@@ -91,6 +91,47 @@ function Logo({ compact = false, light = false }) {
 }
 
 function App() {
+  const [email, setEmail] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [joinSpamCount, setJoinSpamCount] = useState(0)
+
+  const handleWaitlistSubmit = async (event) => {
+    event.preventDefault()
+
+    if (submitted) return
+
+    if (isSubmitting) {
+      setJoinSpamCount((count) => count + 1)
+      return
+    }
+
+    setJoinSpamCount(0)
+    setIsSubmitting(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('email', email)
+
+      const response = await fetch(
+        'https://script.google.com/macros/s/AKfycbxg44fQCPZSKQGYGQcof6gHPSsouDjpwJcOt2kyZ1IhaMMuc-TZLHFgF9kNP02ykif2/exec',
+        {
+          method: 'POST',
+          body: formData,
+        }
+      )
+
+      if (response.ok) {
+        setSubmitted(true)
+        setEmail('')
+      }
+    } catch (error) {
+      console.error('Waitlist submission failed:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const [menuOpen, setMenuOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('motion-theme') === 'dark')
 
@@ -288,7 +329,7 @@ function App() {
                   <span className="text-[10px] uppercase tracking-[0.18em] text-black/35">Motion / 2026</span>
                 </div>
               </div>
-              <div><p className="section-label">Our vision</p><blockquote className="mt-6 text-4xl font-medium leading-[1.05] tracking-[-0.045em] sm:text-6xl"><span className="accent-text">“</span>Built by delegates.<br />Designed for chairs.”</blockquote><p className="mt-8 max-w-lg text-lg leading-relaxed text-black/55">Motion removes the operational friction around debate while preserving what makes Model United Nations matter: procedure, diplomacy, and the people in the room.</p><div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.15em]"><span className="accent-bg h-px w-10" /> From motion to resolution.</div></div>
+              <div><p className="section-label">Our vision</p><blockquote className="mt-6 text-4xl font-medium leading-[1.05] tracking-[-0.045em] sm:text-6xl"><span className="accent-text">“</span>Built by delegates.<br />Designed for chairs.<span className="accent-text">“</span></blockquote><p className="mt-8 max-w-lg text-lg leading-relaxed text-black/55">Motion removes the operational friction around debate while preserving what makes Model United Nations matter: procedure, diplomacy, and the people in the room.</p><div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.15em]"><span className="accent-bg h-px w-10" /> From motion to resolution.</div></div>
             </div>
           </div>
         </section>
@@ -299,12 +340,52 @@ function App() {
             <p className="section-label">Early access</p>
             <h2 className="mx-auto mt-6 max-w-4xl text-5xl font-medium leading-[.95] tracking-[-0.06em] sm:text-7xl lg:text-8xl">Bring the room<br />back into <span className="accent-text">focus.</span></h2>
             <p className="mx-auto mt-7 max-w-lg text-base leading-relaxed text-black/50">Join chairs and conference organizers building a better committee experience.</p>
-            <form className="mx-auto mt-9 flex max-w-md flex-col gap-2 sm:flex-row" onSubmit={(event) => event.preventDefault()}>
+            <form className="mx-auto mt-9 flex max-w-md flex-col gap-2 sm:flex-row" onSubmit={handleWaitlistSubmit}>
               <label className="sr-only" htmlFor="email">Email address</label>
-              <input id="email" type="email" required placeholder="you@conference.org" className="min-w-0 flex-1 border border-black/15 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-black" />
-              <button className="button-primary justify-center px-5 py-3.5" type="submit">Join the waitlist <ArrowRight size={15} /></button>
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@conference.org"
+                className="min-w-0 flex-1 border border-black/15 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-black"
+              />
+              <button
+                className="button-primary justify-center px-5 py-3.5"
+                type="submit"
+              >
+                {submitted ? (
+                  'Joined ✓'
+                ) : isSubmitting ? (
+                  joinSpamCount >= 10 ? (
+                    "Either you have ADHD or you're very impatient..."
+                  ) : joinSpamCount >= 5 ? (
+                    'We heard you...'
+                  ) : joinSpamCount >= 2 ? (
+                    'Still joining...'
+                  ) : (
+                    'Joining...'
+                  )
+                ) : (
+                  <>
+                    Join the waitlist
+                    <ArrowRight size={15} />
+                  </>
+                )}
+              </button>
             </form>
-            <p className="mt-3 text-[11px] text-black/35">No noise. Just product updates and early access.</p>
+            <p className="mt-3 text-[11px] text-black/35">
+              {submitted ? (
+                <strong className="text-black">
+                  Thank you for joining Motion.
+                  <br />
+                  We'll reach out when early access becomes available.
+                </strong>
+              ) : (
+                'No noise. Just product updates and early access.'
+              )}
+            </p>
           </div>
         </section>
       </main>
