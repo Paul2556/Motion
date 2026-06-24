@@ -31,10 +31,7 @@ The goal is to make running MUN easier.
 Motion follows the lifecycle of a committee session:
 
 ```text
-Motion
-→ Formation
-→ Debate
-→ Resolution
+Motion → Formation → Debate → Resolution
 ```
 
 Every feature should support one of these stages.
