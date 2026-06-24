@@ -12,9 +12,10 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
   .section-pad { @apply py-20 sm:py-28 lg:py-36; }
   .section-label, .eyebrow { @apply text-[10px] font-medium uppercase tracking-[0.2em] text-black/40; }
   .eyebrow { @apply inline-flex items-center gap-2 border border-black/15 bg-white/60 px-3 py-2; }
-  .eyebrow::before { content: ''; @apply h-1.5 w-1.5 rounded-full bg-black; }
+  .eyebrow::before { content: ''; @apply h-1.5 w-1.5 rounded-full; background: var(--accent); }
   .section-title { @apply text-4xl font-medium leading-[1.03] tracking-[-0.045em] sm:text-5xl lg:text-6xl; }
-  .button-primary { @apply inline-flex items-center gap-2 bg-black text-sm font-medium text-white transition-all hover:bg-black/80; border-radius: 7px; padding: 0.5rem 1rem; }
+  .button-primary { @apply inline-flex items-center gap-2 text-sm font-medium text-white transition-all; background: var(--accent); border-radius: 7px; padding: 0.5rem 1rem; }
+  .button-primary:hover { filter: brightness(.84); }
   .button-secondary { @apply inline-flex items-center gap-2 border border-black/15 bg-white text-sm font-medium transition-all hover:border-black; }
   .nav-link { @apply transition-colors hover:text-black; }
   .theme-toggle { @apply inline-flex h-9 w-9 items-center justify-center border border-black/15 bg-transparent transition-colors hover:bg-black hover:text-white; }
@@ -25,9 +26,20 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
   .ui-button-muted { @apply border border-white/15 px-4 py-2 text-xs text-white/50; }
 }
 
+.theme-shell { --accent: #9a5b3a; }
+.theme-shell.theme-dark { --accent: #65a4c5; }
+.accent-text { color: var(--accent); }
+.accent-bg { background-color: var(--accent); }
+.accent-border { border-color: var(--accent); }
+.section-label { color: var(--accent); }
+.theme-dark .button-primary { color: black; }
+.theme-dark .group:hover .step-icon { color: black; }
+
 .hero-grid { background-image: linear-gradient(rgba(0,0,0,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.045) 1px, transparent 1px); background-size: 48px 48px; mask-image: linear-gradient(to bottom, black, transparent 85%); }
 .vision-lines { background-image: repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(0,0,0,.08) 32px); }
-.timer-ring { border-radius: 50%; background: radial-gradient(circle at center, #111 68%, transparent 69%), conic-gradient(white 0 76%, rgba(255,255,255,.12) 76% 100%); }
+.product-shell { border-top: 3px solid var(--accent); }
+.timer-ring { border-radius: 50%; background: radial-gradient(circle at center, #111 68%, transparent 69%), conic-gradient(var(--accent) 0 76%, rgba(255,255,255,.12) 76% 100%); }
+.group:hover .step-icon { background: var(--accent); border-color: var(--accent); color: white; }
 .theme-shell > header,
 .theme-shell > main,
 .theme-shell > footer { transition: filter .45s cubic-bezier(.22, 1, .36, 1); }

@@ -174,7 +174,7 @@ function App() {
             <div className="mx-auto max-w-5xl text-center">
               <div className="eyebrow fade-up">Committee management, reconsidered</div>
               <h1 className="fade-up-delay mt-7 text-[clamp(3.6rem,9vw,8.4rem)] font-medium leading-[0.86] tracking-[-0.075em]">
-                From motion<br />to resolution.
+                From motion<br />to <span className="accent-text">resolution.</span>
               </h1>
               <p className="fade-up-delay-2 mx-auto mt-8 max-w-xl text-lg leading-relaxed text-black/55 sm:text-xl">
                 Modern committee management for Model United Nations. Built to keep chairs focused on the room.
@@ -188,7 +188,7 @@ function App() {
             <div className="product-shell mx-auto mt-20 max-w-6xl lg:mt-28">
               <div className="flex h-12 items-center justify-between border-b border-white/10 px-4 sm:px-5">
                 <div className="flex items-center gap-3"><Logo compact light /><span className="text-xs text-white/45">Security Council</span></div>
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-white/45"><span className="h-1.5 w-1.5 rounded-full bg-white" /> Session live</div>
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-white/45"><span className="accent-bg h-1.5 w-1.5 rounded-full" /> Session live</div>
               </div>
               <div className="grid min-h-[420px] grid-cols-1 md:grid-cols-[1.35fr_.65fr]">
                 <div className="border-b border-white/10 p-5 sm:p-7 md:border-b-0 md:border-r">
@@ -266,7 +266,7 @@ function App() {
               {steps.map(([number, title, body], index) => (
                 <div key={title} className="group relative bg-[#101010] p-6 sm:p-8">
                   <div className="flex items-center justify-between"><span className="font-mono text-xs text-white/30">{number}</span>{index < 3 && <ArrowRight className="hidden text-white/20 lg:block" size={17} />}</div>
-                  <div className="mt-14 h-10 w-10 border border-white/20 p-2.5 transition-colors group-hover:bg-white group-hover:text-black">{index === 0 ? <Import size={18} /> : index === 1 ? <Play size={18} /> : index === 2 ? <Vote size={18} /> : <MonitorUp size={18} />}</div>
+                  <div className="step-icon mt-14 h-10 w-10 border border-white/20 p-2.5 transition-colors">{index === 0 ? <Import size={18} /> : index === 1 ? <Play size={18} /> : index === 2 ? <Vote size={18} /> : <MonitorUp size={18} />}</div>
                   <h3 className="mt-6 text-lg font-medium">{title}</h3><p className="mt-3 text-sm leading-relaxed text-white/45">{body}</p>
                 </div>
               ))}
@@ -288,7 +288,7 @@ function App() {
                   <span className="text-[10px] uppercase tracking-[0.18em] text-black/35">Motion / 2026</span>
                 </div>
               </div>
-              <div><p className="section-label">Our vision</p><blockquote className="mt-6 text-4xl font-medium leading-[1.05] tracking-[-0.045em] sm:text-6xl">“Built by delegates.<br />Designed for chairs.”</blockquote><p className="mt-8 max-w-lg text-lg leading-relaxed text-black/55">Motion removes the operational friction around debate while preserving what makes Model United Nations matter: procedure, diplomacy, and the people in the room.</p><div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.15em]"><span className="h-px w-10 bg-black" /> From motion to resolution.</div></div>
+              <div><p className="section-label">Our vision</p><blockquote className="mt-6 text-4xl font-medium leading-[1.05] tracking-[-0.045em] sm:text-6xl"><span className="accent-text">“</span>Built by delegates.<br />Designed for chairs.”</blockquote><p className="mt-8 max-w-lg text-lg leading-relaxed text-black/55">Motion removes the operational friction around debate while preserving what makes Model United Nations matter: procedure, diplomacy, and the people in the room.</p><div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.15em]"><span className="accent-bg h-px w-10" /> From motion to resolution.</div></div>
             </div>
           </div>
         </section>
@@ -297,7 +297,7 @@ function App() {
           <div className="hero-grid absolute inset-0 opacity-40" />
           <div className="page-container relative text-center">
             <p className="section-label">Early access</p>
-            <h2 className="mx-auto mt-6 max-w-4xl text-5xl font-medium leading-[.95] tracking-[-0.06em] sm:text-7xl lg:text-8xl">Bring the room<br />back into focus.</h2>
+            <h2 className="mx-auto mt-6 max-w-4xl text-5xl font-medium leading-[.95] tracking-[-0.06em] sm:text-7xl lg:text-8xl">Bring the room<br />back into <span className="accent-text">focus.</span></h2>
             <p className="mx-auto mt-7 max-w-lg text-base leading-relaxed text-black/50">Join chairs and conference organizers building a better committee experience.</p>
             <form className="mx-auto mt-9 flex max-w-md flex-col gap-2 sm:flex-row" onSubmit={(event) => event.preventDefault()}>
               <label className="sr-only" htmlFor="email">Email address</label>
@@ -321,12 +321,12 @@ function App() {
 
 function Metric({ value, label }) { return <div><span className="block text-lg text-white">{value}</span><span className="text-[9px] uppercase tracking-[0.15em] text-white/30">{label}</span></div> }
 function Tool({ icon: Icon, label, detail }) { return <div className="border-b border-r border-black/10 bg-[#f8f8f5] p-4 sm:p-5"><Icon size={18} strokeWidth={1.5} /><p className="mt-8 text-sm font-medium">{label}</p><p className="mt-1 text-xs text-black/35">{detail}</p></div> }
-function FeatureCard({ icon: Icon, number, title, body, visual }) { return <article className="group flex min-h-[400px] flex-col bg-[#f4f4f0] p-6 transition-colors hover:bg-white sm:p-8"><div className="flex items-center justify-between"><Icon size={20} strokeWidth={1.5} /><span className="font-mono text-[10px] text-black/30">{number}</span></div><div className="my-9 flex flex-1 items-center justify-center">{visual}</div><h3 className="text-xl font-medium tracking-[-0.025em]">{title}</h3><p className="mt-3 max-w-md text-sm leading-relaxed text-black/50">{body}</p></article> }
+function FeatureCard({ icon: Icon, number, title, body, visual }) { return <article className="group flex min-h-[400px] flex-col bg-[#f4f4f0] p-6 transition-colors hover:bg-white sm:p-8"><div className="flex items-center justify-between"><Icon className="accent-text" size={20} strokeWidth={1.5} /><span className="accent-text font-mono text-[10px]">{number}</span></div><div className="my-9 flex flex-1 items-center justify-center">{visual}</div><h3 className="text-xl font-medium tracking-[-0.025em]">{title}</h3><p className="mt-3 max-w-md text-sm leading-relaxed text-black/50">{body}</p></article> }
 
 function ImportVisual() { return <div className="w-full max-w-xs border border-black/15 bg-white p-3 shadow-[0_14px_40px_rgba(0,0,0,.06)]"><div className="flex items-center gap-2 border-b border-black/10 pb-3"><FileSpreadsheet size={17} /><span className="text-xs font-medium">delegates.xlsx</span><span className="ml-auto text-[9px] text-black/35">24 rows</span></div><div className="space-y-2 pt-3">{['Argentina', 'Canada', 'Kenya'].map((x, i) => <div className="flex items-center gap-2 text-[10px]" key={x}><span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[8px] text-white">{i + 1}</span><span>{x}</span><span className="ml-auto text-black/30">Voting</span></div>)}</div></div> }
 function QueueVisual() { return <div className="w-full max-w-xs space-y-2">{['Germany', 'Mexico', 'Indonesia'].map((x, i) => <div className={`flex items-center border px-3 py-3 text-xs transition-transform group-hover:translate-x-1 ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`} key={x}><span className="mr-3 font-mono text-[9px] opacity-40">0{i + 1}</span>{x}<Users size={13} className="ml-auto opacity-35" /></div>)}</div> }
 function TimerVisual() { return <div className="relative flex h-36 w-36 items-center justify-center rounded-full border border-black/15 bg-white"><svg className="absolute inset-1 -rotate-90" viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="none" stroke="black" strokeWidth="1.5" strokeDasharray="225 295" /></svg><div className="text-center"><span className="block text-3xl font-light tracking-[-0.05em]">00:48</span><span className="text-[8px] uppercase tracking-[.16em] text-black/35">speech</span></div></div> }
-function VoteVisual() { return <div className="w-full max-w-xs"><div className="flex h-24 items-end gap-1.5">{[68, 43, 23].map((h, i) => <div className="flex-1 bg-black transition-all duration-500 group-hover:opacity-70" style={{height: `${h}%`}} key={h}><span className="sr-only">{i}</span></div>)}</div><div className="mt-2 grid grid-cols-3 text-center text-[9px] uppercase tracking-[.1em] text-black/35"><span>For 14</span><span>Abst. 3</span><span>Against 2</span></div><div className="mt-4 flex items-center gap-2 border-t border-black/10 pt-3 text-xs"><Check size={13} /><span>Motion passes</span><span className="ml-auto text-black/35">10 required</span></div></div> }
+function VoteVisual() { return <div className="w-full max-w-xs"><div className="flex h-24 items-end gap-1.5">{[68, 43, 23].map((h, i) => <div className={`${i === 0 ? 'accent-bg' : 'bg-black'} flex-1 transition-all duration-500 group-hover:opacity-70`} style={{height: `${h}%`}} key={h}><span className="sr-only">{i}</span></div>)}</div><div className="mt-2 grid grid-cols-3 text-center text-[9px] uppercase tracking-[.1em] text-black/35"><span>For 14</span><span>Abst. 3</span><span>Against 2</span></div><div className="mt-4 flex items-center gap-2 border-t border-black/10 pt-3 text-xs"><Check className="accent-text" size={13} /><span>Motion passes</span><span className="ml-auto text-black/35">10 required</span></div></div> }
 function ResolutionVisual() { return <div className="relative h-36 w-52"><div className="absolute left-0 top-3 h-32 w-24 border border-black/10 bg-white" /><div className="absolute right-0 top-0 h-36 w-40 border border-black/15 bg-white p-4 shadow-[0_12px_30px_rgba(0,0,0,.06)]"><div className="h-1.5 w-16 bg-black" /><div className="mt-4 space-y-2">{[80, 100, 88, 94, 60].map(x => <div key={x} className="h-px bg-black/20" style={{width: `${x}%`}} />)}</div><div className="mt-5 border-l-2 border-black pl-2 text-[8px] leading-relaxed">Draft resolution<br />A/1/1</div></div></div> }
 function PresetVisual() { return <div className="grid w-full max-w-xs grid-cols-2 gap-2">{['UNSC', 'WHO', 'Crisis', 'Custom'].map((x, i) => <div key={x} className={`flex aspect-[1.6] items-end border p-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`}><LayoutTemplate className="mr-auto" size={14} /><span>{x}</span></div>)}</div> }
 
