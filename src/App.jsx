@@ -218,7 +218,7 @@ function App() {
                 From motion<br />to <span className="accent-text">resolution.</span>
               </h1>
               <p className="fade-up-delay-2 mx-auto mt-8 max-w-xl text-lg leading-relaxed text-black/55 sm:text-xl">
-                Modern committee management for Model United Nations. Built to keep chairs focused on the room.
+                Modern committee management for Model United Nations. Built to keep chairs focused on the room, not the software.
               </p>
               <div className="fade-up-delay-2 mt-9 flex flex-col justify-center gap-3 sm:flex-row">
                 <a href="#waitlist" className="button-primary justify-center px-5 py-3.5">Join the waitlist <ArrowRight size={16} /></a>
