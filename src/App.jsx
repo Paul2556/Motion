@@ -407,7 +407,7 @@ function App() {
           <div className="page-container relative text-center">
             <p className="section-label">Early access</p>
             <h2 className="mx-auto mt-6 max-w-4xl text-5xl font-medium leading-[.95] tracking-[-0.06em] sm:text-7xl lg:text-8xl">Bring the room<br />back into <span className="accent-text">focus.</span></h2>
-            <p className="mx-auto mt-7 max-w-lg text-base leading-relaxed text-black/50">Join chairs and conference organizers building a better committee experience.</p>
+            <p className="mx-auto mt-7 max-w-lg text-base leading-relaxed text-black/50">Join chairs and conference organizers to build a cleaner, smoother, more focused MUN experience.</p>
             <form className="mx-auto mt-9 flex max-w-md flex-col gap-2 sm:flex-row" onSubmit={handleWaitlistSubmit}>
               <label className="sr-only" htmlFor="email">Email address</label>
               <input
