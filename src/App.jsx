@@ -461,7 +461,7 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
     >
       <div className="feature-card group flex-1 min-h-[400px] flex-col bg-[#f4f4f0] p-6 transition-colors hover:bg-white sm:p-8">
         <div className="flex items-center justify-between"><Icon className="accent-text" size={20} strokeWidth={1.5} /><span className="accent-text font-mono text-[10px]">{number}</span></div>
-        <div className="my-9 flex flex-1 items-center justify-center">{visual}</div>
+        <div className="my-9 flex flex-1 items-center justify-center overflow-visible">{visual}</div>
         <h3 className="text-xl font-medium tracking-[-0.025em]">{title}</h3>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-black/50">{body}</p>
       </div>
