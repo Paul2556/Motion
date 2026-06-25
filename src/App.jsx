@@ -99,11 +99,62 @@ function Logo({ compact = false, light = false }) {
 }
 
 function App() {
-  const [email, setEmail] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [joinSpamCount, setJoinSpamCount] = useState(0)
+  const fullPlaceholder = "you@conference.org";
 
+  const [email, setEmail] = useState("");
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [joinSpamCount, setJoinSpamCount] = useState(0);
+
+  const [placeholder, setPlaceholder] = useState("");
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  const waitlistRef = useRef(null);
+  const hasAnimated = useRef(false);
+
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCursorVisible(v => !v);
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || hasAnimated.current) return;
+
+        hasAnimated.current = true;
+
+        setTimeout(() => {
+          let i = 0;
+
+          const interval = setInterval(() => {
+            if (i <= fullPlaceholder.length) {
+              setPlaceholder(fullPlaceholder.slice(0, i));
+              i++;
+            } else {
+              clearInterval(interval);
+              observer.disconnect();
+            }
+          }, 80);
+        }, 300);
+      },
+      {
+        threshold: 0.4,
+      }
+    );
+
+    if (waitlistRef.current) {
+      observer.observe(waitlistRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
   const handleWaitlistSubmit = async (event) => {
     event.preventDefault()
 
@@ -402,8 +453,8 @@ function App() {
           </div>
         </section>
 
-        <section id="waitlist" className="relative overflow-hidden bg-[#f4f4f0] py-24 sm:py-32">
-          <div className="hero-grid absolute inset-0 opacity-40" />
+        <section ref={waitlistRef} id="waitlist" className="relative overflow-hidden bg-[#f4f4f0] py-24 sm:py-32">
+          <div className="hero-grid hero-grid-float absolute inset-0 opacity-40" />
           <div className="page-container relative text-center">
             <p className="section-label">Early access</p>
             <h2 className="mx-auto mt-6 max-w-4xl text-5xl font-medium leading-[.95] tracking-[-0.06em] sm:text-7xl lg:text-8xl">Bring the room<br />back into <span className="accent-text">focus.</span></h2>
@@ -416,7 +467,13 @@ function App() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@conference.org"
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                placeholder={
+                  email || isFocused
+                    ? ""
+                    : placeholder + (cursorVisible ? "|" : "")
+                }
                 className="min-w-0 flex-1 border border-black/15 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-black"
               />
               <button
@@ -480,7 +537,9 @@ function Metric({ value, label }) { return <div><span className="block text-lg t
 function Tool({ icon: Icon, label, detail }) { return <div className="border-b border-r border-black/10 bg-[#f8f8f5] p-4 sm:p-5"><Icon size={18} strokeWidth={1.5} /><p className="mt-8 text-sm font-medium">{label}</p><p className="mt-1 text-xs text-black/35">{detail}</p></div> }
 function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
   const cardRef = useRef(null)
-  const [visible, setVisible] = useState(() => !('IntersectionObserver' in window))
+  const [visible, setVisible] = useState(
+    typeof window === "undefined" || !("IntersectionObserver" in window)
+  );
 
   useEffect(() => {
     const card = cardRef.current
