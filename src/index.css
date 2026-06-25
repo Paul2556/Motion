@@ -88,6 +88,8 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
     filter .95s cubic-bezier(.22, 1, .36, 1),
     transform .95s cubic-bezier(.22, 1, .36, 1);
   will-change: opacity, filter, transform;
+  background: #f4f4f0;
+  
 }
 .feature-card-reveal.is-visible {
   opacity: 1;
