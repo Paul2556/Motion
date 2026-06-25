@@ -21,7 +21,7 @@ import {
   X,
   Sun,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const features = [
   {
@@ -62,7 +62,7 @@ const features = [
   {
     icon: LayoutTemplate,
     number: '06',
-    title: 'Committee presets',
+    title: 'Motion presets',
     body: 'Start with procedures tailored to your committee, then adjust the details that matter.',
     visual: <PresetVisual />,
   },
@@ -134,11 +134,20 @@ function App() {
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('motion-theme') === 'dark')
+  const [reducedMotion, setReducedMotion] = useState(() => localStorage.getItem('motion-reduced') === 'true')
 
   const toggleTheme = () => {
     setDarkMode((current) => {
       const next = !current
       localStorage.setItem('motion-theme', next ? 'dark' : 'light')
+      return next
+    })
+  }
+
+  const toggleReducedMotion = () => {
+    setReducedMotion((current) => {
+      const next = !current
+      localStorage.setItem('motion-reduced', next ? 'true' : 'false')
       return next
     })
   }
@@ -149,6 +158,11 @@ function App() {
     const startY = window.scrollY
     const targetY = Math.max(0, target.getBoundingClientRect().top + startY - 64)
     const distance = targetY - startY
+    if (reducedMotion) {
+      window.scrollTo(0, targetY)
+      window.history.replaceState(null, '', `#${id}`)
+      return
+    }
     const duration = Math.min(2200, Math.max(1100, Math.abs(distance) * 0.5))
     const startedAt = performance.now()
     const animate = (now) => {
@@ -177,32 +191,49 @@ function App() {
   }
 
   return (
-    <div className={`theme-shell min-h-screen overflow-hidden text-[#101010] ${darkMode ? 'theme-dark bg-black' : 'bg-[#f4f4f0]'}`} data-theme={darkMode ? 'dark' : 'light'} onClick={handlePageClick}>
+    <div className={`theme-shell min-h-screen overflow-hidden text-[#101010] ${darkMode ? 'theme-dark bg-black' : 'bg-[#f4f4f0]'} ${reducedMotion ? 'motion-reduced' : ''}`} data-theme={darkMode ? 'dark' : 'light'} onClick={handlePageClick}>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-black/10 bg-[#f4f4f0]/90 backdrop-blur-xl">
         <div className="page-container flex h-16 items-center justify-between">
-          <a href="#top" className="shrink-0" onClick={handleHeaderLink}><Logo /></a>
+          <a href="#top" className="logo-link shrink-0" onClick={handleHeaderLink}><Logo /></a>
           <nav className="hidden items-center gap-8 text-sm text-black/60 md:flex">
             <a className="nav-link" href="#problem" onClick={handleHeaderLink}>Why Motion</a>
             <a className="nav-link" href="#features" onClick={handleHeaderLink}>Features</a>
             <a className="nav-link" href="#how" onClick={handleHeaderLink}>How it works</a>
           </nav>
           <div className="flex items-center gap-1.5">
-            <button className="theme-toggle" onClick={toggleTheme} aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} title={darkMode ? 'Light mode' : 'Dark mode'}>
-              {darkMode ? <Sun size={17} /> : <Moon size={17} />}
-            </button>
             <a href="#waitlist" className="button-primary hidden md:inline-flex" onClick={handleHeaderLink}>Join the waitlist <ArrowRight size={15} /></a>
-            <button className="p-2 md:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+            <button className={`sandwich-toggle ${menuOpen ? 'is-active' : ''}`} onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label="Open site menu">
               {menuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
         {menuOpen && (
-          <div className="border-t border-black/10 bg-[#f4f4f0] px-5 py-5 md:hidden">
-            <div className="flex flex-col gap-4 text-sm">
-              <a href="#problem" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>Why Motion</a>
-              <a href="#features" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>Features</a>
-              <a href="#how" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>How it works</a>
-              <a href="#waitlist" className="button-primary mt-2 justify-center" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>Join the waitlist</a>
+          <div className="page-container relative">
+            <div className="sandwich-menu absolute right-5 top-2 w-[min(21rem,calc(100vw-2.5rem))] border border-black/10 bg-[#f4f4f0]/95 p-2 shadow-[0_18px_50px_rgba(0,0,0,.12)] backdrop-blur-xl sm:right-8 lg:right-12">
+              <div className="border-b border-black/10 p-2 md:hidden">
+                <a className="dropdown-link" href="#problem" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>Why Motion</a>
+                <a className="dropdown-link" href="#features" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>Features</a>
+                <a className="dropdown-link" href="#how" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>How it works</a>
+                <a className="dropdown-link" href="#waitlist" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>Join the waitlist</a>
+              </div>
+              <div className="space-y-1 p-2">
+                <button className="dropdown-control" onClick={toggleTheme} type="button">
+                  <span className="dropdown-control-icon">{darkMode ? <Sun size={16} /> : <Moon size={16} />}</span>
+                  <span>
+                    <span className="block text-sm font-medium">{darkMode ? 'Light mode' : 'Dark mode'}</span>
+                    <span className="block text-xs text-black/40">Switch the interface contrast.</span>
+                  </span>
+                  <span className="ml-auto text-[10px] uppercase tracking-[0.16em] text-black/35">{darkMode ? 'On' : 'Off'}</span>
+                </button>
+                <button className="dropdown-control" onClick={toggleReducedMotion} type="button" aria-pressed={reducedMotion}>
+                  <span className="dropdown-control-icon">{reducedMotion ? <Pause size={16} /> : <Play size={16} />}</span>
+                  <span>
+                    <span className="block text-sm font-medium">Reduced motion</span>
+                    <span className="block text-xs text-black/40">Control page sweeps and reveal fades.</span>
+                  </span>
+                  <span className="ml-auto text-[10px] uppercase tracking-[0.16em] text-black/35">{reducedMotion ? 'On' : 'Off'}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -213,7 +244,6 @@ function App() {
           <div className="hero-grid absolute inset-0 opacity-50" />
           <div className="page-container relative py-20 sm:py-28 lg:py-36">
             <div className="mx-auto max-w-5xl text-center">
-              <div className="eyebrow fade-up">Committee management, reconsidered</div>
               <h1 className="fade-up-delay mt-7 text-[clamp(3.6rem,9vw,8.4rem)] font-medium leading-[0.86] tracking-[-0.075em]">
                 From motion<br />to <span className="accent-text">resolution.</span>
               </h1>
@@ -228,23 +258,23 @@ function App() {
 
             <div className="product-shell mx-auto mt-20 max-w-6xl lg:mt-28">
               <div className="flex h-12 items-center justify-between border-b border-white/10 px-4 sm:px-5">
-                <div className="flex items-center gap-3"><Logo compact light /><span className="text-xs text-white/45">Security Council</span></div>
+                <div className="flex items-center gap-3"><Logo compact light /><span className="text-xs text-white/45">DISEC</span></div>
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-white/45"><span className="accent-bg h-1.5 w-1.5 rounded-full" /> Session live</div>
               </div>
               <div className="grid min-h-[420px] grid-cols-1 md:grid-cols-[1.35fr_.65fr]">
                 <div className="border-b border-white/10 p-5 sm:p-7 md:border-b-0 md:border-r">
                   <div className="flex items-start justify-between">
                     <div><p className="ui-label">Active speech</p><h3 className="mt-2 text-xl font-medium text-white">United Kingdom</h3></div>
-                    <span className="status-chip">General speakers list</span>
+                    <span className="status-chip">Moderated caucus</span>
                   </div>
                   <div className="mt-10 flex flex-col items-center">
                     <div className="timer-ring flex h-44 w-44 items-center justify-center sm:h-52 sm:w-52">
-                      <div className="text-center"><span className="block text-5xl font-light tracking-[-0.06em] text-white sm:text-6xl">01:17</span><span className="mt-2 block text-[10px] uppercase tracking-[0.2em] text-white/35">remaining</span></div>
+                      <div className="text-center"><span className="block text-5xl font-light tracking-[-0.06em] text-white sm:text-6xl">01:12</span><span className="mt-2 block text-[10px] uppercase tracking-[0.2em] text-white/35">remaining</span></div>
                     </div>
-                    <div className="mt-7 flex gap-2"><button className="ui-button"><Pause size={14} /> Pause</button><button className="ui-button-muted">+ 15 sec</button></div>
+                    <div className="mt-7 flex gap-2"><button className="ui-button-muted">- 15s total</button><button className="ui-button"><Pause size={14} /> Pause</button><button className="ui-button-muted">+ 15s total</button></div>
                   </div>
                   <div className="mt-9 grid grid-cols-3 border-t border-white/10 pt-5 text-center">
-                    <Metric value="18" label="Present" /><Metric value="05" label="Spoken" /><Metric value="12" label="Queued" />
+                    <Metric value="9 min" label="Estimated" /><Metric value="02" label="Spoken" /><Metric value="04" label="Queued" />
                   </div>
                 </div>
                 <div className="p-5 sm:p-7">
@@ -253,12 +283,11 @@ function App() {
                     {['Brazil', 'Japan', 'Ghana', 'France'].map((country, index) => (
                       <div key={country} className="flex items-center justify-between border border-white/10 px-3.5 py-3 text-sm text-white/75">
                         <div className="flex items-center gap-3"><span className="text-xs tabular-nums text-white/25">{String(index + 1).padStart(2, '0')}</span>{country}</div>
-                        {index === 0 && <span className="text-[9px] uppercase tracking-[0.12em] text-white/35">Ready</span>}
                       </div>
                     ))}
                   </div>
                   <button className="mt-4 flex w-full items-center justify-center gap-2 border border-dashed border-white/15 py-3 text-xs text-white/35"><Plus size={13} /> Add speaker</button>
-                  <div className="mt-8 border-t border-white/10 pt-5"><p className="ui-label">Current motion</p><p className="mt-3 text-sm leading-relaxed text-white/65">Moderated caucus on regional security</p><div className="mt-3 flex justify-between text-[10px] uppercase tracking-[0.12em] text-white/30"><span>10 minutes</span><span>60 sec / speaker</span></div></div>
+                  <div className="mt-8 border-t border-white/10 pt-5"><p className="ui-label">Current topic</p><p className="mt-3 text-sm leading-relaxed text-white/65">Discussing possible solutions to regional security</p><div className="mt-3 flex justify-between text-[10px] uppercase tracking-[0.12em] text-white/30"><span>10 minutes</span><span>90 sec / speaker</span></div></div>
                 </div>
               </div>
             </div>
@@ -294,8 +323,8 @@ function App() {
               <div><p className="section-label">Core features</p><h2 className="section-title mt-5">Everything on the dais.<br />Nothing in the way.</h2></div>
               <p className="max-w-sm text-sm leading-relaxed text-black/50">Six focused tools replace the patchwork—without changing the procedure chairs and delegates already know.</p>
             </div>
-            <div className="mt-14 grid gap-px overflow-hidden border border-black/10 bg-black/10 md:grid-cols-2 lg:mt-20">
-              {features.map((feature) => <FeatureCard key={feature.title} {...feature} />)}
+            <div className="mt-14 grid gap-px overflow-hidden border border-black/10 bg-black/10 md:grid-cols-2 lg:mt-20 ">
+              {features.map((feature, index) => <FeatureCard key={feature.title} index={index} {...feature} />)}
             </div>
           </div>
         </section>
@@ -402,13 +431,49 @@ function App() {
 
 function Metric({ value, label }) { return <div><span className="block text-lg text-white">{value}</span><span className="text-[9px] uppercase tracking-[0.15em] text-white/30">{label}</span></div> }
 function Tool({ icon: Icon, label, detail }) { return <div className="border-b border-r border-black/10 bg-[#f8f8f5] p-4 sm:p-5"><Icon size={18} strokeWidth={1.5} /><p className="mt-8 text-sm font-medium">{label}</p><p className="mt-1 text-xs text-black/35">{detail}</p></div> }
-function FeatureCard({ icon: Icon, number, title, body, visual }) { return <article className="group flex min-h-[400px] flex-col bg-[#f4f4f0] p-6 transition-colors hover:bg-white sm:p-8"><div className="flex items-center justify-between"><Icon className="accent-text" size={20} strokeWidth={1.5} /><span className="accent-text font-mono text-[10px]">{number}</span></div><div className="my-9 flex flex-1 items-center justify-center">{visual}</div><h3 className="text-xl font-medium tracking-[-0.025em]">{title}</h3><p className="mt-3 max-w-md text-sm leading-relaxed text-black/50">{body}</p></article> }
+function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
+  const cardRef = useRef(null)
+  const [visible, setVisible] = useState(() => !('IntersectionObserver' in window))
+
+  useEffect(() => {
+    const card = cardRef.current
+    if (!card) return undefined
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '0px 0px -12% 0px', threshold: 0.22 },
+    )
+
+    observer.observe(card)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <article
+      ref={cardRef}
+      className={`feature-card-reveal ${visible ? 'is-visible' : ''}`}
+      style={{ transitionDelay: `${Math.min(index, 5) * 115}ms` }}
+    >
+      <div className="feature-card group flex-1 min-h-[400px] flex-col bg-[#f4f4f0] p-6 transition-colors hover:bg-white sm:p-8">
+        <div className="flex items-center justify-between"><Icon className="accent-text" size={20} strokeWidth={1.5} /><span className="accent-text font-mono text-[10px]">{number}</span></div>
+        <div className="my-9 flex flex-1 items-center justify-center">{visual}</div>
+        <h3 className="text-xl font-medium tracking-[-0.025em]">{title}</h3>
+        <p className="mt-3 max-w-md text-sm leading-relaxed text-black/50">{body}</p>
+      </div>
+    </article>
+  )
+}
 
 function ImportVisual() { return <div className="w-full max-w-xs border border-black/15 bg-white p-3 shadow-[0_14px_40px_rgba(0,0,0,.06)]"><div className="flex items-center gap-2 border-b border-black/10 pb-3"><FileSpreadsheet size={17} /><span className="text-xs font-medium">delegates.xlsx</span><span className="ml-auto text-[9px] text-black/35">24 rows</span></div><div className="space-y-2 pt-3">{['Argentina', 'Canada', 'Kenya'].map((x, i) => <div className="flex items-center gap-2 text-[10px]" key={x}><span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[8px] text-white">{i + 1}</span><span>{x}</span><span className="ml-auto text-black/30">Voting</span></div>)}</div></div> }
 function QueueVisual() { return <div className="w-full max-w-xs space-y-2">{['Germany', 'Mexico', 'Indonesia'].map((x, i) => <div className={`flex items-center border px-3 py-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`} key={x}><span className="mr-3 font-mono text-[9px] opacity-40">0{i + 1}</span>{x}<Users size={13} className="ml-auto opacity-35" /></div>)}</div> }
-function TimerVisual() { return <div className="relative flex h-36 w-36 items-center justify-center rounded-full border border-black/15 bg-white"><svg className="absolute inset-1 -rotate-90" viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="none" stroke="black" strokeWidth="1.5" strokeDasharray="225 295" /></svg><div className="text-center"><span className="block text-3xl font-light tracking-[-0.05em]">00:48</span><span className="text-[8px] uppercase tracking-[.16em] text-black/35">speech</span></div></div> }
+function TimerVisual() { return <div className="relative flex h-36 w-36 items-center justify-center rounded-full border border-black/15 bg-white"><svg className="absolute inset-1 -rotate-90" viewBox="0 0 100 100"><circle cx="50" cy="50" r="47" fill="none" stroke="black" strokeWidth="1.5" strokeDasharray="225 295" /></svg><div className="text-center"><span className="block text-3xl font-light tracking-[-0.05em]">00:48</span><span className="text-[8px] uppercase tracking-[.16em] text-black/35">REMAINING</span></div></div> }
 function VoteVisual() { return <div className="relative z-10 w-full max-w-xs"><div className="flex h-24 items-end gap-1.5">{[68, 43, 23].map((h, i) => <div className={`${i === 0 ? 'accent-bg' : 'bg-black'} flex-1 transition-colors duration-300`} style={{height: `${h}%`}} key={h}><span className="sr-only">{i}</span></div>)}</div><div className="mt-2 grid grid-cols-3 text-center text-[9px] uppercase tracking-[.1em] text-black/35"><span>For 14</span><span>Abst. 3</span><span>Against 2</span></div><div className="mt-4 flex items-center gap-2 border-t border-black/10 pt-3 text-xs"><Check className="accent-text" size={13} /><span>Motion passes</span><span className="ml-auto text-black/35">10 required</span></div></div> }
-function ResolutionVisual() { return <div className="relative h-36 w-52"><div className="absolute left-0 top-3 h-32 w-24 border border-black/10 bg-white" /><div className="absolute right-0 top-0 h-36 w-40 border border-black/15 bg-white p-4 shadow-[0_12px_30px_rgba(0,0,0,.06)]"><div className="h-1.5 w-16 bg-black" /><div className="mt-4 space-y-2">{[80, 100, 88, 94, 60].map(x => <div key={x} className="h-px bg-black/20" style={{width: `${x}%`}} />)}</div><div className="mt-5 border-l-2 border-black pl-2 text-[8px] leading-relaxed">Draft resolution<br />A/1/1</div></div></div> }
-function PresetVisual() { return <div className="grid w-full max-w-xs grid-cols-2 gap-2">{['UNSC', 'WHO', 'Crisis', 'Custom'].map((x, i) => <div key={x} className={`flex aspect-[1.6] items-end border p-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`}><LayoutTemplate className="mr-auto" size={14} /><span>{x}</span></div>)}</div> }
+function ResolutionVisual() { return <div className="relative h-36 w-52"><div className="absolute left-0 top-3 h-32 w-24 border border-black/10 bg-white" /><div className="absolute right-0 top-0 h-36 w-40 border border-black/15 bg-white p-4 shadow-[0_12px_30px_rgba(0,0,0,.06)]"><div className="h-1.5 w-16 bg-black" /><div className="mt-4 space-y-2">{[80, 100, 88, 94, 60].map(x => <div key={x} className="h-px bg-black/20" style={{width: `${x}%`}} />)}</div><div className="mt-5 border-l-2 border-black pl-2 text-[8px] leading-relaxed">Draft resolution<br />1.1</div></div></div> }
+function PresetVisual() { return <div className="grid w-full max-w-xs grid-cols-2 gap-2">{['Unmoderated', 'Moderated', 'COTW', 'Custom'].map((x, i) => <div key={x} className={`flex aspect-[1.6] items-end border p-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`}><LayoutTemplate className="mr-auto" size={14} /><span>{x}</span></div>)}</div> }
 
 export default App
