@@ -11,20 +11,20 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
+    "lucide-react": "^1.21.0",
     "react": "latest",
     "react-dom": "latest",
-    "lucide-react": "latest"
+    "typescript": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
     "@eslint/js": "latest",
+    "autoprefixer": "latest",
     "eslint": "latest",
     "eslint-plugin-react-hooks": "latest",
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
-    "tailwindcss": "^3.4.17",
     "postcss": "latest",
-    "autoprefixer": "latest"
+    "tailwindcss": "^3.4.17"
   }
 }

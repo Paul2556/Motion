@@ -77,15 +77,23 @@ const steps = [
 
 function Logo({ compact = false, light = false }) {
   const color = light ? 'white' : 'black'
+
   return (
     <div className="flex items-center gap-2.5" aria-label="Motion">
-      <svg width="34" height="24" viewBox="0 0 68 48" fill="none" aria-hidden="true">
-        <circle cx="22" cy="24" r="20" fill={color} />
-        <rect x="44" y="7" width="22" height="7" rx="3.5" fill={color} />
-        <rect x="46" y="20.5" width="20" height="7" rx="3.5" fill={color} />
-        <rect x="44" y="34" width="22" height="7" rx="3.5" fill={color} />
+      <svg width="34" height="28" viewBox="0 0 68 56" fill="none" aria-hidden="true">
+        <circle cx="22" cy="25" r="20" fill={color} />
+
+        <rect x="41" y="6"  width="22" height="6" rx="3" fill={color} />
+        <rect x="46" y="16.5" width="20" height="6" rx="3" fill={color} />
+        <rect x="46" y="27.5" width="20" height="6" rx="3" fill={color} />
+        <rect x="41" y="38" width="22" height="6" rx="3" fill={color} />
       </svg>
-      {!compact && <span className="text-[15px] font-semibold tracking-[-0.02em]">Motion</span>}
+
+      {!compact && (
+        <span className="text-[15px] font-semibold tracking-[-0.02em]">
+          Motion
+        </span>
+      )}
     </div>
   )
 }
@@ -297,8 +305,8 @@ function App() {
 
         <section id="problem" className="section-pad border-b border-black/10 bg-white">
           <div className="page-container">
-            <div className="grid gap-12 lg:grid-cols-[.75fr_1.25fr] lg:gap-24">
-              <div><p className="section-label">The problem</p><h2 className="section-title mt-5">Run committee.<br /><span className="text-black/25">Not spreadsheets.</span></h2></div>
+            <div className="grid gap-12 lg:grid-cols-[0.6fr_1.4fr] lg:gap-24">
+              <div><p className="section-label">The problem</p><h2 className="section-title mt-5">Run the committee.<br /><span className="text-black/25">Not spreadsheets.</span></h2></div>
               <div>
                 <p className="max-w-2xl text-xl leading-relaxed text-black/60 sm:text-2xl">A chair’s attention belongs in the room—not scattered across tabs, files, and formulas.</p>
                 <div className="mt-10 grid grid-cols-2 border-l border-t border-black/10 sm:grid-cols-4">
@@ -307,7 +315,40 @@ function App() {
                   <Tool icon={FileText} label="PDFs" detail="Resolutions" />
                   <Tool icon={FileSpreadsheet} label="Sheets" detail="Delegates" />
                 </div>
-                <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-black/35"><div className="h-px flex-1 bg-black/10" /><ChevronRight size={16} /><div className="h-px flex-1 bg-black/10" /></div>
+                {/* Desktop */}
+                <div className="mt-5 mb-1 hidden justify-center overflow-hidden sm:flex">
+                  <svg
+                    className="block w-full max-w-full"
+                    viewBox="0 10 600 95"
+                    fill="none"
+                  >
+                    {/* Vertical lines */}
+                    <path d="M75 10V45" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M225 10V45" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M375 10V45" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M525 10V45" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
+
+                    {/* Merge */}
+                    <path d="M75 45L180 75" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M225 45L240 75" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M375 45L360 75" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M525 45L420 75" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
+
+                    {/* Center */}
+                    <path d="M180 75H420" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M300 75V110" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </div>
+
+                {/* Mobile */}
+                <div className="my-8 flex flex-col items-center gap-3 sm:hidden">
+
+                  <ArrowDown
+                    size={20}
+                    strokeWidth={1.6}
+                    className="text-black/30"
+                  />
+                </div>
                 <div className="flex items-center justify-between border border-black bg-black p-5 text-white sm:p-7">
                   <Logo light />
                   <span className="text-sm text-white/60">One platform.</span>
@@ -346,14 +387,12 @@ function App() {
 
         <section className="section-pad border-b border-black/10 bg-white">
           <div className="page-container">
-            <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-24">
+            <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-12">
               <div className="relative aspect-square max-w-xl overflow-hidden bg-[#ededE8] p-8 sm:p-12">
                 <div className="absolute inset-0 vision-lines opacity-50" />
                 <div className="relative flex h-full flex-col justify-between">
-                  <Logo compact />
-                  <div className="mx-auto flex items-center gap-3 self-center">
-                    <div className="h-28 w-28 rounded-full bg-black sm:h-36 sm:w-36" />
-                    <div className="space-y-3"><div className="h-4 w-24 rounded-full bg-black sm:w-32" /><div className="h-4 w-28 rounded-full bg-black sm:w-36" /><div className="h-4 w-28 rounded-full bg-black sm:w-36" /><div className="h-4 w-24 rounded-full bg-black sm:w-32" /></div>
+                  <div className="flex flex-1 items-center justify-center scale-[2.5] sm:scale-[3.25]">
+                    <Logo compact/>
                   </div>
                   <span className="text-[10px] uppercase tracking-[0.18em] text-black/35">Motion / 2026</span>
                 </div>
@@ -422,7 +461,15 @@ function App() {
       <footer className="bg-[#101010] py-10 text-white">
         <div className="page-container flex flex-col justify-between gap-8 sm:flex-row sm:items-end">
           <div><Logo light /><p className="mt-4 text-sm text-white/40">From motion to resolution.</p></div>
-          <div className="flex flex-col gap-3 text-sm text-white/50 sm:items-end"><div className="flex gap-6"><a className="hover:text-white" href="#features">Features</a><a className="hover:text-white" href="#how">Process</a><a className="hover:text-white" href="#waitlist">Waitlist</a></div><span className="text-xs text-white/25">© 2026 Motion</span></div>
+          <div className="flex flex-col gap-3 text-sm text-white/50 sm:items-end"><div className="flex gap-6"><a className="hover:text-white" href="#features">Features</a><a className="hover:text-white" href="#how">Process</a><a className="hover:text-white" href="#waitlist">Waitlist</a></div><a
+                                                                                                                                                                                                                                                                                                        href="https://github.com/Paul2556/Motion"
+                                                                                                                                                                                                                                                                                                        target="_blank"
+                                                                                                                                                                                                                                                                                                        rel="noopener noreferrer"
+                                                                                                                                                                                                                                                                                                        className="inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors hover:text-white"
+                                                                                                                                                                                                                                                                                                      >
+                                                                                                                                                                                                                                                                                                        <span>Source</span>
+                                                                                                                                                                                                                                                                                                      </a>
+</div>
         </div>
       </footer>
     </div>
@@ -473,6 +520,6 @@ function ImportVisual() { return <div className="w-full max-w-xs border border-b
 function QueueVisual() { return <div className="w-full max-w-xs space-y-2">{['Germany', 'Mexico', 'Indonesia'].map((x, i) => <div className={`flex items-center border px-3 py-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`} key={x}><span className="mr-3 font-mono text-[9px] opacity-40">0{i + 1}</span>{x}<Users size={13} className="ml-auto opacity-35" /></div>)}</div> }
 function TimerVisual() { return <div className="relative flex h-36 w-36 items-center justify-center rounded-full border border-black/15 bg-white"><svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"><circle cx="50" cy="50" r="45.5" fill="none" stroke="black" strokeWidth="1.5" strokeDasharray="225 295" /></svg><div className="text-center"><span className="block text-3xl font-light tracking-[-0.05em]">00:48</span><span className="text-[8px] uppercase tracking-[.16em] text-black/35">REMAINING</span></div></div> }function VoteVisual() { return <div className="relative z-10 w-full max-w-xs"><div className="flex h-24 items-end gap-1.5">{[68, 43, 23].map((h, i) => <div className={`${i === 0 ? 'accent-bg' : 'bg-black'} flex-1 transition-colors duration-300`} style={{height: `${h}%`}} key={h}><span className="sr-only">{i}</span></div>)}</div><div className="mt-2 grid grid-cols-3 text-center text-[9px] uppercase tracking-[.1em] text-black/35"><span>For 14</span><span>Abst. 3</span><span>Against 2</span></div><div className="mt-4 flex items-center gap-2 border-t border-black/10 pt-3 text-xs"><Check className="accent-text" size={13} /><span>Motion passes</span><span className="ml-auto text-black/35">10 required</span></div></div> }
 function ResolutionVisual() { return <div className="relative h-36 w-52"><div className="absolute left-0 top-3 h-32 w-24 border border-black/10 bg-white" /><div className="absolute right-0 top-0 h-36 w-40 border border-black/15 bg-white p-4 shadow-[0_12px_30px_rgba(0,0,0,.06)]"><div className="h-1.5 w-16 bg-black" /><div className="mt-4 space-y-2">{[80, 100, 88, 94, 60].map(x => <div key={x} className="h-px bg-black/20" style={{width: `${x}%`}} />)}</div><div className="mt-5 border-l-2 border-black pl-2 text-[8px] leading-relaxed">Draft resolution<br />1.1</div></div></div> }
-function PresetVisual() { return <div className="grid w-full max-w-xs grid-cols-2 gap-2">{['Unmoderated', 'Moderated', 'COTW', 'Custom'].map((x, i) => <div key={x} className={`flex aspect-[1.6] items-end border p-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`}><LayoutTemplate className="mr-auto" size={14} /><span>{x}</span></div>)}</div> }
+function PresetVisual() { return <div className="grid w-full max-w-xs grid-cols-2 gap-2">{['Unmoderated', 'Moderated', 'COTW', 'GSL'].map((x, i) => <div key={x} className={`flex aspect-[1.6] items-end border p-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`}><LayoutTemplate className="mr-auto" size={14} /><span>{x}</span></div>)}</div> }
 
 export default App
