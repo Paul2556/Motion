@@ -456,7 +456,7 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
   return (
     <article
       ref={cardRef}
-      className={`feature-card-reveal ${visible ? 'is-visible' : ''}`}
+      className={`feature-card-reveal bg-white ${visible ? 'is-visible' : ''}`}
       style={{ transitionDelay: `${Math.min(index, 5) * 115}ms` }}
     >
       <div className="feature-card group flex-1 min-h-[400px] flex-col bg-[#f4f4f0] p-6 transition-colors hover:bg-white sm:p-8">
