@@ -14,8 +14,17 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
   .eyebrow { @apply inline-flex items-center gap-2 border border-black/15 bg-white/60 px-3 py-2; }
   .eyebrow::before { content: ''; @apply h-1.5 w-1.5 rounded-full; background: var(--accent); }
   .section-title { @apply text-4xl font-medium leading-[1.03] tracking-[-0.045em] sm:text-5xl lg:text-6xl; }
-  .button-primary { @apply inline-flex items-center gap-2 text-sm font-medium text-white transition-all; background: var(--accent); border-radius: 7px; padding: 0.5rem 1rem; }
-  .button-primary:hover { filter: brightness(.84); }
+  .button-primary { @apply inline-flex items-center gap-2 text-sm font-medium text-white transition-all; background: var(--accent); border-radius: 7px; padding: 0.5rem 1rem; transition:
+    background-color .25s,
+    transform .25s cubic-bezier(.22,1,.36,1),
+    box-shadow .25s;}
+  .button-primary:hover { filter: brightness(1.1); transform: translateY(-1px);
+  box-shadow:
+    0 10px 24px rgba(154,91,58,.18),
+    inset 0 0 0 1px rgba(255,255,255,.08);}
+  .button-primary:active {
+    transform: translateY(0);
+  }
   .button-secondary { @apply inline-flex items-center gap-2 border border-black/15 bg-white text-sm font-medium transition-all hover:border-black; }
   .nav-link { @apply transition-colors hover:text-black; }
   .sandwich-toggle { @apply inline-flex h-9 w-9 items-center justify-center border border-black/15 bg-transparent transition-all hover:bg-black hover:text-white; }
@@ -74,7 +83,28 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
   color: var(--accent);
 }
 
-.hero-grid { background-image: linear-gradient(rgba(0,0,0,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.045) 1px, transparent 1px); background-size: 48px 48px; mask-image: linear-gradient(to bottom, black, transparent 85%); }
+.hero-grid { background-image: linear-gradient(rgba(0,0,0,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.045) 1px, transparent 1px); background-size: 48px 48px; mask-image: linear-gradient(to bottom, black, transparent 85%); animation: gridFloat 14s ease-in-out infinite; }
+.hero-grid-float {
+  animation: gridFloat 14s ease-in-out infinite;
+}
+
+@keyframes gridFloat {
+  0%,100% {
+    transform: translate(0,0);
+  }
+
+  25% {
+    transform: translateY(-3px);
+  }
+
+  50% {
+    transform: translateX(2px);
+  }
+
+  75% {
+    transform: translateY(3px);
+  }
+}
 .vision-lines { background-image: repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(0,0,0,.08) 32px); }
 .product-shell { border-top: 3px solid var(--accent); }
 .timer-ring { border-radius: 50%; background: radial-gradient(circle at center, #111 68%, transparent 69%), conic-gradient(var(--accent) 0 80%, rgba(255,255,255,.12) 80% 100%); }
@@ -155,7 +185,40 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
 .motion-reduced .logo-link:hover svg {
   transform: none;
 }
+.email-caret {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  width: 1.5px;
+  height: 18px;
+  background: var(--accent);
+  transform: translateY(-50%);
+  animation: blink 1s steps(1) infinite;
+  pointer-events: none;
+}
 
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+#email {
+  transition:
+    border-color .25s,
+    box-shadow .25s;
+}
+
+#email:focus {
+  box-shadow: 0 0 0 4px rgba(154,91,58,.08);
+}
+
+#email::placeholder {
+  transition: opacity .2s;
+}
+
+#email:focus::placeholder {
+  opacity: .35;
+}
 /* ===== Scrollbar ===== */
 
 /* Chrome, Edge, Safari */
