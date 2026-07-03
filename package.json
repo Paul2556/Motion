@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
+    "exceljs": "^4.4.0",
     "lucide-react": "^1.21.0",
     "react": "latest",
     "react-dom": "latest",
+    "react-router-dom": "^7.18.0",
     "typescript": "latest",
     "vite": "latest"
   },
