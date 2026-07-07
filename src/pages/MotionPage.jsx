@@ -1,18 +1,48 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Logo from "../components/Logo";
 import SeatChart from "../components/SeatChart";
 
 // Placeholder vote tally, using the app's categorical palette (slot 1 blue,
 // slot 3 yellow - see src/index.css / the dataviz skill's palette reference)
 // rather than freehand hex picks.
-const demoGroups = [
-  { name: "For", seats: 20000, color: "#3987e5" },
-  { name: "Against", seats: 20000, color: "#c98500" },
-  { name: "Abstain", seats: 20000, color: "#666666" },
+const initialGroups = [
+  { name: "For", seats: 0, color: "#3987e5" },
+  { name: "Against", seats: 0, color: "#c98500" },
 ];
 
 export default function MotionPage() {
   const [motionText, setMotionText] = useState("");
+  const [groups, setGroups] = useState(initialGroups);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const adjustVotes = useCallback((index, delta) => {
+    setGroups((prev) =>
+      prev.map((group, i) =>
+        i === index ? { ...group, seats: Math.max(0, group.seats + delta) } : group,
+      ),
+    );
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      // Don't hijack these keys while the user is typing the motion text.
+      const tag = event.target.tagName;
+      if (tag === "TEXTAREA" || tag === "INPUT") return;
+
+      if (event.key === "1") {
+        setSelectedIndex(0);
+      } else if (event.key === "2") {
+        setSelectedIndex(1);
+      } else if (event.key === "+" || event.key === "=") {
+        adjustVotes(selectedIndex, 1);
+      } else if (event.key === "-" || event.key === "_") {
+        adjustVotes(selectedIndex, -1);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedIndex, adjustVotes]);
 
   return (
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
@@ -39,7 +69,11 @@ export default function MotionPage() {
             <SeatChart
               title="Voting"
               subtitle="The motion (placeholder)"
-              groups={demoGroups}
+              groups={groups}
+              selectedIndex={selectedIndex}
+              onSelect={setSelectedIndex}
+              onIncrement={(index) => adjustVotes(index, 1)}
+              onDecrement={(index) => adjustVotes(index, -1)}
             />
           </div>
         </div>

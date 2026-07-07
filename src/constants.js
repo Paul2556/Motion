@@ -238,6 +238,12 @@ export const PAGE_WORDS = new Set([
   "RUNNERS",
   "USHER",
   "USHERS",
+  // EISMUN embeds a per-committee support-staff photographer row
+  // ("Photographer") alongside the delegate list - checked against every
+  // country/role value across all 6 excelToJson sample files first, per
+  // the rule below.
+  "PHOTOGRAPHER",
+  "PHOTOGRAPHERS",
 ]);
 
 // Sheet names (exact, case-insensitive) that are never a real committee -
@@ -255,6 +261,11 @@ export const SKIP_SHEETS = new Set([
   "summary",
   "notes",
   "overview",
+  // EISMUN's whole-conference roster tab: advisors + secretariat +
+  // parliamentarians, followed by a "Committees and Chairs" table that just
+  // re-lists every chair already captured from their own committee sheet -
+  // same role as "teams"/"information" above, just named differently.
+  "chairs info",
 ]);
 
 // Exact-match signals (post normalize()) that a row is a header row, and

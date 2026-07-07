@@ -1,3 +1,5 @@
+import { Plus, Minus } from "lucide-react";
+
 // Parliamentary "hemicycle" seat chart: circles arranged across concentric
 // semicircular rows, filled in angular order (left -> right) by bloc, with a
 // dashed threshold line marking the majority seat and a legend below.
@@ -8,7 +10,7 @@
 // categorical palette in fixed slot order (see src/index.css's --series-*
 // custom properties) rather than picking colors freehand.
 function computeSeatPositions(totalSeats, { seatRadius, rowGap, innerRadius }) {
-  if (totalSeats <= 0) return { seats: [], rows: [], seatRadius };
+  if (totalSeats <= 0) return { seats: [], rows: [], seatRadius, outerRadius: innerRadius };
 
   let numRows = 1;
   let rows = [];
@@ -119,6 +121,10 @@ export default function SeatChart({
   seatRadius = 15,
   rowGap = 34,
   innerRadius = 60,
+  selectedIndex = null,
+  onSelect,
+  onIncrement,
+  onDecrement,
 }) {
   const totalSeats = groups.reduce((sum, group) => sum + group.seats, 0);
 
@@ -245,18 +251,62 @@ export default function SeatChart({
         </div>
 
         <div className="mt-2 divide-y divide-white/5">
-          {groups.map((group) => (
-            <div key={group.name} className="flex items-center justify-between py-2.5">
-              <div className="flex items-center gap-2.5">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: group.color }}
-                />
-                <span className="text-sm text-white/80">{group.name}</span>
+          {groups.map((group, index) => {
+            const isSelected = selectedIndex === index;
+
+            return (
+              <div
+                key={group.name}
+                onClick={() => onSelect?.(index)}
+                className={`flex items-center justify-between py-2.5 px-2 -mx-2 transition ${
+                  isSelected ? "bg-white/5" : ""
+                } ${onSelect ? "cursor-pointer" : ""}`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: group.color }}
+                  />
+                  <span className="text-sm text-white/80">{group.name}</span>
+                  {onSelect && (
+                    <span className="rounded-none border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/40">
+                      {index + 1}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="w-10 text-right text-sm text-white/50">{group.seats}</span>
+
+                  {(onIncrement || onDecrement) && (
+                    <div className="flex gap-1">
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDecrement?.(index);
+                        }}
+                        aria-label={`Decrease ${group.name} votes`}
+                        className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
+                      >
+                        <Minus size={12} />
+                      </button>
+
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onIncrement?.(index);
+                        }}
+                        aria-label={`Increase ${group.name} votes`}
+                        className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <span className="text-sm text-white/50">{group.seats}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

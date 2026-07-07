@@ -108,8 +108,8 @@ export default function DebugPage() {
 
                 <p>
                   {ConferenceService.isLoaded()
-                    ? "✅ Yes"
-                    : "❌ No"}
+                    ? "Yes"
+                    : "No"}
                 </p>
 
               </div>
