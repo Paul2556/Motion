@@ -12,7 +12,7 @@
 // benefit SheetJS was chosen for there. If ConferenceService ever moves to
 // SheetJS too, port extractRows() the same way and drop exceljs entirely.
 import ExcelJS from "exceljs";
-import { countries, CHAIR_WORDS, PAGE_WORDS, SKIP_SHEETS, NAME_WORDS, EMAIL_WORDS, TOPIC_WORDS } from "../constants";
+import { countries, historicalCountries, CHAIR_WORDS, PAGE_WORDS, SKIP_SHEETS, NAME_WORDS, EMAIL_WORDS, TOPIC_WORDS } from "../constants";
 
 function firstNonNullIndex(row) {
   for (let i = 0; i < row.length; i++) if (row[i] !== null && row[i] !== "") return i;
@@ -56,10 +56,16 @@ function stripEmoji(s) {
 // deliberately not "corrected" via title-casing, since real cells are
 // legitimately either mixed-case ("BSAA Director") or intentional
 // abbreviations ("UK", "USA") that title-casing would mangle into "Uk"/"Usa").
+const matchesName = (c, name) =>
+  c.name.toLowerCase() === name || c.alias?.some(a => a.toLowerCase() === name);
+
 function lookupCountry(raw) {
   const cleaned = stripEmoji(raw).trim();
   const name = cleaned.toLowerCase();
-  const match = countries.find(c => c.name.toLowerCase() === name);
+  // Falls back to defunct states (USSR, Yugoslavia, etc.) for historical
+  // crisis committees, after current countries so an active state always
+  // wins a name collision.
+  const match = countries.find(c => matchesName(c, name)) ?? historicalCountries.find(c => matchesName(c, name));
 
   const display = match ? match.name : cleaned;
 
