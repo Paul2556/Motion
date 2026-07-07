@@ -1,14 +1,13 @@
-function Logo({ compact = false, light = false }) {
+function Logo({ compact = false, light = false, size }) {
   const color = light ? "white" : "black";
 
   return (
     <div className="flex items-center gap-2.5" aria-label="Motion">
       <svg
-        width="34"
-        height="28"
         viewBox="0 0 68 56"
         fill="none"
         aria-hidden="true"
+        className={`${size ?? "w-[34px]"} aspect-[68/56]`}
       >
         <circle cx="22" cy="25" r="20" fill={color} />
 
