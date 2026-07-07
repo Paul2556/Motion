@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
 
 function formatTime(seconds) {
@@ -22,6 +22,17 @@ export default function Timer({
   const [running, setRunning] = useState(false);
   const [overtime, setOvertime] = useState(false);
 
+  // `onComplete` defaults to a fresh `() => {}` on every render (a new
+  // default-parameter closure each call), and callers can pass their own
+  // inline arrow function too - either way the reference is unstable across
+  // renders. A ref sidesteps that: always call the latest callback without
+  // making any effect depend on its identity.
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   const radius = 150;
   const circumference = 2 * Math.PI * radius;
 
@@ -31,27 +42,64 @@ export default function Timer({
 
   const offset = circumference * (1 - progress);
 
+  const ringRef = useRef(null);
+
+  // Wall-clock anchor {time, value} the continuous animation is computed
+  // from every frame. A setInterval only ever updates once per second no
+  // matter what, so a CSS transition is really just interpolating between
+  // two once-a-second snapshots - it can look smooth but is never *actually*
+  // continuous, and any timing jitter between ticks shows up as visible
+  // unevenness. Re-deriving the exact fractional position from real elapsed
+  // time on every animation frame (~60fps) instead removes that ceiling
+  // entirely. Re-anchored whenever running starts/resumes or `seconds` is
+  // changed directly (addTime/reset), so it always continues from the
+  // correct point rather than drifting.
+  const anchorRef = useRef({ time: 0, value: initialTime });
+
+  useEffect(() => {
+    anchorRef.current = { time: Date.now(), value: seconds };
+  }, [seconds, running]);
+
   useEffect(() => {
     if (!running) return;
 
-    const interval = setInterval(() => {
-      setSeconds((prev) => {
-        if (!overtime) {
-          if (prev <= 1) {
-            setOvertime(true);
-            onComplete();
-            return -1;
-          }
+    let frame;
 
-          return prev - 1;
-        }
+    const tick = () => {
+      const elapsed = (Date.now() - anchorRef.current.time) / 1000;
+      const value = anchorRef.current.value - elapsed;
 
-        return prev - 1;
-      });
-    }, 1000);
+      if (ringRef.current) {
+        const liveProgress = overtime
+          ? 0
+          : Math.max(0, Math.min(value / maxTime, 1));
 
-    return () => clearInterval(interval);
-  }, [running, overtime, onComplete]);
+        ringRef.current.style.strokeDashoffset = circumference * (1 - liveProgress);
+      }
+
+      if (!overtime && value <= 0) {
+        setOvertime(true);
+        onCompleteRef.current();
+        setSeconds(-1);
+      } else {
+        const rounded = Math.ceil(value);
+        setSeconds((prev) => (prev === rounded ? prev : rounded));
+      }
+
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+
+    const ring = ringRef.current;
+
+    return () => {
+      cancelAnimationFrame(frame);
+      // Drop the imperative override so the attribute-driven (React state)
+      // value takes back over for the static, paused rendering.
+      if (ring) ring.style.strokeDashoffset = "";
+    };
+  }, [running, overtime, maxTime, circumference]);
 
   const addTime = (amount) => {
     setSeconds((prev) => {
@@ -101,21 +149,18 @@ export default function Timer({
           />
 
           <circle
+            ref={ringRef}
             cx="160"
             cy="160"
             r={radius}
             fill="none"
-            stroke={overtime ? "#ef4444" : "#b7774d"}
+            stroke={overtime ? "#ef4444" : "var(--timer-remaining)"}
             strokeWidth="4"
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             transform="rotate(-90 160 160)"
-            style={{
-              transition: running
-                ? "stroke-dashoffset 1s linear"
-                : "stroke-dashoffset .2s ease",
-            }}
+            style={{ transition: running ? "none" : "stroke-dashoffset .2s ease" }}
           />
         </svg>
 

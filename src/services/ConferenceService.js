@@ -1,56 +1,12 @@
-import ExcelJS from "exceljs";
+import AllocationParser from "./AllocationParser";
 
 class ConferenceService {
   constructor() {
-    this.aliases = {
-      delegation: [
-        "country",
-        "delegation",
-        "allocation",
-        "character",
-        "agency",
-        "news agency",
-        "news agencies",
-        "representative",
-        "member state",
-        "stance",
-        "délégation"
-      ],
-
-      delegate: [
-        "delegate",
-        "name",
-        "nom",
-        "student",
-        "participant"
-      ],
-
-      school: [
-        "school",
-        "lycée",
-        "institution"
-      ],
-
-      email: [
-        "email",
-        "e-mail",
-        "mail"
-      ],
-
-      position: [
-        "#",
-        "position",
-        "number"
-      ]
-    };
-
     this.reset();
   }
 
   reset() {
     this.loaded = false;
-
-    this.workbook = null;
 
     this.conference = {
       name: "",
@@ -63,23 +19,19 @@ class ConferenceService {
   async loadConference(file) {
     this.reset();
 
-    this.workbook = new ExcelJS.Workbook();
+    const parser = new AllocationParser();
+    const parsed = await parser.load(file);
 
-    await this.workbook.xlsx.load(
-      await file.arrayBuffer()
-    );
+    this.conference.name = parsed.name;
 
-    this.conference.name =
-      file.name.replace(/\.xlsx$/i, "");
-
-    this.workbook.eachSheet((worksheet) => {
+    parsed.committees.forEach((sheet) => {
       try {
-        const committee = this.buildCommittee(worksheet);
+        const committee = this.buildCommittee(sheet);
 
         this.conference.committees[committee.id] = committee;
       } catch (error) {
         console.warn(
-          `Skipping sheet "${worksheet.name}": ${error.message}`
+          `Skipping sheet "${sheet.id}": ${error.message}`
         );
       }
     });
@@ -96,367 +48,57 @@ class ConferenceService {
 
     return this.conference;
   }
-    buildCommittee(worksheet) {
-    const committee = {
-      id: worksheet.name,
 
-      sheetName: worksheet.name,
-
-      committee: worksheet.name,
-
-      topic: "",
-
-      room: "",
-
-      conference: "",
-
-      date: "",
-
-      format: null,
-
-      chairs: [],
-
-      delegates: [],
-
-      columns: {}
+  // `sheet` is one parsed committee from AllocationParser:
+  // { id, title, topic, chairs, delegates, pages }. This just reshapes it
+  // into the committee/delegate records the rest of this service (and its
+  // consumers) expect, adding the session-tracking fields (present/voting/
+  // hasSpoken/speakingTime/notes) AllocationParser has no reason to know about.
+  buildCommittee(sheet) {
+    return {
+      id: sheet.id,
+      sheetName: sheet.id,
+      committee: sheet.title || sheet.id,
+      topic: sheet.topic || "",
+      chairs: sheet.chairs.map((person) => this.toStaffRecord(person)),
+      pages: sheet.pages.map((person) => this.toStaffRecord(person)),
+      delegates: sheet.delegates.map((person) => this.toDelegateRecord(person)),
     };
-
-    // Read every row into memory
-
-    const rows = [];
-
-    for (let i = 1; i <= worksheet.rowCount; i++) {
-      const row = worksheet.getRow(i);
-
-      rows.push({
-        excelRow: i,
-        values: row.values.map((cell) => {
-          if (cell == null) return "";
-          return String(cell).trim();
-        }),
-      });
-    }
-    
-    // ---------- Metadata ----------
-
-    rows.forEach(({ values }) => {
-      const text = values.join(" ");
-      const lower = text.toLowerCase();
-
-      const last = values[values.length - 1];
-
-      if (!committee.conference && lower.includes("mun")) {
-        committee.conference = text;
-      }
-
-      if (lower.includes("committee")) {
-        committee.committee = last || committee.committee;
-      }
-
-      if (lower.includes("topic")) {
-        committee.topic = last;
-      }
-
-      if (lower.includes("room")) {
-        committee.room = last;
-      }
-
-      if (lower.includes("head chair")) {
-        committee.chairs.push({
-          role: "Head Chair",
-          name: last,
-        });
-      }
-
-      if (lower.includes("co-chair") || lower.includes("co chair")) {
-        committee.chairs.push({
-          role: "Co-Chair",
-          name: last,
-        });
-      }
-    });
-
-    // ---------- Detect header ----------
-
-    const header = this.findHeader(rows);
-
-    committee.columns = header.columns;
-
-    committee.format =
-      this.detectFormat(header.columns);
-
-    // ---------- Delegates ----------
-
-    committee.delegates =
-      this.readDelegates(
-        worksheet,
-        header
-      );
-
-    return committee;
   }
-    findHeader(rows) {
-      let best = null;
-      let bestScore = -1;
 
-      for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-        const row = rows[rowIndex].values;
-        const columns = {};
-        let score = 0;
+  toStaffRecord(person) {
+    return {
+      role: person.role ?? "",
+      name: person.name ?? "",
+      email: person.email ?? "",
+      school: person.school ?? "",
+    };
+  }
 
-        row.forEach((cell, columnIndex) => {
-          const value = String(cell)
-            .trim()
-            .toLowerCase();
+  toDelegateRecord(person) {
+    return {
+      id: crypto.randomUUID(),
 
-          Object.entries(this.aliases).forEach(([field, aliases]) => {
-            if (aliases.includes(value)) {
-              columns[field] = columnIndex + 1;
-              score++;
-            }
-          });
-        });
+      country: person.country ?? "",
+      countryDisplay: person.countryDisplay ?? person.country ?? "",
+      countryCode: person.countryCode ?? null,
 
-        if (score > bestScore) {
-          bestScore = score;
-          best = {
-            row: rows[rowIndex].excelRow,
-            columns,
-          };
-        }
-      }
+      delegate: person.name ?? "",
 
-      if (!best || bestScore < 3) {
-        throw new Error(
-          "Unable to locate delegate table."
-        );
-      }
+      school: person.school ?? "",
 
-      console.log(
-        "Header row:",
-        best.row,
-        rows.find(r => r.excelRow === best.row)?.values
-      );
+      email: person.email ?? "",
 
-      return best;
-    }
+      stance: person.stance ?? null,
 
-    detectFormat(columns) {
-      if (
-        columns.delegation !== undefined &&
-        columns.delegate !== undefined
-      ) {
-        return "delegation";
-      }
-
-      if (
-        columns.delegate !== undefined &&
-        columns.committee !== undefined
-      ) {
-        return "committee";
-      }
-
-      if (
-        columns.delegate !== undefined &&
-        columns.email !== undefined
-      ) {
-        return "people";
-      }
-
-      return "unknown";
-    }
-    
-    isDelegateRow(text) {
-      if (!text) return false;
-
-      const value = text.trim();
-
-      // KMIDS/FWC numbering (#1 Australia)
-      if (/^#\d+\s+/.test(value)) {
-        return true;
-      }
-
-      const lower = value.toLowerCase();
-
-      // Staff / metadata
-      const blocked = [
-        "head chair",
-        "co-chair",
-        "co chair",
-        "assistant chair",
-        "chair",
-        "page",
-        "topic",
-        "room",
-        "committee",
-        "country",
-        "allocation",
-        "delegation",
-        "name",
-        "school",
-        "email",
-        "role"
-      ];
-
-      if (blocked.includes(lower)) {
-        return false;
-      }
-
-      // Ignore empty or numeric-only values
-      if (/^\d+$/.test(value)) {
-        return false;
-      }
-
-      // If it contains at least one letter, treat it as an allocation.
-      return /\p{L}/u.test(value);
-    }
-
-    readDelegates(worksheet, header) {
-      const delegates = [];
-
-      const { row: headerRow, columns } = header;
-
-      let blankRows = 0;
-      let started = false;
-      let numberedMode = null;
-
-      for (
-        let rowNumber = headerRow + 1;
-        rowNumber <= worksheet.rowCount;
-        rowNumber++
-      ) {
-        const row = worksheet.getRow(rowNumber);
-
-        const delegation =
-            columns.delegation !== undefined
-                ? row.getCell(columns.delegation).text.trim()
-                : "";
-
-        const delegate =
-            columns.delegate !== undefined
-                ? row.getCell(columns.delegate).text.trim()
-                : "";
-
-        const school =
-            columns.school !== undefined
-                ? row.getCell(columns.school).text.trim()
-                : "";
-
-        const email =
-            columns.email !== undefined
-                ? row.getCell(columns.email).text.trim()
-                : "";
-
-        const position =
-          columns.position
-            ? row.getCell(columns.position).text.trim()
-            : "";
-
-        // Completely blank row
-        if (!delegation && !delegate) {
-          blankRows++;
-
-          if (started && blankRows >= 2) {
-            break;
-          }
-
-          continue;
-        }
-
-        blankRows = 0;
-
-        const lower = delegation.toLowerCase();
-
-        // Skip committee staff
-        if (
-          lower === "head chair" ||
-          lower === "co-chair" ||
-          lower === "co chair" ||
-          lower === "chair" ||
-          lower === "assistant chair" ||
-          lower === "page" ||
-          lower === "secretariat"
-        ) {
-          continue;
-        }
-
-        // Determine workbook style
-        if (numberedMode === null) {
-          numberedMode = /^#\d+/.test(delegation);
-        }
-
-        // KMIDS workbook
-        if (numberedMode) {
-          if (!started) {
-              if (
-                  delegation &&
-                  this.isDelegateRow(delegation)
-              ) {
-                  started = true;
-              }
-
-              else if (
-                  !delegation &&
-                  delegate &&
-                  school
-              ) {
-                  started = true;
-              }
-
-              else {
-                  continue;
-              }
-          }
-        }
-
-        // FWC workbook
-        else {
-          if (!started) {
-            if (
-              !delegation ||
-              !delegate ||
-              lower === "country" ||
-              lower === "delegation"
-            ) {
-              continue;
-            }
-
-            started = true;
-          }
-        }
-
-        delegates.push({
-          id: crypto.randomUUID(),
-
-          position,
-
-          allocation: delegation,
-
-          country:
-            delegation
-                ? delegation
-                    .replace(/^#\d+\s*/, "")
-                    .replace(/^[^\p{L}]+/u, "")
-                    .trim()
-                : "",
-
-          delegate,
-
-          school,
-
-          email,
-
-          present: false,
-          voting: false,
-          hasSpoken: false,
-          speakingTime: 0,
-          notes: "",
-        });
-      }
-
-      return delegates;
-    }
-    // ============================================================
+      present: false,
+      voting: false,
+      hasSpoken: false,
+      speakingTime: 0,
+      notes: "",
+    };
+  }
+  // ============================================================
   // Conference
   // ============================================================
 

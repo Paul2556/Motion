@@ -77,7 +77,7 @@ const steps = [
 
 import Logo from "../components/Logo";
 
-function App() {
+function LandingPage() {
   const fullPlaceholder = "you@conference.org";
 
   const [email, setEmail] = useState("");
@@ -231,14 +231,14 @@ function App() {
   return (
     <div className={`theme-shell min-h-screen overflow-hidden text-[#101010] ${darkMode ? 'theme-dark bg-black' : 'bg-[#f4f4f0]'} ${reducedMotion ? 'motion-reduced' : ''}`} data-theme={darkMode ? 'dark' : 'light'} onClick={handlePageClick}>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-black/10 bg-[#f4f4f0]/90 backdrop-blur-xl">
-        <div className="page-container flex h-16 items-center justify-between">
-          <a href="#top" className="logo-link shrink-0" onClick={handleHeaderLink}><Logo /></a>
+        <div className="page-container grid h-16 grid-cols-[1fr_auto_1fr] items-center">
+          <a href="#top" className="logo-link shrink-0 justify-self-start" onClick={handleHeaderLink}><Logo /></a>
           <nav className="hidden items-center gap-8 text-sm text-black/60 md:flex">
             <a className="nav-link" href="#problem" onClick={handleHeaderLink}>Why Motion</a>
             <a className="nav-link" href="#features" onClick={handleHeaderLink}>Features</a>
             <a className="nav-link" href="#how" onClick={handleHeaderLink}>How it works</a>
           </nav>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-self-end gap-1.5">
             <a href="#waitlist" className="button-primary hidden md:inline-flex" onClick={handleHeaderLink}>Join the waitlist <ArrowRight size={15} /></a>
             <button className={`sandwich-toggle ${menuOpen ? 'is-active' : ''}`} onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label="Open site menu">
               {menuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -497,15 +497,21 @@ function App() {
       <footer className="bg-[#101010] py-10 text-white">
         <div className="page-container flex flex-col justify-between gap-8 sm:flex-row sm:items-end">
           <div><Logo light /><p className="mt-4 text-sm text-white/40">From motion to resolution.</p></div>
-          <div className="flex flex-col gap-3 text-sm text-white/50 sm:items-end"><div className="flex gap-6"><a className="hover:text-white" href="#features">Features</a><a className="hover:text-white" href="#how">Process</a><a className="hover:text-white" href="#waitlist">Waitlist</a></div><a
-                                                                                                                                                                                                                                                                                                        href="https://github.com/Paul2556/Motion"
-                                                                                                                                                                                                                                                                                                        target="_blank"
-                                                                                                                                                                                                                                                                                                        rel="noopener noreferrer"
-                                                                                                                                                                                                                                                                                                        className="inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors hover:text-white"
-                                                                                                                                                                                                                                                                                                      >
-                                                                                                                                                                                                                                                                                                        <span>Source</span>
-                                                                                                                                                                                                                                                                                                      </a>
-</div>
+          <div className="flex flex-col gap-3 text-sm text-white/50 sm:items-end">
+            <div className="flex gap-6">
+              <a className="hover:text-white" href="#features">Features</a>
+              <a className="hover:text-white" href="#how">Process</a>
+              <a className="hover:text-white" href="#waitlist">Waitlist</a>
+            </div>
+            <a
+              href="https://github.com/Paul2556/Motion"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors hover:text-white"
+            >
+              <span>Source</span>
+            </a>
+          </div>
         </div>
       </footer>
     </div>
@@ -556,8 +562,9 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
 
 function ImportVisual() { return <div className="w-full max-w-xs border border-black/15 bg-white p-3 shadow-[0_14px_40px_rgba(0,0,0,.06)]"><div className="flex items-center gap-2 border-b border-black/10 pb-3"><FileSpreadsheet size={17} /><span className="text-xs font-medium">delegates.xlsx</span><span className="ml-auto text-[9px] text-black/35">24 rows</span></div><div className="space-y-2 pt-3">{['Argentina', 'Canada', 'Kenya'].map((x, i) => <div className="flex items-center gap-2 text-[10px]" key={x}><span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[8px] text-white">{i + 1}</span><span>{x}</span><span className="ml-auto text-black/30">Voting</span></div>)}</div></div> }
 function QueueVisual() { return <div className="w-full max-w-xs space-y-2">{['Germany', 'Mexico', 'Indonesia'].map((x, i) => <div className={`flex items-center border px-3 py-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`} key={x}><span className="mr-3 font-mono text-[9px] opacity-40">0{i + 1}</span>{x}<Users size={13} className="ml-auto opacity-35" /></div>)}</div> }
-function TimerVisual() { return <div className="relative flex h-36 w-36 items-center justify-center rounded-full border border-black/15 bg-white"><svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"><circle cx="50" cy="50" r="45.5" fill="none" stroke="black" strokeWidth="1.5" strokeDasharray="225 295" /></svg><div className="text-center"><span className="block text-3xl font-light tracking-[-0.05em]">00:48</span><span className="text-[8px] uppercase tracking-[.16em] text-black/35">REMAINING</span></div></div> }function VoteVisual() { return <div className="relative z-10 w-full max-w-xs"><div className="flex h-24 items-end gap-1.5">{[68, 43, 23].map((h, i) => <div className={`${i === 0 ? 'accent-bg' : 'bg-black'} flex-1 transition-colors duration-300`} style={{height: `${h}%`}} key={h}><span className="sr-only">{i}</span></div>)}</div><div className="mt-2 grid grid-cols-3 text-center text-[9px] uppercase tracking-[.1em] text-black/35"><span>For 14</span><span>Abst. 3</span><span>Against 2</span></div><div className="mt-4 flex items-center gap-2 border-t border-black/10 pt-3 text-xs"><Check className="accent-text" size={13} /><span>Motion passes</span><span className="ml-auto text-black/35">10 required</span></div></div> }
+function TimerVisual() { return <div className="relative flex h-36 w-36 items-center justify-center rounded-full border border-black/15 bg-white"><svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"><circle cx="50" cy="50" r="45.5" fill="none" stroke="black" strokeWidth="1.5" strokeDasharray="225 295" /></svg><div className="text-center"><span className="block text-3xl font-light tracking-[-0.05em]">00:48</span><span className="text-[8px] uppercase tracking-[.16em] text-black/35">REMAINING</span></div></div> }
+function VoteVisual() { return <div className="relative z-10 w-full max-w-xs"><div className="flex h-24 items-end gap-1.5">{[68, 43, 23].map((h, i) => <div className={`${i === 0 ? 'accent-bg' : 'bg-black'} flex-1 transition-colors duration-300`} style={{height: `${h}%`}} key={h}><span className="sr-only">{i}</span></div>)}</div><div className="mt-2 grid grid-cols-3 text-center text-[9px] uppercase tracking-[.1em] text-black/35"><span>For 14</span><span>Abst. 3</span><span>Against 2</span></div><div className="mt-4 flex items-center gap-2 border-t border-black/10 pt-3 text-xs"><Check className="accent-text" size={13} /><span>Motion passes</span><span className="ml-auto text-black/35">10 required</span></div></div> }
 function ResolutionVisual() { return <div className="relative h-36 w-52"><div className="absolute left-0 top-3 h-32 w-24 border border-black/10 bg-white" /><div className="absolute right-0 top-0 h-36 w-40 border border-black/15 bg-white p-4 shadow-[0_12px_30px_rgba(0,0,0,.06)]"><div className="h-1.5 w-16 bg-black" /><div className="mt-4 space-y-2">{[80, 100, 88, 94, 60].map(x => <div key={x} className="h-px bg-black/20" style={{width: `${x}%`}} />)}</div><div className="mt-5 border-l-2 border-black pl-2 text-[8px] leading-relaxed">Draft resolution<br />1.1</div></div></div> }
 function PresetVisual() { return <div className="grid w-full max-w-xs grid-cols-2 gap-2">{['Unmoderated', 'Moderated', 'COTW', 'GSL'].map((x, i) => <div key={x} className={`flex aspect-[1.6] items-end border p-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`}><LayoutTemplate className="mr-auto" size={14} /><span>{x}</span></div>)}</div> }
 
-export default App
+export default LandingPage

@@ -1,11 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import './themes.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 html { scroll-behavior: auto; }
-body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-::selection { background: #111; color: #fff; }
+body { margin: 0; min-width: 320px; background: var(--color-page-light); font-family: Inter, ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+::selection { background: var(--color-surface-dark); color: #fff; }
 
 @layer components {
   .page-container { @apply mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12; }
@@ -20,7 +21,7 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
     box-shadow .25s;}
   .button-primary:hover { filter: brightness(1.1); transform: translateY(-1px);
   box-shadow:
-    0 10px 24px rgba(154,91,58,.18),
+    0 10px 24px rgba(var(--accent-rgb),.18),
     inset 0 0 0 1px rgba(255,255,255,.08);}
   .button-primary:active {
     transform: translateY(0);
@@ -31,15 +32,13 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
   .dropdown-link { @apply flex items-center justify-between px-3 py-2.5 text-sm transition-colors hover:bg-white hover:text-black; }
   .dropdown-control { @apply flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-white; }
   .dropdown-control-icon { @apply flex h-8 w-8 shrink-0 items-center justify-center border border-black/10 bg-white; }
-  .product-shell { @apply overflow-hidden border border-black/20 bg-[#111] shadow-[0_30px_90px_rgba(0,0,0,.18)]; }
+  .product-shell { @apply overflow-hidden border border-black/20 bg-[var(--color-surface-dark)] shadow-[0_30px_90px_rgba(0,0,0,.18)]; }
   .ui-label { @apply text-[9px] font-medium uppercase tracking-[0.17em] text-white/35; }
   .status-chip { @apply border border-white/10 px-2.5 py-1.5 text-[8px] uppercase tracking-[0.12em] text-white/45; }
   .ui-button { @apply flex items-center gap-2 bg-white px-4 py-2 text-xs text-black; }
   .ui-button-muted { @apply border border-white/15 px-4 py-2 text-xs text-white/50; }
 }
 
-.theme-shell { --accent: #9a5b3a; }
-.theme-shell.theme-dark { --accent: #65a4c5; }
 .accent-text { color: var(--accent); }
 .accent-bg { background-color: var(--accent); }
 .accent-border { border-color: var(--accent); }
@@ -61,7 +60,7 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
   transform: translateY(-1px);
 }
 .logo-link:hover svg {
-  filter: drop-shadow(0 6px 12px rgba(154, 91, 58, .18));
+  filter: drop-shadow(0 6px 12px rgba(var(--accent-rgb), .18));
   transform: rotate(-4deg) scale(1.06);
 }
 .sandwich-toggle:hover,
@@ -107,7 +106,7 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
 }
 .vision-lines { background-image: repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(0,0,0,.08) 32px); }
 .product-shell { border-top: 3px solid var(--accent); }
-.timer-ring { border-radius: 50%; background: radial-gradient(circle at center, #111 68%, transparent 69%), conic-gradient(var(--accent) 0 80%, rgba(255,255,255,.12) 80% 100%); }
+.timer-ring { border-radius: 50%; background: radial-gradient(circle at center, var(--color-surface-dark) 68%, transparent 69%), conic-gradient(var(--accent) 0 80%, rgba(255,255,255,.12) 80% 100%); }
 .feature-card-reveal {
   display: flex;
   opacity: 0;
@@ -118,8 +117,7 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
     filter .95s cubic-bezier(.22, 1, .36, 1),
     transform .95s cubic-bezier(.22, 1, .36, 1);
   will-change: opacity, filter, transform;
-  background: #f4f4f0;
-  
+  background: var(--color-page-light);
 }
 .feature-card-reveal.is-visible {
   opacity: 1;
@@ -209,7 +207,7 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
 }
 
 #email:focus {
-  box-shadow: 0 0 0 4px rgba(154,91,58,.08);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb),.08);
 }
 
 #email::placeholder {
@@ -219,7 +217,6 @@ body { margin: 0; min-width: 320px; background: #f4f4f0; font-family: Inter, ui-
 #email:focus::placeholder {
   opacity: .35;
 }
-/* ===== Scrollbar ===== */
 
 /* Chrome, Edge, Safari */
 ::-webkit-scrollbar {

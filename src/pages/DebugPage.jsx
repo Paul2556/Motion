@@ -1,39 +1,26 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ConferenceService from "../services/ConferenceService";
-import ExcelJS from "exceljs";
-import SpreadsheetAnalyzer from "../services/SpreadsheetAnalyzer";
+import AllocationParser from "../services/AllocationParser";
 
 export default function DebugPage() {
   const [conference, setConference] = useState(null);
   const [committees, setCommittees] = useState([]);
   const [delegates, setDelegates] = useState([]);
   const [selectedCommittee, setSelectedCommittee] = useState("");
-  const [analysis, setAnalysis] = useState([]);
+  const [parsedCommittees, setParsedCommittees] = useState([]);
 
   async function loadConference(event) {
     const file = event.target.files?.[0];
-    const workbook = new ExcelJS.Workbook();
-
-    await workbook.xlsx.load(
-      await file.arrayBuffer()
-    );
-
-    const analyzedSheets = [];
-
-    workbook.eachSheet((worksheet) => {
-      const analyzer = new SpreadsheetAnalyzer(
-        worksheet
-      );
-
-      analyzedSheets.push({
-        sheet: worksheet.name,
-        tables: analyzer.analyze(),
-      });
-    });
-
-    setAnalysis(analyzedSheets);
-
     if (!file) return;
+
+    try {
+      const parser = new AllocationParser();
+      const parsed = await parser.load(file);
+
+      setParsedCommittees(parsed.committees);
+    } catch (error) {
+      console.error(error);
+    }
 
     try {
       const data = await ConferenceService.loadConference(file);
@@ -46,15 +33,7 @@ export default function DebugPage() {
       setCommittees(loadedCommittees);
 
       if (loadedCommittees.length > 0) {
-        const first = loadedCommittees[0];
-
-        setSelectedCommittee(first.id);
-
-        ConferenceService.setActiveCommittee(first.id);
-
-        setDelegates(
-          ConferenceService.getDelegates()
-        );
+        selectCommittee(loadedCommittees[0].id);
       }
     } catch (error) {
       console.error(error);
@@ -63,17 +42,15 @@ export default function DebugPage() {
     }
   }
 
-  useEffect(() => {
-    if (!selectedCommittee) return;
+  function selectCommittee(id) {
+    setSelectedCommittee(id);
 
-    ConferenceService.setActiveCommittee(
-      selectedCommittee
-    );
+    ConferenceService.setActiveCommittee(id);
 
     setDelegates(
       ConferenceService.getDelegates()
     );
-  }, [selectedCommittee]);
+  }
 
   function resetConference() {
     ConferenceService.reset();
@@ -82,6 +59,7 @@ export default function DebugPage() {
     setCommittees([]);
     setDelegates([]);
     setSelectedCommittee("");
+    setParsedCommittees([]);
   }
 
   function dumpJSON() {
@@ -91,7 +69,7 @@ export default function DebugPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
 
       <div className="mx-auto max-w-7xl">
 
@@ -177,9 +155,7 @@ export default function DebugPage() {
               <select
                 value={selectedCommittee}
                 onChange={(e) =>
-                  setSelectedCommittee(
-                    e.target.value
-                  )
+                  selectCommittee(e.target.value)
                 }
                 className="w-full border border-white/10 bg-[#181818] p-3"
               >
@@ -282,7 +258,7 @@ export default function DebugPage() {
                       </td>
 
                       <td className="p-3">
-                        {delegate.country}
+                        {delegate.countryDisplay}
                       </td>
 
                       <td className="p-3">
@@ -403,77 +379,80 @@ export default function DebugPage() {
 
           </div>
           
-          {/* Spreadsheet Analyzer */}
+          {/* Allocation Parser */}
 
           <div className="border border-white/10 bg-[#111111] p-6 lg:col-span-2">
 
             <h2 className="text-xl font-semibold">
-              Spreadsheet Analyzer
+              Allocation Parser
             </h2>
+
+            <p className="mt-2 text-sm text-white/40">
+              Raw output of AllocationParser, shown alongside ConferenceService's
+              own parse above for comparison.
+            </p>
 
             <div className="mt-6 space-y-6">
 
-              {analysis.map((sheet) => (
+              {parsedCommittees.map((committee) => (
 
                 <div
-                  key={sheet.sheet}
+                  key={committee.id}
                   className="border border-white/10 p-4"
                 >
 
                   <h3 className="font-semibold">
-                    {sheet.sheet}
+                    {committee.id}
+                    {committee.title ? ` — ${committee.title}` : ""}
                   </h3>
 
-                  <p className="mt-2 text-sm text-white/50">
-                    {sheet.tables.length} tables found
+                  <p className="mt-1 text-sm text-white/50">
+                    {committee.topic || "(no topic)"}
                   </p>
 
-                  {sheet.tables.map((table, index) => (
+                  <p className="mt-2 text-sm text-white/50">
+                    {committee.chairs.length} chairs ·{" "}
+                    {committee.delegates.length} delegates ·{" "}
+                    {committee.pages.length} pages
+                  </p>
 
-                    <div
-                      key={index}
-                      className="mt-4 rounded border border-white/10 bg-[#181818] p-3"
-                    >
+                  <div className="mt-4 overflow-x-auto">
 
-                      <p><strong>Top:</strong> {table.top}</p>
-                      <p><strong>Left:</strong> {table.left}</p>
-                      <p><strong>Bottom:</strong> {table.bottom}</p>
-                      <p><strong>Right:</strong> {table.right}</p>
+                    <table className="border-collapse text-sm">
 
-                      <div className="mt-4 overflow-x-auto">
+                      <thead>
 
-                        <table className="border-collapse text-sm">
+                        <tr>
+                          <th className="border border-white/10 px-2 py-1 text-left">Role</th>
+                          <th className="border border-white/10 px-2 py-1 text-left">Country</th>
+                          <th className="border border-white/10 px-2 py-1 text-left">Code</th>
+                          <th className="border border-white/10 px-2 py-1 text-left">Name</th>
+                          <th className="border border-white/10 px-2 py-1 text-left">School</th>
+                          <th className="border border-white/10 px-2 py-1 text-left">Stance</th>
+                        </tr>
 
-                          <tbody>
+                      </thead>
 
-                            {table.cells.map((row, rowIndex) => (
+                      <tbody>
 
-                              <tr key={rowIndex}>
+                        {[...committee.chairs, ...committee.delegates, ...committee.pages].map((person, index) => (
 
-                                {row.map((cell, cellIndex) => (
+                          <tr key={index}>
+                            <td className="border border-white/10 px-2 py-1">{person.role || ""}</td>
+                            <td className="border border-white/10 px-2 py-1">{person.countryDisplay || ""}</td>
+                            <td className="border border-white/10 px-2 py-1">{person.countryCode || ""}</td>
+                            <td className="border border-white/10 px-2 py-1">{person.name || ""}</td>
+                            <td className="border border-white/10 px-2 py-1">{person.school || ""}</td>
+                            <td className="border border-white/10 px-2 py-1">{person.stance || ""}</td>
+                          </tr>
 
-                                  <td
-                                    key={cellIndex}
-                                    className="border border-white/10 px-2 py-1"
-                                  >
-                                    {cell || " "}
-                                  </td>
+                        ))}
 
-                                ))}
+                      </tbody>
 
-                              </tr>
+                    </table>
 
-                            ))}
-
-                          </tbody>
-
-                        </table>
-
-                      </div>
-
-                    </div>
-
-                  ))}
+                  </div>
 
                 </div>
 
@@ -482,7 +461,7 @@ export default function DebugPage() {
             </div>
 
           </div>
-          
+
           {/* Live JSON */}
 
           <div className="border border-white/10 bg-[#111111] p-6 lg:col-span-2">
@@ -491,36 +470,9 @@ export default function DebugPage() {
               Conference Object
             </h2>
 
-            <div className="mt-4 overflow-x-auto">
-
-  <table className="border-collapse text-sm">
-
-    <tbody>
-
-      {table.cells.map((row, rowIndex) => (
-
-        <tr key={rowIndex}>
-
-          {row.map((cell, cellIndex) => (
-
-            <td
-              key={cellIndex}
-              className="border border-white/10 px-2 py-1"
-            >
-              {cell || " "}
-            </td>
-
-          ))}
-
-        </tr>
-
-      ))}
-
-    </tbody>
-
-  </table>
-
-</div>
+            <pre className="mt-4 max-h-[400px] overflow-auto border border-white/10 bg-[#181818] p-3 text-xs">
+              {JSON.stringify(conference, null, 2)}
+            </pre>
 
           </div>
 

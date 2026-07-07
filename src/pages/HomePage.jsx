@@ -5,10 +5,14 @@ import {
   Settings,
   BarChart3,
   ChevronRight,
+  FileX,
+  FileSpreadsheet,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 import Logo from "../components/Logo";
+import ConferenceService from "../services/ConferenceService";
 
 function MenuCard({
   title,
@@ -46,8 +50,60 @@ function MenuCard({
 }
 
 export default function HomePage() {
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Once a workbook is parsed, this holds its committees so the picker
+  // modal can render - null means "no picker showing".
+  const [pendingConference, setPendingConference] = useState(null);
+
+  const [loadedConference, setLoadedConference] = useState(() =>
+    ConferenceService.isLoaded() ? ConferenceService.getConference() : null
+  );
+
+  async function handleFile(file) {
+    if (!file) return;
+
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const conference = await ConferenceService.loadConference(file);
+      const committees = ConferenceService.getCommittees();
+
+      if (committees.length === 0) {
+        setError("No committees found in that workbook.");
+        return;
+      }
+
+      setPendingConference({ name: conference.name, committees });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load workbook. Make sure it's a valid .xlsx allocation sheet.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleDrop(event) {
+    event.preventDefault();
+    setIsDragging(false);
+    handleFile(event.dataTransfer.files?.[0]);
+  }
+
+  function selectCommittee(id) {
+    ConferenceService.setActiveCommittee(id);
+    setLoadedConference(ConferenceService.getConference());
+    setPendingConference(null);
+    navigate("/session");
+  }
+
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-white">
+    <div className="app-shell min-h-screen bg-[#0d0d0d] text-white">
 
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-8">
 
@@ -107,16 +163,45 @@ export default function HomePage() {
 
               <div className="mt-8">
 
-                <div className="flex h-16 w-16 items-center justify-center border border-dashed border-white/10 text-white/25">
-                  📄
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx"
+                  className="hidden"
+                  onChange={(event) => handleFile(event.target.files?.[0])}
+                />
+
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  className={`flex h-16 w-16 cursor-pointer items-center justify-center border border-dashed text-white transition ${
+                    isDragging
+                      ? "border-white/40 bg-white/10"
+                      : "border-white/15 hover:border-white/30"
+                  }`}
+                >
+                  <FileX size={24} />
                 </div>
 
                 <h2 className="mt-6 text-2xl font-semibold">
-                  No Conference Loaded
+                  {isLoading
+                    ? "Loading…"
+                    : loadedConference?.name
+                    ? loadedConference.name
+                    : "No Conference Loaded"}
                 </h2>
 
                 <p className="mt-3 leading-relaxed text-white/45">
-                  Upload an Excel workbook to begin chairing a committee.
+                  {error
+                    ? error
+                    : loadedConference?.name
+                    ? "Drop another workbook to replace it, or resume the session above."
+                    : "Drag an Excel workbook onto the icon above, or click it to browse."}
                 </p>
 
               </div>
@@ -147,7 +232,7 @@ export default function HomePage() {
               </Link>
 
               <Link
-                to="/reports"
+                to="#"
                 className="group border border-white/10 bg-[#111111] p-6 transition hover:border-white/20 hover:bg-[#1b1b1b]"
               >
                 <BarChart3
@@ -184,6 +269,42 @@ export default function HomePage() {
         </footer>
 
       </div>
+
+      {pendingConference && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+          <div className="w-full max-w-md border border-white/10 bg-[#111111] p-6">
+
+            <div className="flex items-center gap-3">
+              <FileSpreadsheet size={20} className="text-white/50" />
+              <div>
+                <h2 className="text-lg font-medium">Which committee are you chairing?</h2>
+                <p className="text-xs text-white/40">{pendingConference.name}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 max-h-80 space-y-2 overflow-y-auto">
+              {pendingConference.committees.map((committee) => (
+                <button
+                  key={committee.id}
+                  onClick={() => selectCommittee(committee.id)}
+                  className="flex w-full items-center justify-between border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-white/20 hover:bg-white/10"
+                >
+                  <span className="font-medium">{committee.committee}</span>
+                  <span className="shrink-0 whitespace-nowrap pl-4 text-xs text-white/40">{committee.delegates.length} delegates</span>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setPendingConference(null)}
+              className="mt-4 w-full border border-white/10 px-4 py-2.5 text-sm text-white/50 transition hover:bg-white/5"
+            >
+              Cancel
+            </button>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

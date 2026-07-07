@@ -59,7 +59,7 @@ export default function Queue({
   }
 
   return (
-    <div className="flex h-full flex-col rounded-none border border-white/10 bg-[#121212] p-5 sm:p-6 lg:p-8 shadow-[0_25px_80px_rgba(0,0,0,.25)]">
+    <div className="flex h-full min-h-0 flex-col rounded-none border border-white/10 bg-[#121212] p-5 sm:p-6 lg:p-8 shadow-[0_25px_80px_rgba(0,0,0,.25)]">
 
       <div className="flex items-center justify-between">
         <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">
@@ -86,7 +86,7 @@ export default function Queue({
         </button>
       </div>
 
-      <div className="mt-6 flex-1 overflow-y-auto space-y-3 pr-1">
+      <div className="mt-6 min-h-0 flex-1 overflow-y-auto space-y-3 pr-1">
 
         {queue.length === 0 && (
           <div className="border border-dashed border-white/10 py-10 text-center text-sm text-white/30">

@@ -1,0 +1,51 @@
+/* Company identity colors - single source of truth. Reference these via
+   var() everywhere instead of hardcoding hex/rgba. */
+
+:root {
+  --color-page-light: #f4f4f0;
+  --color-surface-dark: #111111;
+}
+
+.theme-shell {
+  --accent: #9a5b3a;
+  --accent-rgb: 154, 91, 58;
+}
+
+.theme-shell.theme-dark {
+  --accent: #65a4c5;
+  --accent-rgb: 101, 164, 197;
+}
+
+/* App shell (Home/Session/Debug/Motion/Settings) - natively dark; any page
+   opts in by adding `.app-shell` to its root element. Inverting to "light" is
+   a deliberate quick technique (the same one LandingPage already uses, just
+   run in the opposite direction since that page is natively light) - not a
+   full re-theme, so hue-based colors (accents, chart colors) shift to their
+   complements under the light setting. Kept as a separate mechanism from
+   LandingPage's own .theme-shell/.theme-dark above so the two never double-invert. */
+.app-shell {
+  transition: filter .25s ease;
+  /* Timer ring's "remaining" color. Same technique as .theme-shell's
+     --accent above: pre-inverted in the light variant below, so it still
+     reads as this same brown after the invert(1) filter flips it back. */
+  --timer-remaining: #b7774d;
+}
+
+html[data-app-theme="light"] .app-shell {
+  filter: invert(1);
+  --timer-remaining: #4888b2;
+}
+
+/* [data-motion-exempt] carves out the reduced-motion toggle's own knob:
+   setAppReducedMotion() sets the data-app-reduced-motion attribute
+   synchronously, before React re-renders the knob's new position, so without
+   this exemption the very click that turns reduced motion ON would have its
+   own feedback animation suppressed (snapping instantly) while turning it
+   OFF would still animate smoothly (re-enabling transitions just in time) -
+   an inconsistent, confusing result for the one control whose job is to show
+   you it registered the click. */
+html[data-app-reduced-motion="true"] .app-shell,
+html[data-app-reduced-motion="true"] .app-shell *:not([data-motion-exempt]) {
+  transition: none !important;
+  animation: none !important;
+}
