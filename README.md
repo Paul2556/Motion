@@ -1,6 +1,9 @@
 # Motion
-paul2556.github.io/Motion/
+
 **From motion to resolution.**
+
+paul2556.github.io/Motion/
+
 
 Motion is a committee management platform designed for Model United Nations conferences.
 
