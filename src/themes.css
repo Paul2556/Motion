@@ -29,11 +29,20 @@
      --accent above: pre-inverted in the light variant below, so it still
      reads as this same brown after the invert(1) filter flips it back. */
   --timer-remaining: #b7774d;
+  /* Same accent hue as .theme-shell.theme-dark, pre-inverted below for the same reason. */
+  --accent: #65a4c5;
+  /* Second accent (e.g. MotionInput's country highlight), same pre-inversion technique. */
+  --accent-alt: #4caf7d;
+  /* Third accent (MotionInput's per-speaker "speaking time" highlight), same pre-inversion technique. */
+  --accent-time: #a37fd1;
 }
 
 html[data-app-theme="light"] .app-shell {
   filter: invert(1);
   --timer-remaining: #4888b2;
+  --accent: #9a5b3a;
+  --accent-alt: #b35082;
+  --accent-time: #5c802e;
 }
 
 /* [data-motion-exempt] carves out the reduced-motion toggle's own knob:

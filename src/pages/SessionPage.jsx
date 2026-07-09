@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import Timer from "../components/Timer";
 import Queue from "../components/Queue";
+import Flag from "../components/Flag";
 import ConferenceService from "../services/ConferenceService";
 
 import Logo from "../components/Logo";
@@ -18,6 +20,7 @@ export default function AppSnapshotPage() {
     (committee?.delegates ?? []).map((delegate) => ({
       id: delegate.id,
       country: delegate.countryDisplay || delegate.country,
+      countryCode: delegate.countryCode,
     }))
   );
 
@@ -50,10 +53,13 @@ export default function AppSnapshotPage() {
             <Logo compact light />
             <span className="text-xs uppercase tracking-[0.18em] text-white/50">{committee?.committee ?? committee?.id ?? "No committee loaded"}</span>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-none border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-white/60">
+          <Link
+            to="/motion"
+            className="inline-flex items-center gap-2 rounded-none border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-white/60 transition hover:border-white/20 hover:bg-white/10"
+          >
             <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
             Motion: {activeMotion}
-          </div>
+          </Link>
         </header>
 
         <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_440px] 2xl:grid-cols-[minmax(0,1fr)_480px]">
@@ -61,7 +67,8 @@ export default function AppSnapshotPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">Active speech</p>
-                <h1 className="mt-3 text-2xl sm:text-xl sm:text-4xl font-semibold tracking-[-0.03em] text-white">
+                <h1 className="mt-3 flex items-center gap-3 text-2xl sm:text-xl sm:text-4xl font-semibold tracking-[-0.03em] text-white">
+                  <Flag countryCode={currentSpeaker?.countryCode} className="text-xl sm:text-2xl" />
                   {currentSpeaker?.country ?? "No speaker selected"}
                 </h1>
               </div>

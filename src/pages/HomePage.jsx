@@ -99,7 +99,7 @@ export default function HomePage() {
     ConferenceService.setActiveCommittee(id);
     setLoadedConference(ConferenceService.getConference());
     setPendingConference(null);
-    navigate("/session");
+    navigate("/motion");
   }
 
   return (

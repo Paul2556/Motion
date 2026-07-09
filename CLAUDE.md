@@ -22,6 +22,7 @@ npm run dev       # start Vite dev server
 npm run build     # production build (outputs to dist/)
 npm run preview   # preview a production build
 npm run lint      # eslint . --max-warnings 0 (zero warnings allowed)
+vite # only use this when starting the normal vite server, used after every message that changes the code
 ```
 
 There is no test suite/runner configured in this repo yet.

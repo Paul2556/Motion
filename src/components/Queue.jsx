@@ -5,6 +5,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
+import Flag from "./Flag";
 
 export default function Queue({
   queue,
@@ -106,7 +107,8 @@ export default function Queue({
                   {String(index + 1).padStart(2, "0")}
                 </span>
 
-                <span className="text-white">
+                <span className="inline-flex items-center gap-2 text-white">
+                  <Flag countryCode={speaker.countryCode} />
                   {speaker.country}
                 </span>
               </div>

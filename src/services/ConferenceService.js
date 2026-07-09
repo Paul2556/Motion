@@ -1,8 +1,14 @@
 import AllocationParser from "./AllocationParser";
 
+// sessionStorage (not localStorage) so a refresh or brief network hiccup
+// doesn't lose the loaded conference, but closing the tab still leaves no
+// trace, matching this app's in-memory-only design.
+const STORAGE_KEY = "motion-conference-session";
+
 class ConferenceService {
   constructor() {
     this.reset();
+    this.restore();
   }
 
   reset() {
@@ -14,6 +20,33 @@ class ConferenceService {
       committees: {},
       activeCommittee: null
     };
+  }
+
+  // Called after every mutation below - storage access can throw (private
+  // browsing, quota, disabled), so a failure here just skips the cache
+  // rather than breaking the app.
+  persist() {
+    try {
+      if (this.loaded) {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.conference));
+      } else {
+        sessionStorage.removeItem(STORAGE_KEY);
+      }
+    } catch {
+      // no-op - falls back to in-memory-only for this tab
+    }
+  }
+
+  restore() {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+
+      this.conference = JSON.parse(raw);
+      this.loaded = true;
+    } catch {
+      // corrupted or unavailable - start fresh instead of throwing
+    }
   }
 
   async loadConference(file) {
@@ -45,6 +78,7 @@ class ConferenceService {
     }
 
     this.loaded = true;
+    this.persist();
 
     return this.conference;
   }
@@ -146,6 +180,7 @@ class ConferenceService {
     }
 
     this.conference.activeCommittee = id;
+    this.persist();
 
     return true;
   }
@@ -214,6 +249,7 @@ class ConferenceService {
     if (!delegate) return false;
 
     delegate.present = value;
+    this.persist();
 
     return true;
   }
@@ -224,6 +260,7 @@ class ConferenceService {
     if (!delegate) return false;
 
     delegate.present = !delegate.present;
+    this.persist();
 
     return delegate.present;
   }
@@ -233,6 +270,7 @@ class ConferenceService {
       delegate.present = false;
       delegate.voting = false;
     });
+    this.persist();
   }
 
   // ============================================================
@@ -246,6 +284,7 @@ class ConferenceService {
 
     delegate.hasSpoken = true;
     delegate.speakingTime += seconds;
+    this.persist();
 
     return true;
   }
@@ -255,6 +294,7 @@ class ConferenceService {
       delegate.hasSpoken = false;
       delegate.speakingTime = 0;
     });
+    this.persist();
   }
 
   // ============================================================
@@ -310,6 +350,7 @@ class ConferenceService {
 
   clear() {
     this.reset();
+    this.persist();
   }
     validateConference() {
     const issues = [];
@@ -368,6 +409,7 @@ class ConferenceService {
         String(b[by] ?? "")
       )
     );
+    this.persist();
   }
 
   filterPresent() {

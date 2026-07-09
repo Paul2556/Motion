@@ -1,24 +1,14 @@
 import { Plus, Minus } from "lucide-react";
 
-// Parliamentary "hemicycle" seat chart: circles arranged across concentric
-// semicircular rows, filled in angular order (left -> right) by bloc, with a
-// dashed threshold line marking the majority seat and a legend below.
-//
-// `groups` is an ordered array of { name, seats, color }. Color is a prop,
-// not auto-generated, so callers can match a specific bloc's real identity
-// color - but when wiring this up for a new chart, default new groups to the
-// categorical palette in fixed slot order (see src/index.css's --series-*
-// custom properties) rather than picking colors freehand.
+// Hemicycle seat chart: concentric rows filled left-to-right by bloc, with a dashed majority-threshold line.
+// groups colors are explicit. Default new ones to the categorical palette in index.css, not ad hoc.
 function computeSeatPositions(totalSeats, { seatRadius, rowGap, innerRadius }) {
   if (totalSeats <= 0) return { seats: [], rows: [], seatRadius, outerRadius: innerRadius };
 
   let numRows = 1;
   let rows = [];
 
-  // Grow the row count until every row's seats fit without the circles
-  // overlapping (chord spacing between adjacent seat centers >= seat
-  // diameter), redistributing seats per row proportional to that row's
-  // radius (circumference grows with radius, so outer rows hold more seats).
+  // Grows row count until seats fit without overlapping; outer rows hold more seats (bigger circumference).
   for (;;) {
     rows = Array.from({ length: numRows }, (_, r) => ({
       radius: innerRadius + r * rowGap,
@@ -36,81 +26,117 @@ function computeSeatPositions(totalSeats, { seatRadius, rowGap, innerRadius }) {
       assigned += row.seats;
     });
 
+    // 4.25 (not the bare non-overlap minimum) leaves real clearance, found empirically, so the line never grazes a seat.
     const overcrowded = rows.some((row) => {
       if (row.seats <= 1) return false;
       const angleStep = Math.PI / (row.seats - 1);
       const chordSpacing = 2 * row.radius * Math.sin(angleStep / 2);
-      return chordSpacing < seatRadius * 2.05;
+      return chordSpacing < seatRadius * 4.25;
     });
 
     if (!overcrowded || numRows > 8) break;
     numRows++;
   }
 
-  // Every row spans the full 180 degrees on its own (just with a different
-  // seat count/radius), so each row keeps its own angle-sorted seat list -
-  // needed later to find where the majority boundary actually falls *within
-  // that row*, rather than assuming one global angle lines up with every
-  // row's (different) seat spacing.
+  // Each row keeps its own seat list, needed later to count before/after seats per row.
   rows.forEach((row) => {
     const n = row.seats;
     row.rowSeats = [];
+    row.angleStep = n === 1 ? Math.PI : Math.PI / (n - 1);
 
     for (let i = 0; i < n; i++) {
       const angle = n === 1 ? Math.PI / 2 : Math.PI - (i / (n - 1)) * Math.PI;
-      const seat = { x: Math.cos(angle) * row.radius, y: -Math.sin(angle) * row.radius, angle, radius: row.radius };
+      const seat = { x: Math.cos(angle) * row.radius, y: -Math.sin(angle) * row.radius, angle, radius: row.radius, row };
       row.rowSeats.push(seat);
     }
   });
 
+  // Rows with an odd seat count share a seat at the exact center angle, so
+  // two different rows can land seats on top of each other. Spread each
+  // colliding group apart (skip the 0/pi ends, where every radius meets at
+  // y=0 anyway) using a slice of each seat's own row spacing.
+  const angleGroups = new Map();
+  for (const seat of rows.flatMap((row) => row.rowSeats)) {
+    if (seat.angle < 1e-9 || Math.abs(seat.angle - Math.PI) < 1e-9) continue;
+    const key = Math.round(seat.angle * 1e6);
+    if (!angleGroups.has(key)) angleGroups.set(key, []);
+    angleGroups.get(key).push(seat);
+  }
+  for (const group of angleGroups.values()) {
+    if (group.length < 2) continue;
+    group.sort((a, b) => a.radius - b.radius);
+    group.forEach((seat, k) => {
+      seat.angle += seat.row.angleStep * 0.15 * (k - (group.length - 1) / 2);
+      seat.x = Math.cos(seat.angle) * seat.radius;
+      seat.y = -Math.sin(seat.angle) * seat.radius;
+    });
+  }
+
   const seats = rows.flatMap((row) => row.rowSeats);
 
-  // Angular order (left -> right) is what determines fill order by bloc,
-  // independent of which row a seat happens to land in.
+  // Sorted left-to-right by angle. This order determines fill order by bloc.
   seats.sort((a, b) => b.angle - a.angle);
 
   return { seats, rows, seatRadius, outerRadius: rows[rows.length - 1]?.radius ?? innerRadius };
 }
 
-// Where does `targetAngle` fall within this row's own seats? Returns the
-// midpoint angle between whichever pair of the row's seats straddle it, so a
-// curve through these points threads the actual gap at every row instead of
-// cutting across seats whose row has a different angular spacing.
-function rowGapAngle(rowSeats, targetAngle) {
-  const sorted = [...rowSeats].sort((a, b) => b.angle - a.angle);
-
-  for (let i = 0; i < sorted.length - 1; i++) {
-    if (sorted[i].angle >= targetAngle && targetAngle >= sorted[i + 1].angle) {
-      return (sorted[i].angle + sorted[i + 1].angle) / 2;
-    }
-  }
-
-  return targetAngle;
+// Shortest distance from p to segment a-b, used to check a line segment clears every seat.
+function pointToSegmentDistance(p, a, b) {
+  const abx = b.x - a.x;
+  const aby = b.y - a.y;
+  const apx = p.x - a.x;
+  const apy = p.y - a.y;
+  const lenSq = abx * abx + aby * aby;
+  const t = lenSq === 0 ? 0 : Math.max(0, Math.min(1, (apx * abx + apy * aby) / lenSq));
+  const cx = a.x + t * abx;
+  const cy = a.y + t * aby;
+  return Math.hypot(p.x - cx, p.y - cy);
 }
 
-// A smooth curve through an ordered list of points, using the midpoint of
-// each consecutive pair as the on-curve anchor and the point itself as the
-// quadratic control - a standard "smooth freehand line through N points"
-// construction, so multi-row boundaries don't kink at each row.
-function smoothPathThroughPoints(points) {
-  if (points.length < 2) return "";
+function segmentClearsSeats(a, b, seatPositions, seatRadius) {
+  return seatPositions.every((s) => pointToSegmentDistance(s, a, b) >= seatRadius + 1);
+}
 
-  let d = `M ${points[0].x} ${points[0].y}`;
-
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i];
-    const p1 = points[i + 1];
-    const isLast = i === points.length - 2;
-
-    if (isLast) {
-      d += ` Q ${p0.x} ${p0.y} ${p1.x} ${p1.y}`;
-    } else {
-      const midX = (p0.x + p1.x) / 2;
-      const midY = (p0.y + p1.y) / 2;
-      d += ` Q ${p0.x} ${p0.y} ${midX} ${midY}`;
+// Does the quadratic corner through ctrl clear every seat by seatRadius, sampled densely.
+function cornerClearsSeats(a, ctrl, b, seatPositions, seatRadius) {
+  for (let s = 1; s < 10; s++) {
+    const t = s / 10;
+    const x = (1 - t) ** 2 * a.x + 2 * (1 - t) * t * ctrl.x + t ** 2 * b.x;
+    const y = (1 - t) ** 2 * a.y + 2 * (1 - t) * t * ctrl.y + t ** 2 * b.y;
+    for (const seat of seatPositions) {
+      if (Math.hypot(x - seat.x, y - seat.y) < seatRadius + 1) return false;
     }
   }
+  return true;
+}
 
+// Straight segments with each corner rounded off by a small, verified-safe fillet radius.
+function roundedPathThroughPoints(points, seatPositions, seatRadius) {
+  if (points.length < 2) return "";
+  if (points.length === 2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length - 1; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const next = points[i + 1];
+    const lenIn = Math.hypot(curr.x - prev.x, curr.y - prev.y);
+    const lenOut = Math.hypot(next.x - curr.x, next.y - curr.y);
+    let radius = Math.min(14, lenIn / 2, lenOut / 2);
+    let approach;
+    let depart;
+    for (;;) {
+      const tIn = radius / lenIn;
+      const tOut = radius / lenOut;
+      approach = { x: curr.x + (prev.x - curr.x) * tIn, y: curr.y + (prev.y - curr.y) * tIn };
+      depart = { x: curr.x + (next.x - curr.x) * tOut, y: curr.y + (next.y - curr.y) * tOut };
+      if (radius < 0.5 || cornerClearsSeats(approach, curr, depart, seatPositions, seatRadius)) break;
+      radius *= 0.6;
+    }
+    d += ` L ${approach.x} ${approach.y} Q ${curr.x} ${curr.y} ${depart.x} ${depart.y}`;
+  }
+  const last = points[points.length - 1];
+  d += ` L ${last.x} ${last.y}`;
   return d;
 }
 
@@ -134,9 +160,7 @@ export default function SeatChart({
     innerRadius,
   });
 
-  // Assign each seat to a bloc by consuming `groups` in order along the
-  // angle-sorted seat list - matches the reference layout (one bloc occupies
-  // a contiguous wedge, not interleaved row-by-row).
+  // Fills blocs in angle order, one bloc per contiguous wedge, not interleaved row by row.
   const coloredSeats = [];
   let cursor = 0;
   for (const group of groups) {
@@ -146,19 +170,11 @@ export default function SeatChart({
   }
 
   const majorityIndex = Math.floor(totalSeats / 2) + 1; // seats needed to win
-  // Line sits just before the majorityIndex-th seat, so having that many
-  // seats filled means the winning seat itself has crossed onto the pass
-  // side - majority is reached AT that seat, not one seat after it.
-  const before = seats[majorityIndex - 2];
-  const after = seats[majorityIndex - 1];
-  const majorityAngle = before && after ? (before.angle + after.angle) / 2 : null;
+  // The seats coloredSeats fills first. Every row's gap comes from this set, never an angle approximation.
+  const trueBeforeSeats = new Set(seats.slice(0, majorityIndex - 1));
 
   const sidePadding = seatRadius + 4;
-  // Seats extend `seatRadius` beyond `outerRadius`, and the majority label
-  // sits a further ~14px + its own text height beyond that - reserve enough
-  // top room for both, or the outer row/label clip the viewBox edge. Seats in
-  // the innermost row sit almost exactly on the baseline (angle near 0/pi),
-  // so they need their own `seatRadius` of room below centerY too.
+  // Reserves room for seat radius plus the majority label so nothing clips the viewBox edge.
   const topPadding = seatRadius + 34;
   const bottomPadding = seatRadius + 4;
   const width = (outerRadius + sidePadding) * 2;
@@ -166,34 +182,65 @@ export default function SeatChart({
   const centerX = width / 2;
   const centerY = height - bottomPadding;
 
-  const majorityLine = majorityAngle == null || rows.length === 0 ? null : (() => {
-    // One point per row, at that row's own local gap angle nearest the
-    // global boundary - this is what makes the line thread between seats
-    // instead of cutting through whichever row's spacing doesn't match the
-    // single global angle.
-    const rowPoints = rows.map((row) => {
-      const angle = rowGapAngle(row.rowSeats, majorityAngle);
-      return {
-        x: centerX + Math.cos(angle) * row.radius,
-        y: centerY - Math.sin(angle) * row.radius,
-      };
+  const majorityLine = trueBeforeSeats.size === totalSeats || rows.length === 0 || seats.length < 2 ? null : (() => {
+    // A row entirely before or after the boundary still gets a gap past its outermost seat.
+    const rowAngles = rows.map((row) => {
+      const sorted = [...row.rowSeats].sort((a, b) => b.angle - a.angle);
+      const beforeCount = sorted.filter((s) => trueBeforeSeats.has(s)).length;
+      if (beforeCount === 0) return sorted[sorted.length - 1].angle - 0.3;
+      if (beforeCount === sorted.length) return sorted[0].angle + 0.3;
+      return (sorted[beforeCount - 1].angle + sorted[beforeCount].angle) / 2;
     });
 
-    const innerPoint = {
-      x: centerX + Math.cos(majorityAngle) * (innerRadius - seatRadius),
-      y: centerY - Math.sin(majorityAngle) * (innerRadius - seatRadius),
-    };
+    const rowPoints = rows.map((row, i) => ({
+      x: centerX + Math.cos(rowAngles[i]) * row.radius,
+      y: centerY - Math.sin(rowAngles[i]) * row.radius,
+    }));
+
+    // Reaches the actual center, nudged up 10px so the tip isn't flush with the baseline.
+    const innerPoint = { x: centerX, y: centerY - 10 };
+    const outerAngle = rowAngles[rowAngles.length - 1];
     const outerPoint = {
-      x: centerX + Math.cos(majorityAngle) * (outerRadius + seatRadius),
-      y: centerY - Math.sin(majorityAngle) * (outerRadius + seatRadius),
+      x: centerX + Math.cos(outerAngle) * (outerRadius + seatRadius * 1.5),
+      y: centerY - Math.sin(outerAngle) * (outerRadius + seatRadius * 1.5),
     };
 
-    const points = [innerPoint, ...rowPoints, outerPoint];
+    const rawPoints = [innerPoint, ...rowPoints, outerPoint];
+    const seatPositions = seats.map((s) => ({ x: centerX + s.x, y: centerY + s.y }));
+
+    // Rows with very different seat counts can have gaps far apart in angle, risking a graze.
+    const points = [rawPoints[0]];
+    for (let i = 0; i < rawPoints.length - 1; i++) {
+      const a = rawPoints[i];
+      const b = rawPoints[i + 1];
+      if (segmentClearsSeats(a, b, seatPositions, seatRadius)) {
+        points.push(b);
+        continue;
+      }
+      // Nearest safe waypoint to the segment's midpoint, so the detour stays small rather than swinging wide.
+      const midX = (a.x + b.x) / 2;
+      const midY = (a.y + b.y) / 2;
+      let detour = null;
+      let bestDistSq = Infinity;
+      for (let dx = -100; dx <= 100; dx += 8) {
+        for (let dy = -100; dy <= 100; dy += 8) {
+          const candidate = { x: midX + dx, y: midY + dy };
+          const distSq = dx * dx + dy * dy;
+          if (distSq >= bestDistSq) continue;
+          if (segmentClearsSeats(a, candidate, seatPositions, seatRadius) && segmentClearsSeats(candidate, b, seatPositions, seatRadius)) {
+            detour = candidate;
+            bestDistSq = distSq;
+          }
+        }
+      }
+      if (detour) points.push(detour);
+      points.push(b);
+    }
 
     return {
-      path: smoothPathThroughPoints(points),
-      labelX: centerX + Math.cos(majorityAngle) * (outerRadius + seatRadius + 14),
-      labelY: centerY - Math.sin(majorityAngle) * (outerRadius + seatRadius + 14),
+      path: roundedPathThroughPoints(points, seatPositions, seatRadius),
+      labelX: centerX + Math.cos(outerAngle) * (outerRadius + seatRadius * 1.5 + 14),
+      labelY: centerY - Math.sin(outerAngle) * (outerRadius + seatRadius * 1.5 + 14),
     };
   })();
 
@@ -220,6 +267,7 @@ export default function SeatChart({
               stroke="#898781"
               strokeWidth="1.5"
               strokeDasharray="4 3"
+              strokeLinejoin="round"
             />
             <text
               x={majorityLine.labelX}

@@ -46,16 +46,15 @@ function stripEmoji(s) {
 
 // Cleans a raw country cell (flag emoji + "Afghanistan" -> "afghanistan") and
 // looks it up against the countries list to attach a stable id a UI can use to
-// render the actual flag SVG (e.g. `/flags/${countryCode}.svg`).
-// `countries` only has English names, so non-English cells (e.g. a French
-// sheet's "Allemagne") intentionally resolve to code: null rather than
-// guessing - no flag is shown for those rather than a wrong/broken one.
-// Returns both `name` (lowercase - the canonical key used for matching/
-// search/sort) and `display` (the properly-cased form for showing in a UI:
-// the canonical name when matched, otherwise the original cell text as-is -
-// deliberately not "corrected" via title-casing, since real cells are
-// legitimately either mixed-case ("BSAA Director") or intentional
-// abbreviations ("UK", "USA") that title-casing would mangle into "Uk"/"Usa").
+// render the actual flag SVG (see components/Flag.jsx). `display` is always
+// the original cell text as-is (emoji/whitespace stripped, otherwise
+// untouched) rather than the matched country's canonical name - a delegate's
+// placard at the physical conference reads whatever that sheet actually
+// wrote ("USA", "Deutschland", "The Netherlands"), and this should match it,
+// not silently "correct" it. `code` (from the match, or null if unmatched)
+// is what actually drives the flag and delegation-scoped fuzzy matching, so
+// spelling/language variation still resolves to the right country under the
+// hood even though the displayed text is untouched.
 const matchesName = (c, name) =>
   c.name.toLowerCase() === name || c.alias?.some(a => a.toLowerCase() === name);
 
@@ -67,9 +66,7 @@ function lookupCountry(raw) {
   // wins a name collision.
   const match = countries.find(c => matchesName(c, name)) ?? historicalCountries.find(c => matchesName(c, name));
 
-  const display = match ? match.name : cleaned;
-
-  return { name, display, code: match ? match.code : null };
+  return { name, display: cleaned, code: match ? match.code : null };
 }
 
 export default class AllocationParser {

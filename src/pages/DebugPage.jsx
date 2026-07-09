@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ConferenceService from "../services/ConferenceService";
 import AllocationParser from "../services/AllocationParser";
+import MotionInput from "../components/MotionInput";
+import Flag from "../components/Flag";
 
 export default function DebugPage() {
   const [conference, setConference] = useState(null);
@@ -8,6 +10,13 @@ export default function DebugPage() {
   const [delegates, setDelegates] = useState([]);
   const [selectedCommittee, setSelectedCommittee] = useState("");
   const [parsedCommittees, setParsedCommittees] = useState([]);
+  const [motionText, setMotionText] = useState("");
+  const [fuzzyLevel, setFuzzyLevel] = useState(0.3);
+
+  const delegations = useMemo(
+    () => delegates.map((d) => ({ name: d.countryDisplay, code: d.countryCode })),
+    [delegates]
+  );
 
   async function loadConference(event) {
     const file = event.target.files?.[0];
@@ -229,7 +238,7 @@ export default function DebugPage() {
                     </th>
 
                     <th className="border-b border-white/10 p-3 text-left">
-                      Country
+                      Delegation
                     </th>
 
                     <th className="border-b border-white/10 p-3 text-left">
@@ -258,7 +267,10 @@ export default function DebugPage() {
                       </td>
 
                       <td className="p-3">
-                        {delegate.countryDisplay}
+                        <span className="inline-flex items-center gap-2">
+                          <Flag countryCode={delegate.countryCode} />
+                          {delegate.countryDisplay}
+                        </span>
                       </td>
 
                       <td className="p-3">
@@ -424,7 +436,7 @@ export default function DebugPage() {
 
                         <tr>
                           <th className="border border-white/10 px-2 py-1 text-left">Role</th>
-                          <th className="border border-white/10 px-2 py-1 text-left">Country</th>
+                          <th className="border border-white/10 px-2 py-1 text-left">Delegation</th>
                           <th className="border border-white/10 px-2 py-1 text-left">Code</th>
                           <th className="border border-white/10 px-2 py-1 text-left">Name</th>
                           <th className="border border-white/10 px-2 py-1 text-left">School</th>
@@ -439,7 +451,12 @@ export default function DebugPage() {
 
                           <tr key={index}>
                             <td className="border border-white/10 px-2 py-1">{person.role || ""}</td>
-                            <td className="border border-white/10 px-2 py-1">{person.countryDisplay || ""}</td>
+                            <td className="border border-white/10 px-2 py-1">
+                              <span className="inline-flex items-center gap-2">
+                                <Flag countryCode={person.countryCode} />
+                                {person.countryDisplay || ""}
+                              </span>
+                            </td>
                             <td className="border border-white/10 px-2 py-1">{person.countryCode || ""}</td>
                             <td className="border border-white/10 px-2 py-1">{person.name || ""}</td>
                             <td className="border border-white/10 px-2 py-1">{person.school || ""}</td>
@@ -459,6 +476,50 @@ export default function DebugPage() {
               ))}
 
             </div>
+
+          </div>
+
+          {/* Motion Input */}
+
+          <div className="border border-white/10 bg-[#111111] p-6 lg:col-span-2">
+
+            <h2 className="text-xl font-semibold">
+              Motion Input
+            </h2>
+
+            <p className="mt-2 text-sm text-white/40">
+              Type a motion below to see MOTIONS/delegation highlighting live, and drag the
+              slider to adjust how many typos a fuzzy match will tolerate. Delegation matching
+              is scoped to the loaded committee's {delegates.length} delegations.
+            </p>
+
+            <div className="mt-6">
+              <div className="flex items-center justify-between text-sm text-white/50">
+                <label htmlFor="fuzzy-level">Fuzzy match level</label>
+                <span>{Math.round(fuzzyLevel * 100)}%{fuzzyLevel === 0 ? " (off)" : ""}</span>
+              </div>
+
+              <input
+                id="fuzzy-level"
+                type="range"
+                min="0"
+                max="0.4"
+                step="0.01"
+                value={fuzzyLevel}
+                onChange={(e) => setFuzzyLevel(Number(e.target.value))}
+                className="mt-2 w-full"
+              />
+            </div>
+
+            <MotionInput
+              value={motionText}
+              onChange={setMotionText}
+              placeholder="Try a typo, like 'Frnace moves to Open a Moderatd Caucus'…"
+              rows={6}
+              fuzzyLevel={fuzzyLevel}
+              className="mt-6"
+              delegations={delegations}
+            />
 
           </div>
 
