@@ -9,7 +9,7 @@ initAppTheme();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <BrowserRouter basename="/Motion">
+    <BrowserRouter>
       <App />
     </BrowserRouter>
   </StrictMode>

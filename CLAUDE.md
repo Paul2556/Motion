@@ -28,10 +28,9 @@ vite # only use this when starting the normal vite server, used after every mess
 There is no test suite/runner configured in this repo yet.
 
 Node version is pinned via `.nvmrc` (24). CI (`.github/workflows/ci.yml`) runs `npm ci` + `npm run
-build` on Node 22 for every push/PR to main/master. `.github/workflows/deploy.yml` builds and
-publishes `dist/` to GitHub Pages on push to `main`. Because it's served from a Pages subpath, Vite
-is configured with `base: '/Motion/'` (`vite.config.js`) and the router is mounted with
-`basename="/Motion"` (`src/main.jsx`) — both must stay in sync if the deploy path ever changes.
+build` on Node 22 for every push/PR to main/master. Deploys to Vercel (served from the domain root,
+not a subpath) — `vercel.json` has the SPA rewrite (`/(.*)` → `/index.html`) so client-side routes
+like `/session` don't 404 on a direct link or refresh.
 
 ## Architecture
 
