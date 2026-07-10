@@ -8,6 +8,8 @@ const MOTION_PHRASES = MOTIONS.flatMap((motion) =>
     category: "motion",
     canonical: text,
     requireExactWordCount: motion.explicit === true,
+    durationField: motion.durationField ?? null,
+    requiresTopic: motion.topic === true,
   }))
 );
 const ALL_COUNTRIES = [...countries, ...historicalCountries];
@@ -166,7 +168,15 @@ function findFuzzyMatch(tokens, tokenIndex, text, fuzzyLevel, phraseIndex) {
       if (distance === 0 || distance > budget) continue;
 
       if (!best || distance < best.distance || (distance === best.distance && phrase.lower.length > best.phraseLength)) {
-        best = { end: windowEnd, category: phrase.category, canonical: phrase.canonical, distance, phraseLength: phrase.lower.length };
+        best = {
+          end: windowEnd,
+          category: phrase.category,
+          canonical: phrase.canonical,
+          durationField: phrase.durationField ?? null,
+          requiresTopic: phrase.requiresTopic === true,
+          distance,
+          phraseLength: phrase.lower.length,
+        };
       }
     }
   }
@@ -174,8 +184,34 @@ function findFuzzyMatch(tokens, tokenIndex, text, fuzzyLevel, phraseIndex) {
 }
 
 const NUMBER_WORD = /^\d+$/;
-const isConnectiveWord = (w) => CONNECTIVE_WORDS.has(w.toUpperCase());
-const isMeasurementWord = (w) => MEASUREMENT_WORDS.has(w.toUpperCase());
+const TIGHT_TYPO_BUDGET = 1;
+
+// Fuzzy match for connective/measurement words ("fro"/"wth"/"mintue"/
+// "mon"->"min") - not the country/delegation fuzzy system (that's
+// fuzzyBudget/wordBudget, untouched). Words 3-4 chars ("for", "with", "min")
+// get a fixed, very tight 1-typo budget - too short for the usual
+// proportional scaling to mean anything. Words 5+ chars ("minute",
+// "minutes") scale with fuzzyLevel like everywhere else in the app. Words
+// under 3 chars ("of") stay exact-only - practically every 2-letter word is
+// 1 typo away from another one ("on" vs "of"), so any tolerance there is
+// just noise (this is what broke "topic of" detection when "on" started
+// matching "of").
+function isCloseToAny(word, wordSet, fuzzyLevel) {
+  const upper = word.toUpperCase();
+  if (wordSet.has(upper)) return true;
+  if (fuzzyLevel <= 0) return false;
+
+  for (const candidate of wordSet) {
+    if (candidate.length < 3) continue;
+    const budget = candidate.length < 5 ? TIGHT_TYPO_BUDGET : wordBudget(candidate.length, fuzzyLevel);
+    if (Math.abs(upper.length - candidate.length) > budget) continue;
+    if (editDistance(upper, candidate) <= budget) return true;
+  }
+  return false;
+}
+
+const isConnectiveWord = (w, fuzzyLevel) => isCloseToAny(w, CONNECTIVE_WORDS, fuzzyLevel);
+const isMeasurementWord = (w, fuzzyLevel) => isCloseToAny(w, MEASUREMENT_WORDS, fuzzyLevel);
 
 // Strips leading/trailing punctuation a token might carry from adjacent text
 // ("10," or "minutes.") so word matching isn't thrown off by it.
@@ -197,25 +233,30 @@ function containsWord(tokens, text, fromIndex, toIndex, word) {
   return false;
 }
 
-// If a motion match is followed by "for <number> minute(s)" - e.g. "Moderated
-// Caucus for 10 minutes" - within a couple words of slack at each step,
-// extends the highlight to cover the whole duration phrase, not just the
-// bare motion phrase. `explicit` is true when the word "speaking" appears
-// anywhere from the motion phrase through the minute word (e.g. "Extend the
-// Speaking Time for 1 minute", or "...with a speaking time of 1 minute") -
-// that duration is unambiguously the per-speaker time, not the total.
-function extendWithDuration(tokens, text, motionStartIndex, afterIndex) {
-  const forIndex = findTokenWithin(tokens, text, afterIndex, 2, isConnectiveWord);
-  if (forIndex === -1) return null;
+// Looks from fromIndex through toIndex (inclusive) for an explicit "speaking"
+// or "total" wording label - "speaking" wins if both somehow appear. Used to
+// tell "12 min speaking time" apart from "12 min total time" regardless of
+// which one happens to come first on the line.
+function explicitLabel(tokens, text, fromIndex, toIndex) {
+  const lo = Math.max(0, fromIndex);
+  const hi = Math.min(tokens.length - 1, toIndex);
+  if (containsWord(tokens, text, lo, hi, "SPEAKING")) return "speaking-time";
+  if (containsWord(tokens, text, lo, hi, "TOTAL")) return "total-time";
+  return null;
+}
 
-  const numberIndex = findTokenWithin(tokens, text, forIndex + 1, 2, (w) => NUMBER_WORD.test(w));
-  if (numberIndex === -1) return null;
 
+// Given a number token already found at numberIndex, looks for its measurement
+// unit within 2 words either side and builds the duration result - shared by
+// extendWithDuration (narrow, motion-adjacent search) and findDurationInRange
+// (wide search, for topic motions where the number can be arbitrarily far
+// from the motion once a topic phrase sits in between).
+function resolveDurationAt(tokens, text, numberIndex, connectiveIndex, motionStartIndex, fuzzyLevel) {
   const minuteStart = Math.max(0, numberIndex - 2);
   let minuteIndex = -1;
   for (let i = minuteStart; i <= Math.min(numberIndex + 2, tokens.length - 1); i++) {
     if (i === numberIndex) continue;
-    if (isMeasurementWord(bareWord(text, tokens[i]))) {
+    if (isMeasurementWord(bareWord(text, tokens[i]), fuzzyLevel)) {
       minuteIndex = i;
       break;
     }
@@ -223,28 +264,65 @@ function extendWithDuration(tokens, text, motionStartIndex, afterIndex) {
   if (minuteIndex === -1) return null;
 
   const endIndex = Math.max(numberIndex, minuteIndex);
+  const startIndex = connectiveIndex === -1 ? numberIndex : connectiveIndex;
   return {
+    start: tokens[startIndex].start,
     end: tokens[endIndex].end,
     amount: Number(bareWord(text, tokens[numberIndex])),
-    explicit: containsWord(tokens, text, motionStartIndex, endIndex, "SPEAKING"),
+    label: explicitLabel(tokens, text, motionStartIndex, endIndex + 2),
   };
 }
 
+// If a motion match is followed by "for <number> minute(s)" - e.g. "Moderated
+// Caucus for 10 minutes" - within a couple words of slack at each step,
+// extends the highlight to cover the whole duration phrase, not just the
+// bare motion phrase. The connective ("for"/"of"/"with") is optional - a
+// terse "India mod 12 min" (no connective at all) still works.
+function extendWithDuration(tokens, text, motionStartIndex, afterIndex, fuzzyLevel) {
+  const forIndex = findTokenWithin(tokens, text, afterIndex, 2, (w) => isConnectiveWord(w, fuzzyLevel));
+  const numberSearchStart = forIndex === -1 ? afterIndex : forIndex + 1;
+
+  const numberIndex = findTokenWithin(tokens, text, numberSearchStart, 2, (w) => NUMBER_WORD.test(w));
+  if (numberIndex === -1) return null;
+
+  return resolveDurationAt(tokens, text, numberIndex, forIndex, motionStartIndex, fuzzyLevel);
+}
+
+// Same as extendWithDuration, but scans the whole [fromIndex, toIndex) range
+// for the first standalone number instead of just the 2 words right after
+// the motion - needed for topic motions, since "on the topic of X" can push
+// the actual duration arbitrarily far from the motion phrase itself.
+function findDurationInRange(tokens, text, fromIndex, toIndex, motionStartIndex, fuzzyLevel) {
+  for (let i = fromIndex; i < toIndex; i++) {
+    if (!NUMBER_WORD.test(bareWord(text, tokens[i]))) continue;
+    const connectiveIndex = i > fromIndex && isConnectiveWord(bareWord(text, tokens[i - 1]), fuzzyLevel) ? i - 1 : -1;
+    const result = resolveDurationAt(tokens, text, i, connectiveIndex, motionStartIndex, fuzzyLevel);
+    if (result) return result;
+  }
+  return null;
+}
+
 // A standalone "<number> minute(s)" with no motion/connective nearby - the
-// implicit per-speaker time in a line that already stated a total duration,
-// e.g. the "1 minute" in "...Caucus for 10 minutes, 1 minute each". Stops at
-// `limit` (the current line's end) so it never reaches into the next line.
-function findBareDuration(tokens, text, fromIndex, limit) {
+// implicit per-speaker (or total, if labeled "total") time in a line that
+// already stated its counterpart, e.g. the "1 minute" in "...Caucus for 10
+// minutes, 1 minute each". Stops at `limit` (the current line's end) so it
+// never reaches into the next line.
+function findBareDuration(tokens, text, fromIndex, limit, fuzzyLevel) {
   for (let i = fromIndex; i < tokens.length && tokens[i].start < limit; i++) {
     const word = bareWord(text, tokens[i]);
     if (!NUMBER_WORD.test(word)) continue;
 
     for (let j = Math.max(fromIndex, i - 2); j <= Math.min(i + 2, tokens.length - 1); j++) {
       if (j === i || tokens[j].start >= limit) continue;
-      if (isMeasurementWord(bareWord(text, tokens[j]))) {
+      if (isMeasurementWord(bareWord(text, tokens[j]), fuzzyLevel)) {
         const lo = Math.min(i, j);
         const hi = Math.max(i, j);
-        return { start: tokens[lo].start, end: tokens[hi].end, amount: Number(word) };
+        return {
+          start: tokens[lo].start,
+          end: tokens[hi].end,
+          amount: Number(word),
+          label: explicitLabel(tokens, text, Math.max(fromIndex, lo - 2), hi + 2),
+        };
       }
     }
   }
@@ -266,16 +344,86 @@ function lineEndAt(text, pos) {
   return nl === -1 ? text.length : nl;
 }
 
-// A motion's duration is classified per line: the first "for <number>
-// minute(s)" found is the total caucus time, UNLESS it explicitly says
-// "speaking" (then it's already the per-speaker time). A second, later
-// duration on the same line - with or without its own "for" - is the
-// per-speaker speaking time, but only if the first one wasn't already
-// explicit (one explicit "speaking time" mention per line is enough).
-function classifyDuration(lineState, explicit) {
-  if (explicit) return "speaking-time";
-  if (lineState.sawDuration && !lineState.firstExplicit) return "speaking-time";
-  return "motion";
+// If a "speaking"/"total (time)" label sits right after `pos`, skips past it
+// too - so the topic starts after the label, not in the middle of it.
+function skipTrailingLabel(tokens, text, pos, limit) {
+  const idx = tokenIndexAtOrAfter(tokens, pos);
+  if (idx === -1 || tokens[idx].start >= limit) return pos;
+
+  const word = bareWord(text, tokens[idx]).toUpperCase();
+  if (word !== "SPEAKING" && word !== "TOTAL") return pos;
+
+  let next = idx + 1;
+  if (next < tokens.length && tokens[next].start < limit && bareWord(text, tokens[next]).toUpperCase() === "TIME") next += 1;
+  return next < tokens.length && tokens[next - 1].start < limit ? tokens[next - 1].end : pos;
+}
+
+// Finds "topic of" anywhere in [fromIndex, toIndex) and returns the token
+// index of "of", or null. Doesn't care what's on either side - the caller
+// decides what that implies (topic before or after the duration).
+function findTopicOf(tokens, text, fromIndex, toIndex) {
+  for (let i = fromIndex; i < toIndex; i++) {
+    if (bareWord(text, tokens[i]).toUpperCase() !== "TOPIC") continue;
+    const ofIndex = findTokenWithin(tokens, text, i + 1, 2, (w) => w.toUpperCase() === "OF");
+    if (ofIndex !== -1 && ofIndex < toIndex) return ofIndex;
+  }
+  return null;
+}
+
+// Requires constants.js's `topic: true`. Captures the caucus's subject. An
+// explicit "topic of" always wins, wherever it falls in the line - before
+// the duration, after it, or even between two durations - and overrides the
+// trailing-text fallback entirely. The topic runs from right after "of" up
+// to the *next* number+unit found after that (or line end, if none) - so
+// "on the topic of X with 12 min speaking time" stops right before "12 min"
+// instead of swallowing the second duration as part of the topic. Only when
+// "topic of" isn't said anywhere does it fall back to whatever trails the
+// duration(s) instead. `needsSecondLookup` (dual-duration motions only)
+// peeks ahead for a second bare number+unit in that fallback case, so it
+// starts after BOTH durations, not between them.
+// A single stray word (e.g. "each", left over from "1 minute each" with no
+// real topic said) isn't a real topic - require at least 2 words.
+function finalizeTopic(text) {
+  const trimmed = text.trim();
+  return trimmed && trimmed.split(/\s+/).length > 1 ? trimmed : null;
+}
+
+function extractTopic(tokens, text, motionEndPos, lineEnd, motionStartIndex, duration, fuzzyLevel, needsSecondLookup) {
+  const fromIndex = tokenIndexAtOrAfter(tokens, motionEndPos);
+  if (fromIndex === -1) return null;
+  const lineEndIndex = tokenIndexAtOrAfter(tokens, lineEnd);
+  const endIndex = lineEndIndex === -1 ? tokens.length : lineEndIndex;
+
+  const ofIndex = findTopicOf(tokens, text, fromIndex, endIndex);
+  if (ofIndex !== null) {
+    const boundaryDuration = findDurationInRange(tokens, text, ofIndex + 1, endIndex, motionStartIndex, fuzzyLevel);
+    const boundaryPos = boundaryDuration ? boundaryDuration.start : lineEnd;
+    return finalizeTopic(text.slice(tokens[ofIndex].end, boundaryPos));
+  }
+
+  if (!duration) return null;
+
+  let trailStart = duration.end;
+  if (needsSecondLookup) {
+    const afterIndex = tokenIndexAtOrAfter(tokens, duration.end);
+    const second = afterIndex === -1 ? null : findBareDuration(tokens, text, afterIndex, lineEnd, fuzzyLevel);
+    if (second) trailStart = second.end;
+  }
+  trailStart = skipTrailingLabel(tokens, text, trailStart, lineEnd);
+
+  return finalizeTopic(text.slice(trailStart, lineEnd));
+}
+
+// A motion's duration is classified per line: an explicit "speaking"/"total"
+// label always wins, wherever it appears. Otherwise the first duration found
+// defaults to the total caucus time, and a second, later duration on the
+// same line - with or without its own "for" - defaults to whichever role the
+// first one *didn't* take (so if the first was explicitly speaking time, an
+// unlabeled second one is assumed to be the total, and vice versa).
+function classifyDuration(lineState, label) {
+  if (label) return label;
+  if (!lineState.sawDuration) return "total-time";
+  return lineState.firstRole === "speaking-time" ? "total-time" : "speaking-time";
 }
 
 // Non-overlapping motion/country matches in text: exact whole-word matches
@@ -288,8 +436,8 @@ function findHighlightRanges(text, fuzzyLevel, phraseIndex) {
   const tokens = tokenize(text);
   const tokenStarts = new Map(tokens.map((t, i) => [t.start, i]));
   const ranges = [];
-  const meta = { motion: null, delegation: null, totalTime: null, speakingTime: null };
-  const lineState = { lineIndex: -1, sawDuration: false, firstExplicit: false };
+  const meta = { motion: null, delegation: null, totalTime: null, speakingTime: null, topic: null };
+  const lineState = { lineIndex: -1, sawDuration: false, firstRole: null, secondFound: false };
 
   let i = 0;
   while (i < text.length) {
@@ -297,7 +445,8 @@ function findHighlightRanges(text, fuzzyLevel, phraseIndex) {
     if (currentLine !== lineState.lineIndex) {
       lineState.lineIndex = currentLine;
       lineState.sawDuration = false;
-      lineState.firstExplicit = false;
+      lineState.firstRole = null;
+      lineState.secondFound = false;
     }
 
     const exact = phraseIndex.allPhrases.find((phrase) => {
@@ -310,26 +459,67 @@ function findHighlightRanges(text, fuzzyLevel, phraseIndex) {
 
     if (match) {
       let end = exact ? i + exact.lower.length : match.end;
-      let category = match.category;
+      const category = match.category;
 
       if (category === "delegation" && meta.delegation === null) meta.delegation = match.canonical;
 
       if (category === "motion") {
         if (meta.motion === null) meta.motion = match.canonical;
+        const motionEndPos = end;
         const motionStartIndex = tokenIndex ?? tokenStarts.get(i);
         const afterIndex = tokenIndexAtOrAfter(tokens, end);
-        const extended = motionStartIndex === undefined || afterIndex === -1
-          ? null
-          : extendWithDuration(tokens, text, motionStartIndex, afterIndex);
+        let extended = null;
+        if (motionStartIndex !== undefined && afterIndex !== -1) {
+          if (match.requiresTopic) {
+            // A topic can push the duration arbitrarily far from the motion
+            // ("on the topic of X for 10 minutes"), so scan the whole line
+            // instead of just the 2 words right after the motion.
+            const lineEndIndex = tokenIndexAtOrAfter(tokens, lineEndAt(text, i));
+            const scanLimit = lineEndIndex === -1 ? tokens.length : lineEndIndex;
+            extended = findDurationInRange(tokens, text, afterIndex, scanLimit, motionStartIndex, fuzzyLevel);
+          } else {
+            extended = extendWithDuration(tokens, text, motionStartIndex, afterIndex, fuzzyLevel);
+          }
+        }
 
+        let durationCategory = null;
         if (extended) {
           end = extended.end;
-          category = classifyDuration(lineState, extended.explicit);
-          if (category === "speaking-time" && meta.speakingTime === null) meta.speakingTime = extended.amount;
-          if (category === "motion" && meta.totalTime === null) meta.totalTime = extended.amount;
-          if (!lineState.sawDuration) lineState.firstExplicit = extended.explicit;
-          lineState.sawDuration = true;
+
+          if (match.durationField) {
+            // Single-param motion (constants.js's durationField): always the
+            // one fixed field, no total/speaking classification, and no
+            // second-duration lookup - there's only ever one number to read.
+            durationCategory = match.durationField === "speaking" ? "speaking-time" : "total-time";
+            const field = match.durationField === "speaking" ? "speakingTime" : "totalTime";
+            if (meta[field] === null) meta[field] = extended.amount;
+          } else {
+            durationCategory = classifyDuration(lineState, extended.label);
+            if (durationCategory === "speaking-time" && meta.speakingTime === null) meta.speakingTime = extended.amount;
+            if (durationCategory === "total-time" && meta.totalTime === null) meta.totalTime = extended.amount;
+            if (!lineState.sawDuration) lineState.firstRole = durationCategory;
+            lineState.sawDuration = true;
+          }
         }
+
+        if (match.requiresTopic && meta.topic === null) {
+          const duration = extended ? { start: extended.start, end: extended.end } : null;
+          const topic = extractTopic(
+            tokens, text, motionEndPos, lineEndAt(text, i), motionStartIndex, duration, fuzzyLevel, !match.durationField
+          );
+          if (topic) meta.topic = topic;
+        }
+
+        // Pushed as two separate ranges (motion phrase, then duration) - not
+        // one continuous span - so anything in between (a connective word, or
+        // a whole topic phrase) stays plain/uncolored instead of getting
+        // swept into the motion's highlight.
+        ranges.push({ start: i, end: motionEndPos, category: "motion", canonical: match.canonical, fuzzy: !exact });
+        if (extended) {
+          ranges.push({ start: extended.start, end: extended.end, category: durationCategory, canonical: null, fuzzy: false });
+        }
+        i = end;
+        continue;
       }
 
       ranges.push({ start: i, end, category, canonical: match.canonical, fuzzy: !exact });
@@ -337,13 +527,23 @@ function findHighlightRanges(text, fuzzyLevel, phraseIndex) {
       continue;
     }
 
-    if (tokenIndex !== undefined && lineState.sawDuration && !lineState.firstExplicit && meta.speakingTime === null) {
-      const bare = findBareDuration(tokens, text, tokenIndex, lineEndAt(text, i));
+    if (
+      tokenIndex !== undefined &&
+      lineState.sawDuration &&
+      !lineState.secondFound &&
+      (meta.totalTime === null || meta.speakingTime === null)
+    ) {
+      const bare = findBareDuration(tokens, text, tokenIndex, lineEndAt(text, i), fuzzyLevel);
       if (bare && bare.start === i) {
-        ranges.push({ start: bare.start, end: bare.end, category: "speaking-time", canonical: null, fuzzy: false });
-        meta.speakingTime = bare.amount;
-        i = bare.end;
-        continue;
+        const category = bare.label ?? (lineState.firstRole === "speaking-time" ? "total-time" : "speaking-time");
+        const field = category === "speaking-time" ? "speakingTime" : "totalTime";
+        lineState.secondFound = true;
+        if (meta[field] === null) {
+          meta[field] = bare.amount;
+          ranges.push({ start: bare.start, end: bare.end, category, canonical: null, fuzzy: false });
+          i = bare.end;
+          continue;
+        }
       }
     }
 
@@ -356,6 +556,7 @@ const CATEGORY_COLOR = {
   motion: "var(--accent)",
   delegation: "var(--accent-alt)",
   "speaking-time": "var(--accent-time)",
+  "total-time": "var(--accent-duration)",
 };
 
 function buildSegments(text, ranges) {
@@ -387,10 +588,13 @@ function shouldAutoExpand(matchedText, canonical) {
 // one. A summary row below shows the current motion/country/speaking time/
 // total time at a glance. Pass delegations ([{ name, code }, ...] from the
 // committee roster) to scope matching to that roster - including non-country
-// delegations like press corps/NGOs - instead of every ISO country. A plain
+// delegations like press corps/NGOs - instead of every ISO country. Pass
+// onSubmit to let plain Enter (Shift+Enter for a real newline) hand the
+// current parsed meta up to the caller and clear the box for the next motion
+// - e.g. to log it in a list rendered below (see MotionLog). A plain
 // textarea can't render colored spans, so a read-only backdrop with the
 // highlighted text sits behind a transparent textarea, keeping the real caret/selection.
-export default function MotionInput({ value, onChange, placeholder, rows = 8, className = "", fuzzyLevel = 0.3, delegations }) {
+export default function MotionInput({ value, onChange, placeholder, rows = 8, className = "", fuzzyLevel = 0.3, delegations, onSubmit }) {
   const textareaRef = useRef(null);
   const backdropRef = useRef(null);
 
@@ -407,10 +611,19 @@ export default function MotionInput({ value, onChange, placeholder, rows = 8, cl
     }
   }
 
-  // Spacebar right after a completed delegation match expands it to the
-  // canonical text, e.g. "US " -> "United States ". Motions are only ever
-  // highlighted (blue), never rewritten - the chair's own wording stays put.
+  // Plain Enter (no shift) submits the current motion - passes today's
+  // parsed meta up to the caller and clears the box for the next one.
+  // Shift+Enter still inserts a real newline, for a motion that spans
+  // multiple lines.
   function handleKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      if (!onSubmit || !value.trim()) return;
+      event.preventDefault();
+      onSubmit(meta);
+      onChange("");
+      return;
+    }
+
     if (event.key !== " ") return;
     const el = event.target;
     if (el.selectionStart !== el.selectionEnd) return;
@@ -466,9 +679,10 @@ export default function MotionInput({ value, onChange, placeholder, rows = 8, cl
         />
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
         <MetaStat label="Motion" value={meta.motion} />
         <MetaStat label="Country" value={meta.delegation} />
+        <MetaStat label="Topic" value={meta.topic} />
         <MetaStat label="Speaking Time" value={meta.speakingTime != null ? `${meta.speakingTime} min` : null} />
         <MetaStat label="Total Time" value={meta.totalTime != null ? `${meta.totalTime} min` : null} />
       </div>

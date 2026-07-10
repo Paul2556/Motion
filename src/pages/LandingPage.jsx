@@ -421,8 +421,8 @@ function LandingPage() {
               <div className="relative aspect-square max-w-xl overflow-hidden bg-[#ededE8] p-8 sm:p-12">
                 <div className="absolute inset-0 vision-lines opacity-50" />
                 <div className="relative flex h-full flex-col justify-between">
-                  <div className="flex flex-1 items-center justify-center">
-                    <Logo compact size="w-[255px] sm:w-[280px]" />
+                  <div className="flex flex-1 items-center justify-center scale-[7.5] sm:scale-[8.25]">
+                    <Logo compact/>
                   </div>
                   <span className="text-[10px] uppercase tracking-[0.18em] text-black/35">Motion / 2026</span>
                 </div>
@@ -503,14 +503,7 @@ function LandingPage() {
               <a className="hover:text-white" href="#how">Process</a>
               <a className="hover:text-white" href="#waitlist">Waitlist</a>
             </div>
-            <a
-              href="https://github.com/Paul2556/Motion"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors hover:text-white"
-            >
-              <span>Source</span>
-            </a>
+            <span className='inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors'>"To be or not to be, that is the question."</span>
           </div>
         </div>
       </footer>

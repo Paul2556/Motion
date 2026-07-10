@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import ConferenceService from "../services/ConferenceService";
 import AllocationParser from "../services/AllocationParser";
 import MotionInput from "../components/MotionInput";
+import MotionLog from "../components/MotionLog";
 import Flag from "../components/Flag";
 
 export default function DebugPage() {
@@ -12,6 +13,7 @@ export default function DebugPage() {
   const [parsedCommittees, setParsedCommittees] = useState([]);
   const [motionText, setMotionText] = useState("");
   const [fuzzyLevel, setFuzzyLevel] = useState(0.3);
+  const [motionLog, setMotionLog] = useState([]);
 
   const delegations = useMemo(
     () => delegates.map((d) => ({ name: d.countryDisplay, code: d.countryCode })),
@@ -519,7 +521,10 @@ export default function DebugPage() {
               fuzzyLevel={fuzzyLevel}
               className="mt-6"
               delegations={delegations}
+              onSubmit={(meta) => setMotionLog((prev) => [meta, ...prev])}
             />
+
+            <MotionLog entries={motionLog} />
 
           </div>
 

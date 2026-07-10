@@ -1,18 +1,11 @@
-// Common parliamentary motions raised on the floor of an MUN committee,
-// phrased the way a chair would read them aloud. `alias` (when present)
-// lists the shorthand delegates actually say on the floor instead. `explicit`
-// (when true) requires fuzzy matching to see all of this phrase's words, not
-// just wordCount-1 of them (see MotionInput's requireExactWordCount) - without
-// it, "12 minutes speaking time" would fuzzy-match the 2 words "speaking
-// time" against this 3-word alias missing just "Extend", misreading an
-// ordinary per-speaker time mention as this motion.
+// motions for fuzzy matching and easy new motion additions
 export const MOTIONS = [
-  { text: "Open a Moderated Caucus", alias: ["Moderated Caucus", "Mod Caucus", "Mod"] },
-  { text: "Open an Unmoderated Caucus", alias: ["Unmoderated Caucus", "Unmod Caucus", "Unmod"] },
+  { text: "Open a Moderated Caucus", alias: ["Moderated Caucus", "Mod Caucus", "Mod"], topic: true },
+  { text: "Open an Unmoderated Caucus", alias: ["Unmoderated Caucus", "Unmod Caucus", "Unmod"], durationField: "total" },
   { text: "Open the General Speaker's List", alias: ["Open the GSL", "Open Speaker's List"] },
   { text: "Close the General Speaker's List", alias: ["Close the GSL", "Close Speaker's List"] },
-  { text: "Extend the Speaking Time", alias: ["Extend Speaking Time"], explicit: true },
-  { text: "Extend the Moderated Caucus", alias: ["Extend the Mod Caucus", "Extend Mod"] },
+  { text: "Extend the Speaking Time", alias: ["Extend Speaking Time"], explicit: true, durationField: "speaking" },
+  { text: "Extend the Moderated Caucus", alias: ["Extend the Mod Caucus", "Extend Mod"], durationField: "total" },
   { text: "Introduce a Draft Resolution", alias: ["Introduce Draft Resolution", "Introduce a Draft Res"] },
   { text: "Introduce an Amendment", alias: ["Introduce Amendment"] },
   { text: "Move into Voting Procedure", alias: ["Move to Voting Procedure", "Voting Procedure"] },
@@ -20,18 +13,7 @@ export const MOTIONS = [
   { text: "Adjourn the Meeting", alias: ["Adjourn Meeting"] },
 ];
 
-// Ported from excelToJson/assets/constants.js — kept in sync by hand, not by
-// a build step. If you change the word lists there, mirror the change here.
-// Official ISO 3166-1 alpha-3 codes (cross-checked against the ISO OBP and
-// Wikipedia's mirror of it). `name` is the display name; `alias` (when
-// present) lists other names MUN allocation sheets use for the same country
-// - official long form, informal/former names, and the French short name
-// (English and French are the UN's two working languages, and some
-// conferences run French-language sheets - see AllocationParser's header
-// detection, which already tolerates French vocab elsewhere) - skipped
-// where it's identical to the English name (e.g. "Canada"). AllocationParser
-// matches a cell's country name against both `name` and every `alias`. `code`
-// also keys the flag SVGs in src/assets/flags (see components/Flag.jsx).
+// Official ISO 3166-1 alpha-3 codes `code` are also keys the flag SVGs in src/assets/flags (see components/Flag.jsx).
 // Almost all `code`s are ISO 3166-1 alpha-3, except constituent-nation entries
 // some MUN sheets list separately (currently just "Scotland"), which use
 // their ISO 3166-2 subdivision code instead (e.g. "GB-SCT").

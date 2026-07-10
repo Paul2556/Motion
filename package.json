@@ -10,6 +10,8 @@
     "lint": "eslint . --max-warnings 0"
   },
   "dependencies": {
+    "@vercel/analytics": "2.0.1",
+    "@vercel/speed-insights": "2.0.0",
     "@vitejs/plugin-react": "latest",
     "exceljs": "^4.4.0",
     "lucide-react": "^1.21.0",

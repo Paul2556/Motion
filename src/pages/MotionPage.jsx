@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../components/Logo";
 import MotionInput from "../components/MotionInput";
+import MotionLog from "../components/MotionLog";
 import SeatChart from "../components/SeatChart";
 import ConferenceService from "../services/ConferenceService";
 
@@ -51,16 +52,17 @@ export default function MotionPage() {
 
   const [motionText, setMotionText] = useState(cachedVote?.motionText ?? "");
   const [groups, setGroups] = useState(cachedVote?.groups ?? buildInitialGroups(delegateCount));
+  const [motionLog, setMotionLog] = useState(cachedVote?.motionLog ?? []);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   useEffect(() => {
     if (!committee) return;
     try {
-      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ motionText, groups }));
+      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ motionText, groups, motionLog }));
     } catch {
       // storage unavailable (private browsing, quota) - falls back to in-memory-only
     }
-  }, [committee, motionText, groups]);
+  }, [committee, motionText, groups, motionLog]);
 
   // For/Against always sum to the committee's delegate count - each vote is
   // a delegate moving from one bloc to the other, not an independent tally.
@@ -119,7 +121,10 @@ export default function MotionPage() {
               rows={8}
               className="mt-4"
               delegations={delegations}
+              onSubmit={(meta) => setMotionLog((prev) => [meta, ...prev])}
             />
+
+            <MotionLog entries={motionLog} />
           </div>
 
           <div className="border border-white/10 bg-[#121212] p-6">
