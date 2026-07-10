@@ -1,7 +1,7 @@
 // motions for fuzzy matching and easy new motion additions
 export const MOTIONS = [
-  { text: "Open a Moderated Caucus", alias: ["Moderated Caucus", "Mod Caucus", "Mod"], topic: true },
-  { text: "Open an Unmoderated Caucus", alias: ["Unmoderated Caucus", "Unmod Caucus", "Unmod"], durationField: "total" },
+  { text: "Open a Moderated Caucus", alias: ["Moderated Caucus", "Mod Caucus", "Mod", "Moderated"], topic: true },
+  { text: "Open an Unmoderated Caucus", alias: ["Unmoderated Caucus", "Unmod Caucus", "Unmod", "Unmoderated"], durationField: "total" },
   { text: "Open the General Speaker's List", alias: ["Open the GSL", "Open Speaker's List"] },
   { text: "Close the General Speaker's List", alias: ["Close the GSL", "Close Speaker's List"] },
   { text: "Extend the Speaking Time", alias: ["Extend Speaking Time"], explicit: true, durationField: "speaking" },
@@ -391,3 +391,10 @@ export const MEASUREMENT_WORDS = new Set([
   "MIN",
   "MINS"
 ]);
+
+// Used by MotionInput's topic-phrase detection - the whole phrase (matched
+// word-for-word, not just the bare word "topic") that introduces a motion's
+// subject, e.g. "...on the topic of nuclear disarmament". Distinct from
+// TOPIC_WORDS above, which is header/row classification vocab for
+// AllocationParser, not floor language a chair actually says.
+export const TOPIC_MARKER_PHRASE = ["ON THE TOPIC OF","DISCUSSING", "FOR THE PURPOSE OF"];

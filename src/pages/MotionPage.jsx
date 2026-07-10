@@ -117,7 +117,7 @@ export default function MotionPage() {
             <MotionInput
               value={motionText}
               onChange={setMotionText}
-              placeholder="Enter the motion up for a vote…"
+              placeholder="You can type as naturally as you want"
               rows={8}
               className="mt-4"
               delegations={delegations}

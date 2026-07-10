@@ -8,6 +8,17 @@ html { scroll-behavior: auto; }
 body { margin: 0; min-width: 320px; background: var(--color-page-light); font-family: Inter, ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 ::selection { background: var(--color-surface-dark); color: #fff; }
 
+/* MotionInput's invalid-duration feedback (speaking time > total time). The
+   app-shell's reduced-motion rule (transition/animation: none !important)
+   already suppresses this for users who've turned that on. */
+@keyframes motion-input-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+.motion-input-shake { animation: motion-input-shake .3s linear; }
+
 @layer components {
   .page-container { @apply mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12; }
   .section-pad { @apply py-20 sm:py-28 lg:py-36; }

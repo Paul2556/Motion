@@ -1,5 +1,5 @@
-import { useMemo, useRef } from "react";
-import { MOTIONS, countries, historicalCountries, CONNECTIVE_WORDS, MEASUREMENT_WORDS } from "../constants";
+import { useMemo, useRef, useState } from "react";
+import { MOTIONS, countries, historicalCountries, CONNECTIVE_WORDS, MEASUREMENT_WORDS, TOPIC_MARKER_PHRASE } from "../constants";
 
 const MOTION_PHRASES = MOTIONS.flatMap((motion) =>
   [motion.text, ...(motion.alias ?? [])].map((text) => ({
@@ -186,26 +186,28 @@ function findFuzzyMatch(tokens, tokenIndex, text, fuzzyLevel, phraseIndex) {
 const NUMBER_WORD = /^\d+$/;
 const TIGHT_TYPO_BUDGET = 1;
 
-// Fuzzy match for connective/measurement words ("fro"/"wth"/"mintue"/
-// "mon"->"min") - not the country/delegation fuzzy system (that's
-// fuzzyBudget/wordBudget, untouched). Words 3-4 chars ("for", "with", "min")
-// get a fixed, very tight 1-typo budget - too short for the usual
-// proportional scaling to mean anything. Words 5+ chars ("minute",
-// "minutes") scale with fuzzyLevel like everywhere else in the app. Words
-// under 3 chars ("of") stay exact-only - practically every 2-letter word is
-// 1 typo away from another one ("on" vs "of"), so any tolerance there is
-// just noise (this is what broke "topic of" detection when "on" started
-// matching "of").
-function isCloseToAny(word, wordSet, fuzzyLevel) {
+// Very tight fuzzy match against one target word ("fro"->"for", "wth"->
+// "with", "mon"->"min") - not the country/delegation fuzzy system (that's
+// fuzzyBudget/wordBudget, untouched). Targets 3-4 chars get a fixed, very
+// tight 1-typo budget - too short for the usual proportional scaling to mean
+// anything. Targets 5+ chars ("minute", "topic") scale with fuzzyLevel like
+// everywhere else in the app. Targets under 3 chars ("of") stay exact-only -
+// practically every 2-letter word is 1 typo away from another one ("on" vs
+// "of"), so any tolerance there is just noise (this is what broke "topic of"
+// detection when "on" started matching "of").
+function isCloseToWord(word, target, fuzzyLevel) {
   const upper = word.toUpperCase();
-  if (wordSet.has(upper)) return true;
-  if (fuzzyLevel <= 0) return false;
+  if (upper === target) return true;
+  if (fuzzyLevel <= 0 || target.length < 3) return false;
 
+  const budget = target.length < 5 ? TIGHT_TYPO_BUDGET : wordBudget(target.length, fuzzyLevel);
+  if (Math.abs(upper.length - target.length) > budget) return false;
+  return editDistance(upper, target) <= budget;
+}
+
+function isCloseToAny(word, wordSet, fuzzyLevel) {
   for (const candidate of wordSet) {
-    if (candidate.length < 3) continue;
-    const budget = candidate.length < 5 ? TIGHT_TYPO_BUDGET : wordBudget(candidate.length, fuzzyLevel);
-    if (Math.abs(upper.length - candidate.length) > budget) continue;
-    if (editDistance(upper, candidate) <= budget) return true;
+    if (isCloseToWord(word, candidate, fuzzyLevel)) return true;
   }
   return false;
 }
@@ -358,14 +360,25 @@ function skipTrailingLabel(tokens, text, pos, limit) {
   return next < tokens.length && tokens[next - 1].start < limit ? tokens[next - 1].end : pos;
 }
 
-// Finds "topic of" anywhere in [fromIndex, toIndex) and returns the token
-// index of "of", or null. Doesn't care what's on either side - the caller
-// decides what that implies (topic before or after the duration).
-function findTopicOf(tokens, text, fromIndex, toIndex) {
+// Each alternative phrasing (constants.js's TOPIC_MARKER_PHRASE, e.g. "ON
+// THE TOPIC OF" or "DISCUSSING") split into its own word list.
+const TOPIC_MARKER_PHRASES = TOPIC_MARKER_PHRASE.map((phrase) => phrase.split(" "));
+
+// Finds any TOPIC_MARKER_PHRASE alternative anywhere in [fromIndex, toIndex)
+// as a whole word-for-word sequence (each word tight-fuzzy-tolerant, e.g.
+// "on da tpoic of"), not just the bare word "topic", and returns the token
+// index of its last word, or null. Doesn't care what's on either side - the
+// caller decides what that implies (topic before or after the duration).
+function findTopicOf(tokens, text, fromIndex, toIndex, fuzzyLevel) {
   for (let i = fromIndex; i < toIndex; i++) {
-    if (bareWord(text, tokens[i]).toUpperCase() !== "TOPIC") continue;
-    const ofIndex = findTokenWithin(tokens, text, i + 1, 2, (w) => w.toUpperCase() === "OF");
-    if (ofIndex !== -1 && ofIndex < toIndex) return ofIndex;
+    for (const words of TOPIC_MARKER_PHRASES) {
+      const lastWordIndex = words.length - 1;
+      if (i + lastWordIndex >= toIndex) continue;
+      const matches = words.every(
+        (word, k) => isCloseToWord(bareWord(text, tokens[i + k]), word, fuzzyLevel)
+      );
+      if (matches) return i + lastWordIndex;
+    }
   }
   return null;
 }
@@ -394,7 +407,7 @@ function extractTopic(tokens, text, motionEndPos, lineEnd, motionStartIndex, dur
   const lineEndIndex = tokenIndexAtOrAfter(tokens, lineEnd);
   const endIndex = lineEndIndex === -1 ? tokens.length : lineEndIndex;
 
-  const ofIndex = findTopicOf(tokens, text, fromIndex, endIndex);
+  const ofIndex = findTopicOf(tokens, text, fromIndex, endIndex, fuzzyLevel);
   if (ofIndex !== null) {
     const boundaryDuration = findDurationInRange(tokens, text, ofIndex + 1, endIndex, motionStartIndex, fuzzyLevel);
     const boundaryPos = boundaryDuration ? boundaryDuration.start : lineEnd;
@@ -597,6 +610,7 @@ function shouldAutoExpand(matchedText, canonical) {
 export default function MotionInput({ value, onChange, placeholder, rows = 8, className = "", fuzzyLevel = 0.3, delegations, onSubmit }) {
   const textareaRef = useRef(null);
   const backdropRef = useRef(null);
+  const [invalid, setInvalid] = useState(false);
 
   const phraseIndex = useMemo(() => buildPhraseIndex(delegations), [delegations]);
   const { ranges, meta } = useMemo(
@@ -614,11 +628,29 @@ export default function MotionInput({ value, onChange, placeholder, rows = 8, cl
   // Plain Enter (no shift) submits the current motion - passes today's
   // parsed meta up to the caller and clears the box for the next one.
   // Shift+Enter still inserts a real newline, for a motion that spans
-  // multiple lines.
+  // multiple lines. A per-speaker time longer than the total caucus time is
+  // never valid, so it's rejected instead: a brief red flash + shake, then
+  // the offending "N min" speaking-time span is cut out and the cursor left
+  // right there for the chair to retype it.
   function handleKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       if (!onSubmit || !value.trim()) return;
       event.preventDefault();
+
+      if (meta.totalTime != null && meta.speakingTime != null && meta.speakingTime > meta.totalTime) {
+        setInvalid(true);
+        const el = event.target;
+        const speakingRange = ranges.find((r) => r.category === "speaking-time");
+        setTimeout(() => {
+          setInvalid(false);
+          if (speakingRange) {
+            onChange(value.slice(0, speakingRange.start) + value.slice(speakingRange.end));
+            requestAnimationFrame(() => el.setSelectionRange(speakingRange.start, speakingRange.start));
+          }
+        }, 300);
+        return;
+      }
+
       onSubmit(meta);
       onChange("");
       return;
@@ -647,7 +679,9 @@ export default function MotionInput({ value, onChange, placeholder, rows = 8, cl
 
   return (
     <div className={className}>
-      <div className="relative border border-white/10 bg-white/5 transition focus-within:border-white/30">
+      <div
+        className={`relative border border-white/10 bg-white/5 transition focus-within:border-white/30 ${invalid ? "motion-input-shake" : ""}`}
+      >
         <div
           ref={backdropRef}
           aria-hidden="true"
@@ -657,9 +691,11 @@ export default function MotionInput({ value, onChange, placeholder, rows = 8, cl
             <span
               key={i}
               style={
-                segment.color
-                  ? { color: segment.color, textDecoration: segment.fuzzy ? "underline dashed" : undefined }
-                  : undefined
+                invalid
+                  ? { color: "#f87171" }
+                  : segment.color
+                    ? { color: segment.color, textDecoration: segment.fuzzy ? "underline dashed" : undefined }
+                    : undefined
               }
             >
               {segment.text}
