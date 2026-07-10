@@ -388,5 +388,6 @@ export const CONNECTIVE_WORDS = new Set([
 export const MEASUREMENT_WORDS = new Set([
   "MINUTE",
   "MINUTES",
-  "MIN"
+  "MIN",
+  "MINS"
 ]);
