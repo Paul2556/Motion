@@ -524,7 +524,10 @@ export default function DebugPage() {
               onSubmit={(meta) => setMotionLog((prev) => [meta, ...prev])}
             />
 
-            <MotionLog entries={motionLog} />
+            <MotionLog
+              entries={motionLog}
+              onDelete={(index) => setMotionLog((prev) => prev.filter((_, i) => i !== index))}
+            />
 
           </div>
 

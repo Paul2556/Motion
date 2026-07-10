@@ -124,7 +124,10 @@ export default function MotionPage() {
               onSubmit={(meta) => setMotionLog((prev) => [meta, ...prev])}
             />
 
-            <MotionLog entries={motionLog} />
+            <MotionLog
+              entries={motionLog}
+              onDelete={(index) => setMotionLog((prev) => prev.filter((_, i) => i !== index))}
+            />
           </div>
 
           <div className="border border-white/10 bg-[#121212] p-6">
