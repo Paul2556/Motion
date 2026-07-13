@@ -7,12 +7,14 @@ import {
   ChevronRight,
   FileX,
   FileSpreadsheet,
+  Cloud,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import Logo from "../components/Logo";
 import ConferenceService from "../services/ConferenceService";
+import AuthService from "../services/AuthService";
 
 function MenuCard({
   title,
@@ -65,6 +67,9 @@ export default function HomePage() {
     ConferenceService.isLoaded() ? ConferenceService.getConference() : null
   );
 
+  const [user, setUser] = useState(() => AuthService.getCurrentUser());
+  useEffect(() => AuthService.subscribe(setUser), []);
+
   async function handleFile(file) {
     if (!file) return;
 
@@ -113,9 +118,15 @@ export default function HomePage() {
 
           <Logo light/>
 
-          <span className="border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/50">
-            Alpha
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/50">
+              {user ? (user.email ?? "Signed In") : "Signed Out"}
+            </span>
+
+            <span className="border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/50">
+              Alpha
+            </span>
+          </div>
 
         </header>
 
@@ -146,6 +157,13 @@ export default function HomePage() {
               subtitle="Create a new conference from Excel."
               icon={<Plus size={24} />}
               to="#"
+            />
+
+            <MenuCard
+              title="Cloud Sessions"
+              subtitle="Sign in to sync multi-day attendance."
+              icon={<Cloud size={24} />}
+              to="/cloud"
             />
                       </div>
 

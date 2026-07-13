@@ -7,6 +7,7 @@ export default [
   { ignores: ['dist'] },
   {
     files: ['**/*.{js,jsx}'],
+    ignores: ['api/**', 'scripts/**'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
@@ -18,6 +19,20 @@ export default [
       ...reactHooks.configs.recommended.rules,
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+    },
+  },
+  // Vercel serverless functions + build scripts run under Node, not the
+  // browser - separate config so process/Buffer/etc. are recognized globals.
+  {
+    files: ['api/**/*.js', 'scripts/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      globals: globals.node,
+      parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
 ]

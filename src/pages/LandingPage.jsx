@@ -2,7 +2,6 @@ import {
   ArrowDown,
   ArrowRight,
   BarChart3,
-  Check,
   ChevronRight,
   Clock3,
   FileSpreadsheet,
@@ -11,17 +10,37 @@ import {
   LayoutTemplate,
   ListOrdered,
   Menu,
+  Minus,
   MonitorUp,
   Moon,
   Pause,
   Play,
   Plus,
-  Users,
+  Sparkles,
   Vote,
   X,
   Sun,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+
+import Queue from "../components/Queue"
+import Timer from "../components/Timer"
+import SeatChart from "../components/SeatChart"
+import MotionInput from "../components/MotionInput"
+import SessionBoard from "../components/SessionBoard"
+import { MOTIONS, countries } from "../constants"
+
+// The hero preview's seed data - a snapshot of what a real committee mid-session
+// looks like. Suggestions use the full ISO list (constants.js's `countries`)
+// rather than a committee roster, since no real committee is loaded here.
+const HERO_SUGGESTIONS = countries.map((c) => ({ name: c.name, code: c.code }))
+const HERO_SPEAKER = { country: "United Kingdom", countryCode: "GBR" }
+const HERO_QUEUE = [
+  { id: "hero-1", country: "Brazil", countryCode: "BRA" },
+  { id: "hero-2", country: "Japan", countryCode: "JPN" },
+  { id: "hero-3", country: "Ghana", countryCode: "GHA" },
+  { id: "hero-4", country: "France", countryCode: "FRA" },
+]
 
 const features = [
   {
@@ -29,42 +48,42 @@ const features = [
     number: '01',
     title: 'Excel delegate import',
     body: 'Bring your roster in once. Countries, names, and voting status arrive ready for committee.',
-    visual: <ImportVisual />,
+    visual: <ImportDemo />,
   },
   {
     icon: ListOrdered,
     number: '02',
     title: 'Speaker queue management',
     body: 'Keep the general speakers list and moderated caucuses moving without losing the room.',
-    visual: <QueueVisual />,
+    visual: <QueueDemo />,
   },
   {
     icon: Clock3,
     number: '03',
     title: 'Built-in debate timers',
-    body: 'One precise, visible clock for speeches, caucuses, and yields—controlled from the dais.',
-    visual: <TimerVisual />,
+    body: 'One precise, visible clock for speeches, caucuses, and yields controlled from the dais.',
+    visual: <TimerDemo />,
   },
   {
     icon: Vote,
     number: '04',
     title: 'Voting & majority calculations',
     body: 'Track the room and calculate simple, two-thirds, and substantive majorities instantly.',
-    visual: <VoteVisual />,
+    visual: <VoteDemo />,
   },
   {
-    icon: MonitorUp,
+    icon: Sparkles,
     number: '05',
-    title: 'Resolution display',
-    body: 'Present working papers, amendments, and draft resolutions without hunting through PDFs.',
-    visual: <ResolutionVisual />,
+    title: 'Natural language motions',
+    body: 'Text editor meets MUN, type a motion the way you’d say it, and Motion parses the type, duration, and topic instantly.',
+    visual: <MotionInputDemo />,
   },
   {
     icon: LayoutTemplate,
     number: '06',
     title: 'Motion presets',
     body: 'Start with procedures tailored to your committee, then adjust the details that matter.',
-    visual: <PresetVisual />,
+    visual: <PresetDemo />,
   },
 ]
 
@@ -294,39 +313,22 @@ function LandingPage() {
               </div>
             </div>
 
-            <div className="product-shell mx-auto mt-20 max-w-6xl lg:mt-28">
-              <div className="flex h-12 items-center justify-between border-b border-white/10 px-4 sm:px-5">
-                <div className="flex items-center gap-3"><Logo compact light /><span className="text-xs text-white/45">DISEC</span></div>
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-white/45"><span className="accent-bg h-1.5 w-1.5 rounded-full" /> Session live</div>
-              </div>
-              <div className="grid min-h-[420px] grid-cols-1 md:grid-cols-[1.35fr_.65fr]">
-                <div className="border-b border-white/10 p-5 sm:p-7 md:border-b-0 md:border-r">
-                  <div className="flex items-start justify-between">
-                    <div><p className="ui-label">Active speech</p><h3 className="mt-2 text-xl font-medium text-white">United Kingdom</h3></div>
-                    <span className="status-chip">Moderated caucus</span>
-                  </div>
-                  <div className="mt-10 flex flex-col items-center">
-                    <div className="timer-ring flex h-44 w-44 items-center justify-center sm:h-52 sm:w-52">
-                      <div className="text-center"><span className="block text-5xl font-light tracking-[-0.06em] text-white sm:text-6xl">01:12</span><span className="mt-2 block text-[10px] uppercase tracking-[0.2em] text-white/35">remaining</span></div>
-                    </div>
-                    <div className="mt-7 flex gap-2"><button className="ui-button-muted">- 15s total</button><button className="ui-button"><Pause size={14} /> Pause</button><button className="ui-button-muted">+ 15s total</button></div>
-                  </div>
-                  <div className="mt-9 grid grid-cols-3 border-t border-white/10 pt-5 text-center">
-                    <Metric value="9 min" label="Estimated" /><Metric value="02" label="Spoken" /><Metric value="04" label="Queued" />
-                  </div>
-                </div>
-                <div className="p-5 sm:p-7">
-                  <div className="flex items-center justify-between"><p className="ui-label">Up next</p><button className="text-white/40"><Plus size={16} /></button></div>
-                  <div className="mt-5 space-y-2">
-                    {['Brazil', 'Japan', 'Ghana', 'France'].map((country, index) => (
-                      <div key={country} className="flex items-center justify-between border border-white/10 px-3.5 py-3 text-sm text-white/75">
-                        <div className="flex items-center gap-3"><span className="text-xs tabular-nums text-white/25">{String(index + 1).padStart(2, '0')}</span>{country}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <button className="mt-4 flex w-full items-center justify-center gap-2 border border-dashed border-white/15 py-3 text-xs text-white/35"><Plus size={13} /> Add speaker</button>
-                  <div className="mt-8 border-t border-white/10 pt-5"><p className="ui-label">Current topic</p><p className="mt-3 text-sm leading-relaxed text-white/65">Discussing possible solutions to regional security</p><div className="mt-3 flex justify-between text-[10px] uppercase tracking-[0.12em] text-white/30"><span>10 minutes</span><span>90 sec / speaker</span></div></div>
-                </div>
+            <div className="product-shell mx-auto mt-20 lg:mt-28">
+              {/* The real SessionBoard (src/components/SessionBoard.jsx) - the same
+                  Timer/Queue used on the actual /session route, just seeded with
+                  demo data and `linked=false` so the header buttons don't route a
+                  visitor off the marketing page. Outside .app-shell here, so both
+                  --timer-remaining and the base text-white it normally inherits
+                  from that class are supplied directly. */}
+              <div className="h-[860px] p-4 text-white sm:p-6" style={{ '--timer-remaining': '#b7774d' }}>
+                <SessionBoard
+                  committeeLabel="DISEC"
+                  initialSpeaker={HERO_SPEAKER}
+                  initialQueue={HERO_QUEUE}
+                  activeMotion="Moderated Caucus — 72s / speaker"
+                  suggestions={HERO_SUGGESTIONS}
+                  linked={false}
+                />
               </div>
             </div>
             <p className="mt-4 text-center text-[10px] uppercase tracking-[0.18em] text-black/35">One room. One system. Full control.</p>
@@ -496,14 +498,19 @@ function LandingPage() {
 
       <footer className="bg-[#101010] py-10 text-white">
         <div className="page-container flex flex-col justify-between gap-8 sm:flex-row sm:items-end">
-          <div><Logo light /><p className="mt-4 text-sm text-white/40">From motion to resolution.</p></div>
+          <div><Logo light /><p className="mt-4 text-sm text-white/40">From motion to resolution.</p></div> 
           <div className="flex flex-col gap-3 text-sm text-white/50 sm:items-end">
             <div className="flex gap-6">
               <a className="hover:text-white" href="#features">Features</a>
               <a className="hover:text-white" href="#how">Process</a>
               <a className="hover:text-white" href="#waitlist">Waitlist</a>
             </div>
-            <span className='inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors'>"To be or not to be, that is the question."</span>
+            <a
+              href="/licensing"
+              className="inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors hover:text-white/50"
+            >
+              Licensed under the Motion Attribution License.
+            </a>
           </div>
         </div>
       </footer>
@@ -511,7 +518,6 @@ function LandingPage() {
   )
 }
 
-function Metric({ value, label }) { return <div><span className="block text-lg text-white">{value}</span><span className="text-[9px] uppercase tracking-[0.15em] text-white/30">{label}</span></div> }
 function Tool({ icon: Icon, label, detail }) { return <div className="border-b border-r border-black/10 bg-[#f8f8f5] p-4 sm:p-5"><Icon size={18} strokeWidth={1.5} /><p className="mt-8 text-sm font-medium">{label}</p><p className="mt-1 text-xs text-black/35">{detail}</p></div> }
 function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
   const cardRef = useRef(null)
@@ -545,7 +551,10 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
     >
       <div className="feature-card group flex-1 min-h-[400px] flex-col bg-[#f4f4f0] p-6 transition-colors hover:bg-white sm:p-8">
         <div className="flex items-center justify-between"><Icon className="accent-text" size={20} strokeWidth={1.5} /><span className="accent-text font-mono text-[10px]">{number}</span></div>
-        <div className="my-9 flex flex-1 items-center justify-center overflow-visible">{visual}</div>
+        <div className="my-9 flex flex-1 flex-col items-center justify-center gap-3 overflow-visible">
+          <span className="self-start text-[9px] uppercase tracking-[0.16em] text-black/25">Live demo — try it</span>
+          {visual}
+        </div>
         <h3 className="text-xl font-medium tracking-[-0.025em]">{title}</h3>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-black/50">{body}</p>
       </div>
@@ -553,11 +562,222 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
   )
 }
 
-function ImportVisual() { return <div className="w-full max-w-xs border border-black/15 bg-white p-3 shadow-[0_14px_40px_rgba(0,0,0,.06)]"><div className="flex items-center gap-2 border-b border-black/10 pb-3"><FileSpreadsheet size={17} /><span className="text-xs font-medium">delegates.xlsx</span><span className="ml-auto text-[9px] text-black/35">24 rows</span></div><div className="space-y-2 pt-3">{['Argentina', 'Canada', 'Kenya'].map((x, i) => <div className="flex items-center gap-2 text-[10px]" key={x}><span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[8px] text-white">{i + 1}</span><span>{x}</span><span className="ml-auto text-black/30">Voting</span></div>)}</div></div> }
-function QueueVisual() { return <div className="w-full max-w-xs space-y-2">{['Germany', 'Mexico', 'Indonesia'].map((x, i) => <div className={`flex items-center border px-3 py-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`} key={x}><span className="mr-3 font-mono text-[9px] opacity-40">0{i + 1}</span>{x}<Users size={13} className="ml-auto opacity-35" /></div>)}</div> }
-function TimerVisual() { return <div className="relative flex h-36 w-36 items-center justify-center rounded-full border border-black/15 bg-white"><svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"><circle cx="50" cy="50" r="45.5" fill="none" stroke="black" strokeWidth="1.5" strokeDasharray="225 295" /></svg><div className="text-center"><span className="block text-3xl font-light tracking-[-0.05em]">00:48</span><span className="text-[8px] uppercase tracking-[.16em] text-black/35">REMAINING</span></div></div> }
-function VoteVisual() { return <div className="relative z-10 w-full max-w-xs"><div className="flex h-24 items-end gap-1.5">{[68, 43, 23].map((h, i) => <div className={`${i === 0 ? 'accent-bg' : 'bg-black'} flex-1 transition-colors duration-300`} style={{height: `${h}%`}} key={h}><span className="sr-only">{i}</span></div>)}</div><div className="mt-2 grid grid-cols-3 text-center text-[9px] uppercase tracking-[.1em] text-black/35"><span>For 14</span><span>Abst. 3</span><span>Against 2</span></div><div className="mt-4 flex items-center gap-2 border-t border-black/10 pt-3 text-xs"><Check className="accent-text" size={13} /><span>Motion passes</span><span className="ml-auto text-black/35">10 required</span></div></div> }
-function ResolutionVisual() { return <div className="relative h-36 w-52"><div className="absolute left-0 top-3 h-32 w-24 border border-black/10 bg-white" /><div className="absolute right-0 top-0 h-36 w-40 border border-black/15 bg-white p-4 shadow-[0_12px_30px_rgba(0,0,0,.06)]"><div className="h-1.5 w-16 bg-black" /><div className="mt-4 space-y-2">{[80, 100, 88, 94, 60].map(x => <div key={x} className="h-px bg-black/20" style={{width: `${x}%`}} />)}</div><div className="mt-5 border-l-2 border-black pl-2 text-[8px] leading-relaxed">Draft resolution<br />1.1</div></div></div> }
-function PresetVisual() { return <div className="grid w-full max-w-xs grid-cols-2 gap-2">{['Unmoderated', 'Moderated', 'COTW', 'GSL'].map((x, i) => <div key={x} className={`flex aspect-[1.6] items-end border p-3 text-xs ${i === 0 ? 'border-black bg-black text-white' : 'border-black/15 bg-white'}`}><LayoutTemplate className="mr-auto" size={14} /><span>{x}</span></div>)}</div> }
+// Sample roster revealed on click, styled like the real HomePage drop zone -
+// genuine ExcelJS parsing needs a real file, which isn't a fair ask of a
+// marketing-page visitor, so this simulates the reveal instead of the parse.
+function ImportDemo() {
+  const [loaded, setLoaded] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const delegates = ['Argentina', 'Canada', 'Kenya', 'Vietnam']
+
+  return (
+    <div
+      onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
+      onDragLeave={() => setIsDragging(false)}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => { e.preventDefault(); setIsDragging(false); setLoaded(true) }}
+      className={`w-full max-w-xs border bg-white p-3 shadow-[0_14px_40px_rgba(0,0,0,.06)] transition ${isDragging ? 'border-black/40' : 'border-black/15'}`}
+    >
+      <div className="flex items-center gap-2 border-b border-black/10 pb-3">
+        <FileSpreadsheet size={17} />
+        <span className="text-xs font-medium">delegates.xlsx</span>
+        <span className="ml-auto text-[9px] text-black/35">{loaded ? `${delegates.length} rows` : 'Drop file'}</span>
+      </div>
+      <div className="space-y-2 pt-3">
+        {loaded ? delegates.map((x, i) => (
+          <div className="flex items-center gap-2 text-[10px]" key={x}>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[8px] text-white">{i + 1}</span>
+            <span>{x}</span>
+            <span className="ml-auto text-black/30">Voting</span>
+          </div>
+        )) : (
+          <button onClick={() => setLoaded(true)} className="flex w-full items-center justify-center gap-2 border border-dashed border-black/20 py-6 text-xs text-black/40 transition hover:border-black/40 hover:text-black/60">
+            <Plus size={14} /> Load sample roster
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// The real Queue component (src/components/Queue.jsx) - controlled, no
+// service coupling, so it drops in here with nothing but local demo state.
+function QueueDemo() {
+  const [queue, setQueue] = useState([
+    { id: 'q1', country: 'Germany' },
+    { id: 'q2', country: 'Mexico' },
+    { id: 'q3', country: 'Indonesia' },
+  ])
+
+  return (
+    // text-white here, not on Queue.jsx itself - its icon buttons rely on
+    // inheriting a white text color, which its native dark .app-shell pages
+    // provide ambiently but this light landing page doesn't. Wider than the
+    // other cards deliberately: Queue's own lg:p-8 padding plus its 3
+    // always-reserved (opacity-0 until hover) row icons need more room than
+    // max-w-xs gives before content clips.
+    <div className="h-[300px] w-full max-w-sm text-white">
+      <Queue queue={queue} setQueue={setQueue} />
+    </div>
+  )
+}
+
+// The real Timer component. Its ring is a fixed 320px SVG with no size prop,
+// so unlike the others here it's shrunk with a scale transform inside a
+// clipped, fixed-height frame rather than by narrowing its container.
+// It also reads --timer-remaining off an .app-shell ancestor normally;
+// outside that theme system here, so the one CSS var it needs is supplied
+// directly rather than pulling in the whole app-shell cascade.
+function TimerDemo() {
+  return (
+    <div
+      className="flex h-[280px] w-full max-w-xs items-center justify-center overflow-hidden border border-black/15 bg-[#0d0d0d] p-6 shadow-[0_14px_40px_rgba(0,0,0,.10)]"
+      style={{ '--timer-remaining': '#b7774d' }}
+    >
+      <div className="origin-center scale-50">
+        <Timer initialTime={90} />
+      </div>
+    </div>
+  )
+}
+
+// Mirrors MotionPage.jsx's real voting model exactly, abstain toggle
+// included: groups always sum to a fixed delegate count, and a vote is a
+// delegate moving between blocs - For<->Against, or (when abstain is
+// switched on) Abstain<->Against - never an independent per-bloc tally.
+// Abstain is opt-in there because most procedural motions are strictly
+// for/against; only some substantive votes allow abstention.
+const VOTE_DELEGATE_COUNT = 23
+
+function VoteDemo() {
+  const [groups, setGroups] = useState([
+    { name: 'For', seats: 0, color: '#3987e5' },
+    { name: 'Against', seats: VOTE_DELEGATE_COUNT, color: '#c98500' },
+  ])
+  const allowAbstain = groups.length > 2
+
+  function adjustVotes(index, delta) {
+    setGroups((prev) => {
+      const partner = index === 1 ? 0 : 1
+      const moved = delta > 0 ? Math.min(delta, prev[partner].seats) : Math.max(delta, -prev[index].seats)
+      if (moved === 0) return prev
+      return prev.map((group, i) => {
+        if (i === index) return { ...group, seats: group.seats + moved }
+        if (i === partner) return { ...group, seats: group.seats - moved }
+        return group
+      })
+    })
+  }
+
+  function toggleAbstain() {
+    setGroups((prev) => (prev.length > 2
+      ? [prev[0], { ...prev[1], seats: prev[1].seats + prev[2].seats }]
+      : [...prev, { name: 'Abstain', seats: 0, color: '#7a7a7a' }]))
+  }
+
+  return (
+    <div className="w-full max-w-xs border border-black/15 bg-[#0d0d0d] p-5 shadow-[0_14px_40px_rgba(0,0,0,.10)]">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <p className="text-xs text-white/50">Allow abstentions</p>
+        <button
+          onClick={toggleAbstain}
+          role="switch"
+          aria-checked={allowAbstain}
+          className={`relative h-6 w-11 shrink-0 rounded-full border transition ${allowAbstain ? 'border-white/40 bg-white/30' : 'border-white/10 bg-white/5'}`}
+        >
+          <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${allowAbstain ? 'translate-x-[20px]' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
+      <SeatChart
+        groups={[groups[0], groups[1]]}
+        onIncrement={(i) => adjustVotes(i, 1)}
+        onDecrement={(i) => adjustVotes(i, -1)}
+      />
+
+      {allowAbstain && (
+        <div className="-mx-2 mt-2 flex items-center justify-between border-t border-white/5 px-2 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: groups[2].color }} />
+            <span className="text-sm text-white/80">Abstain</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="w-10 text-right text-sm text-white/50">{groups[2].seats}</span>
+
+            <div className="flex gap-1">
+              <button onClick={() => adjustVotes(2, -1)} className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10">
+                <Minus size={12} />
+              </button>
+              <button onClick={() => adjustVotes(2, 1)} className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10">
+                <Plus size={12} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// The real MotionInput component (src/components/MotionInput.jsx) - the same
+// fuzzy natural-language parser used on the live Motion page. Omitting
+// `delegations` entirely (rather than a small demo list) makes it fall back
+// to MotionInput's own built-in full country + historical-country list, so
+// any real delegation name a visitor types is recognized.
+function MotionInputDemo() {
+  const [value, setValue] = useState('India motions for a moderated caucus of 12 minutes on the topic of discussing possible solutions to nuclear disarmament with 2 minute speaking time')
+
+  return (
+    <div
+      className="w-full max-w-lg border border-black/15 bg-[#0d0d0d] p-4 shadow-[0_14px_40px_rgba(0,0,0,.10)]"
+      // MotionInput highlights each category (motion/delegation/speaking-time/
+      // total-time/topic) via CSS vars that only exist inside .app-shell
+      // (themes.css) - --accent already resolves here via the landing page's
+      // own theme-shell system, but these four don't exist outside
+      // .app-shell at all, so they'd otherwise render invisible (inherited
+      // white text) rather than colored. Values match .app-shell's dark mode.
+      style={{ '--accent-alt': '#4caf7d', '--accent-time': '#a37fd1', '--accent-duration': '#d4a24c', '--accent-topic': '#4a90e2' }}
+    >
+      <MotionInput value={value} onChange={setValue} placeholder="Type a motion..." rows={3} fuzzyLevel={0.3} />
+    </div>
+  )
+}
+
+// Pulled from the real MOTIONS vocabulary (src/constants.js) rather than
+// hardcoded chip labels, so the detail line below is always the actual
+// canonical phrasing/aliases Motion recognizes.
+const PRESET_PICKS = [
+  { match: 'Open a Moderated Caucus', label: 'Moderated' },
+  { match: 'Open an Unmoderated Caucus', label: 'Unmoderated' },
+  { match: 'Introduce a Draft Resolution', label: 'Draft Resolution' },
+  { match: 'Move into Voting Procedure', label: 'Voting Procedure' },
+].map((preset) => ({ ...preset, motion: MOTIONS.find((m) => m.text === preset.match) }))
+
+function PresetDemo() {
+  const [selected, setSelected] = useState(0)
+  const active = PRESET_PICKS[selected].motion
+
+  return (
+    <div className="w-full max-w-sm">
+      <div className="grid grid-cols-2 gap-2">
+        {PRESET_PICKS.map((preset, i) => (
+          <button
+            key={preset.match}
+            onClick={() => setSelected(i)}
+            className={`flex aspect-[1.6] flex-col justify-end border p-3 text-left text-xs transition ${i === selected ? 'border-black bg-black text-white' : 'border-black/15 bg-white hover:border-black/30'}`}
+          >
+            <LayoutTemplate className="mb-auto" size={14} />
+            <span>{preset.label}</span>
+          </button>
+        ))}
+      </div>
+      <p className="mt-3 border-t border-black/10 pt-3 text-xs text-black/45">
+        <span className="font-medium text-black/70">{active.text}</span>
+        {active.alias?.length ? ` — also recognized as "${active.alias[0]}"` : null}
+      </p>
+    </div>
+  )
+}
 
 export default LandingPage

@@ -1,11 +1,56 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ConferenceService from "../services/ConferenceService";
 import AllocationParser from "../services/AllocationParser";
+import AuthService from "../services/AuthService";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
 import Flag from "../components/Flag";
 
+// Dev-only tooling, not for casual visitors - gated to a hardcoded allowlist
+// of owner/contributor emails rather than any signed-in account. This is a
+// client-side convenience redirect, not a real security boundary (there's no
+// backend to enforce it), which is fine here since this page only ever
+// touches the current tab's in-memory ConferenceService state, never other
+// users' data. Add a contributor's email to CONTRIBUTOR_EMAILS to grant them
+// access - no other change needed.
+const OWNER_EMAIL = "paultae2506@proton.me";
+const CONTRIBUTOR_EMAILS = [];
+const AUTHORIZED_EMAILS = [OWNER_EMAIL, ...CONTRIBUTOR_EMAILS];
+
 export default function DebugPage() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(() => AuthService.getCurrentUser());
+  const [authReady, setAuthReady] = useState(() => AuthService.isReady());
+
+  useEffect(() => AuthService.subscribe((nextUser) => {
+    setUser(nextUser);
+    setAuthReady(AuthService.isReady());
+  }), []);
+
+  const isAuthorized = AUTHORIZED_EMAILS.includes(user?.email);
+
+  // Wait for authReady - AuthService reports `null` synchronously before
+  // Firebase has confirmed a persisted session, so redirecting immediately
+  // would wrongly boot out an authorized user during that brief startup window.
+  //
+  // On the debug.motionmun.com subdomain, this page is the *only* route
+  // App.jsx mounts there (see DebugRoutes) - there's no "/home" for
+  // react-router's navigate() to resolve to, since HomePage lives on a
+  // different origin (app.motionmun.com). A real cross-origin redirect is
+  // required there; everywhere else (localhost, previews, the original
+  // *.vercel.app domain) still has "/home" in the same combined route table,
+  // so the ordinary client-side navigate keeps working.
+  useEffect(() => {
+    if (!authReady || isAuthorized) return;
+
+    if (window.location.hostname === "debug.motionmun.com") {
+      window.location.replace("https://app.motionmun.com/");
+    } else {
+      navigate("/home");
+    }
+  }, [authReady, isAuthorized, navigate]);
+
   const [conference, setConference] = useState(null);
   const [committees, setCommittees] = useState([]);
   const [delegates, setDelegates] = useState([]);
@@ -78,6 +123,8 @@ export default function DebugPage() {
       ConferenceService.getConference()
     );
   }
+
+  if (!authReady || !isAuthorized) return null;
 
   return (
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">

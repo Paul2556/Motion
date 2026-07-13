@@ -74,7 +74,7 @@ export const countries = [
   { name: "Cuba", code: "CUB" },
   { name: "Curaçao", code: "CUW", alias: ["Curacao"] },
   { name: "Cyprus", code: "CYP", alias: ["Chypre"] },
-  { name: "Czechia", code: "CZE", alias: ["Czech Republic", "Tchéquie"] },
+  { name: "Czechia", code: "CZE", alias: ["Czech Republic", "Tchéquie", "République Tchque"] },
   { name: "Côte d'Ivoire", code: "CIV", alias: ["Ivory Coast", "Cote d'Ivoire"] },
   { name: "Denmark", code: "DNK", alias: ["Danemark"] },
   { name: "Djibouti", code: "DJI", alias: ["French Afars and Issas"] },

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Minus, Plus } from "lucide-react";
 import Logo from "../components/Logo";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
@@ -8,6 +9,8 @@ import ConferenceService from "../services/ConferenceService";
 
 // Colors use the app's categorical palette (slot 1 blue, slot 3 yellow - see
 // src/index.css / the dataviz skill's palette reference) rather than freehand hex picks.
+// Abstain is opt-in, not always present - most procedural motions are strictly
+// for/against, only some substantive votes allow abstention - see toggleAbstain.
 function buildInitialGroups(delegateCount) {
   return [
     { name: "For", seats: 0, color: "#3987e5" },
@@ -22,12 +25,14 @@ function voteStorageKey(committeeId) {
 // sessionStorage, same reasoning as ConferenceService: survives a refresh,
 // still gone once the tab closes. Ignores a cache whose total seat count no
 // longer matches the roster (e.g. a re-imported workbook with a different size).
+// Sums every group present (2 without abstain, 3 with it) rather than
+// hardcoding indices, since group count now varies.
 function loadCachedVote(committeeId, delegateCount) {
   try {
     const raw = sessionStorage.getItem(voteStorageKey(committeeId));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    const total = (parsed.groups?.[0]?.seats ?? 0) + (parsed.groups?.[1]?.seats ?? 0);
+    const total = (parsed.groups ?? []).reduce((sum, group) => sum + (group.seats ?? 0), 0);
     return total === delegateCount ? parsed : null;
   } catch {
     return null;
@@ -64,20 +69,36 @@ export default function MotionPage() {
     }
   }, [committee, motionText, groups, motionLog]);
 
-  // For/Against always sum to the committee's delegate count - each vote is
-  // a delegate moving from one bloc to the other, not an independent tally.
+  // Groups always sum to the committee's delegate count - each vote is a
+  // delegate moving from one bloc to another, not an independent tally.
+  // Against (index 1) is the shared default bucket both For and Abstain
+  // exchange with - a delegate moves For<->Against or Abstain<->Against,
+  // never directly between For and Abstain.
   const adjustVotes = useCallback((index, delta) => {
     setGroups((prev) => {
-      const otherIndex = index === 0 ? 1 : 0;
-      const moved = delta > 0 ? Math.min(delta, prev[otherIndex].seats) : Math.max(delta, -prev[index].seats);
+      const partner = index === 1 ? 0 : 1;
+      const moved = delta > 0 ? Math.min(delta, prev[partner].seats) : Math.max(delta, -prev[index].seats);
       if (moved === 0) return prev;
       return prev.map((group, i) => {
         if (i === index) return { ...group, seats: group.seats + moved };
-        if (i === otherIndex) return { ...group, seats: group.seats - moved };
+        if (i === partner) return { ...group, seats: group.seats - moved };
         return group;
       });
     });
   }, []);
+
+  const allowAbstain = groups.length > 2;
+
+  // Toggling on appends a fresh Abstain bucket; toggling off folds any
+  // existing abstentions back into Against so the total never changes.
+  function toggleAbstain() {
+    setGroups((prev) => {
+      if (prev.length > 2) {
+        return [prev[0], { ...prev[1], seats: prev[1].seats + prev[2].seats }];
+      }
+      return [...prev, { name: "Abstain", seats: 0, color: "#7a7a7a" }];
+    });
+  }
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -89,6 +110,8 @@ export default function MotionPage() {
         setSelectedIndex(0);
       } else if (event.key === "2") {
         setSelectedIndex(1);
+      } else if (event.key === "3" && allowAbstain) {
+        setSelectedIndex(2);
       } else if (event.key === "+" || event.key === "=") {
         adjustVotes(selectedIndex, 1);
       } else if (event.key === "-" || event.key === "_") {
@@ -98,7 +121,7 @@ export default function MotionPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIndex, adjustVotes]);
+  }, [selectedIndex, adjustVotes, allowAbstain]);
 
   if (!committee) return null;
 
@@ -131,15 +154,65 @@ export default function MotionPage() {
           </div>
 
           <div className="border border-white/10 bg-[#121212] p-6">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <p className="text-xs text-white/50">Allow abstentions</p>
+
+              <button
+                onClick={toggleAbstain}
+                role="switch"
+                aria-checked={allowAbstain}
+                className={`relative h-7 w-12 shrink-0 rounded-full border transition ${
+                  allowAbstain ? "border-white/40 bg-white/30" : "border-white/10 bg-white/5"
+                }`}
+              >
+                <span
+                  className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                    allowAbstain ? "translate-x-[22px]" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
             <SeatChart
               title="Voting"
               subtitle="The motion (placeholder)"
-              groups={groups}
+              groups={[groups[0], groups[1]]}
               selectedIndex={selectedIndex}
               onSelect={setSelectedIndex}
               onIncrement={(index) => adjustVotes(index, 1)}
               onDecrement={(index) => adjustVotes(index, -1)}
             />
+
+            {allowAbstain && (
+              <div className="-mx-2 mt-2 flex items-center justify-between border-t border-white/5 px-2 py-2.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: groups[2].color }} />
+                  <span className="text-sm text-white/80">Abstain</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="w-10 text-right text-sm text-white/50">{groups[2].seats}</span>
+
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => adjustVotes(2, -1)}
+                      aria-label="Decrease Abstain votes"
+                      className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
+                    >
+                      <Minus size={12} />
+                    </button>
+
+                    <button
+                      onClick={() => adjustVotes(2, 1)}
+                      aria-label="Increase Abstain votes"
+                      className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

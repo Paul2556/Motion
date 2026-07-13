@@ -265,6 +265,29 @@ class ConferenceService {
     return delegate.present;
   }
 
+  // Roll call's 3-state model ("absent" | "present" | "voting", the last
+  // meaning present-and-voting) collapses onto the existing present/voting
+  // booleans rather than adding a third field - voting implies present.
+  setAttendanceState(id, state) {
+    const delegate = this.getDelegate(id);
+
+    if (!delegate) return false;
+
+    delegate.present = state !== "absent";
+    delegate.voting = state === "voting";
+    this.persist();
+
+    return true;
+  }
+
+  setAllAttendanceState(state) {
+    this.getDelegates().forEach((delegate) => {
+      delegate.present = state !== "absent";
+      delegate.voting = state === "voting";
+    });
+    this.persist();
+  }
+
   resetAttendance() {
     this.getDelegates().forEach((delegate) => {
       delegate.present = false;

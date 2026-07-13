@@ -396,25 +396,48 @@ function findTopicOf(tokens, text, fromIndex, toIndex, fuzzyLevel) {
 // starts after BOTH durations, not between them.
 // A single stray word (e.g. "each", left over from "1 minute each" with no
 // real topic said) isn't a real topic - require at least 2 words.
-function finalizeTopic(text) {
+// Returns {text, start, end} (trimmed position, not the raw slice's) so the
+// caller can highlight exactly the topic span, or null. `rangeStart` is where
+// the untrimmed slice begins, needed to translate the trim back into
+// absolute text positions.
+function finalizeTopic(text, rangeStart) {
   const trimmed = text.trim();
-  return trimmed && trimmed.split(/\s+/).length > 1 ? trimmed : null;
+  if (!trimmed || trimmed.split(/\s+/).length <= 1) return null;
+  const start = rangeStart + (text.length - text.trimStart().length);
+  return { text: trimmed, start, end: start + trimmed.length };
 }
 
+// Returns { topic, secondDuration } rather than just a topic - a second,
+// unlabeled duration (e.g. "2 minute speaking time") can sit between the
+// first duration and an explicit "topic of" marker ("...12 minutes with 2
+// minute speaking time on the topic of X"), and has to be found *here*: once
+// this function returns, the caller's cursor jumps straight from the first
+// duration to the end of the topic span, skipping right over that gap
+// without ever token-scanning it, so nothing else ever gets a chance to
+// notice that second duration.
 function extractTopic(tokens, text, motionEndPos, lineEnd, motionStartIndex, duration, fuzzyLevel, needsSecondLookup) {
   const fromIndex = tokenIndexAtOrAfter(tokens, motionEndPos);
-  if (fromIndex === -1) return null;
+  if (fromIndex === -1) return { topic: null, secondDuration: null };
   const lineEndIndex = tokenIndexAtOrAfter(tokens, lineEnd);
   const endIndex = lineEndIndex === -1 ? tokens.length : lineEndIndex;
 
   const ofIndex = findTopicOf(tokens, text, fromIndex, endIndex, fuzzyLevel);
   if (ofIndex !== null) {
+    let secondDuration = null;
+    if (duration) {
+      const afterFirstIndex = tokenIndexAtOrAfter(tokens, duration.end);
+      if (afterFirstIndex !== -1 && afterFirstIndex < ofIndex) {
+        secondDuration = findBareDuration(tokens, text, afterFirstIndex, tokens[ofIndex].start, fuzzyLevel);
+      }
+    }
+
     const boundaryDuration = findDurationInRange(tokens, text, ofIndex + 1, endIndex, motionStartIndex, fuzzyLevel);
     const boundaryPos = boundaryDuration ? boundaryDuration.start : lineEnd;
-    return finalizeTopic(text.slice(tokens[ofIndex].end, boundaryPos));
+    const topic = finalizeTopic(text.slice(tokens[ofIndex].end, boundaryPos), tokens[ofIndex].end);
+    return { topic, secondDuration };
   }
 
-  if (!duration) return null;
+  if (!duration) return { topic: null, secondDuration: null };
 
   let trailStart = duration.end;
   if (needsSecondLookup) {
@@ -424,7 +447,7 @@ function extractTopic(tokens, text, motionEndPos, lineEnd, motionStartIndex, dur
   }
   trailStart = skipTrailingLabel(tokens, text, trailStart, lineEnd);
 
-  return finalizeTopic(text.slice(trailStart, lineEnd));
+  return { topic: finalizeTopic(text.slice(trailStart, lineEnd), trailStart), secondDuration: null };
 }
 
 // A motion's duration is classified per line: an explicit "speaking"/"total"
@@ -515,22 +538,42 @@ function findHighlightRanges(text, fuzzyLevel, phraseIndex) {
           }
         }
 
-        if (match.requiresTopic && meta.topic === null) {
-          const duration = extended ? { start: extended.start, end: extended.end } : null;
-          const topic = extractTopic(
-            tokens, text, motionEndPos, lineEndAt(text, i), motionStartIndex, duration, fuzzyLevel, !match.durationField
-          );
-          if (topic) meta.topic = topic;
+        // Pushed as separate ranges (motion phrase, duration, topic) rather
+        // than one continuous span, and sorted by position before pushing -
+        // a topic can land either before its duration ("on the topic of X
+        // for 10 min") or after it ("for 10 min on the topic of X").
+        const localRanges = [{ start: i, end: motionEndPos, category: "motion", canonical: match.canonical, fuzzy: !exact }];
+        if (extended) {
+          localRanges.push({ start: extended.start, end: extended.end, category: durationCategory, canonical: null, fuzzy: false });
         }
 
-        // Pushed as two separate ranges (motion phrase, then duration) - not
-        // one continuous span - so anything in between (a connective word, or
-        // a whole topic phrase) stays plain/uncolored instead of getting
-        // swept into the motion's highlight.
-        ranges.push({ start: i, end: motionEndPos, category: "motion", canonical: match.canonical, fuzzy: !exact });
-        if (extended) {
-          ranges.push({ start: extended.start, end: extended.end, category: durationCategory, canonical: null, fuzzy: false });
+        if (match.requiresTopic && meta.topic === null) {
+          const duration = extended ? { start: extended.start, end: extended.end } : null;
+          const { topic, secondDuration } = extractTopic(
+            tokens, text, motionEndPos, lineEndAt(text, i), motionStartIndex, duration, fuzzyLevel, !match.durationField
+          );
+
+          if (secondDuration) {
+            const secondCategory = classifyDuration(lineState, secondDuration.label);
+            const secondField = secondCategory === "speaking-time" ? "speakingTime" : "totalTime";
+            if (meta[secondField] === null) meta[secondField] = secondDuration.amount;
+            lineState.secondFound = true;
+            localRanges.push({ start: secondDuration.start, end: secondDuration.end, category: secondCategory, canonical: null, fuzzy: false });
+          }
+
+          if (topic) {
+            meta.topic = topic.text;
+            localRanges.push({ start: topic.start, end: topic.end, category: "topic", canonical: null, fuzzy: false });
+            // Advance past the whole topic span too, not just the duration -
+            // otherwise the outer loop would keep scanning through free-form
+            // topic prose for further motion/delegation matches, which could
+            // land a second, overlapping range inside this one.
+            end = Math.max(end, topic.end);
+          }
         }
+
+        localRanges.sort((a, b) => a.start - b.start);
+        ranges.push(...localRanges);
         i = end;
         continue;
       }
@@ -570,6 +613,7 @@ const CATEGORY_COLOR = {
   delegation: "var(--accent-alt)",
   "speaking-time": "var(--accent-time)",
   "total-time": "var(--accent-duration)",
+  topic: "var(--accent-topic)",
 };
 
 function buildSegments(text, ranges) {

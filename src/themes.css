@@ -37,6 +37,8 @@
   --accent-time: #a37fd1;
   /* Fourth accent (MotionInput's total-duration highlight), same pre-inversion technique. */
   --accent-duration: #d4a24c;
+  /* Fifth accent (MotionInput's topic highlight), same pre-inversion technique. */
+  --accent-topic: #4a90e2;
 }
 
 html[data-app-theme="light"] .app-shell {
@@ -46,6 +48,7 @@ html[data-app-theme="light"] .app-shell {
   --accent-alt: #b35082;
   --accent-time: #5c802e;
   --accent-duration: #2b5db3;
+  --accent-topic: #b56f1d;
 }
 
 /* [data-motion-exempt] carves out the reduced-motion toggle's own knob:

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Check, Moon, Sun } from "lucide-react";
 
 import Logo from "../components/Logo";
 import { getAppTheme, setAppTheme, getAppReducedMotion, setAppReducedMotion } from "../appTheme";
+import AuthService from "../services/AuthService";
 
 function ThemeOption({ label, icon, active, onClick }) {
   return (
@@ -31,6 +32,9 @@ function ThemeOption({ label, icon, active, onClick }) {
 export default function SettingsPage() {
   const [theme, setTheme] = useState(getAppTheme);
   const [reducedMotion, setReducedMotion] = useState(getAppReducedMotion);
+  const [user, setUser] = useState(() => AuthService.getCurrentUser());
+
+  useEffect(() => AuthService.subscribe(setUser), []);
 
   function chooseTheme(next) {
     setTheme(next);
@@ -103,6 +107,31 @@ export default function SettingsPage() {
                 }`}
               />
             </button>
+          </div>
+        </div>
+
+        <div className="mt-6 border border-white/10 bg-[#111111] p-6">
+          <p className="text-xs uppercase tracking-[0.22em] text-white/40">Account</p>
+          <p className="mt-2 text-sm text-white/45">
+            {user ? `Signed in as ${user.email ?? "cloud account"}` : "Not signed in."}
+          </p>
+
+          <div className="mt-5 flex gap-3">
+            <Link
+              to="/cloud"
+              className="border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+            >
+              {user ? "Manage Cloud Sessions" : "Sign In"}
+            </Link>
+
+            {user && (
+              <button
+                onClick={() => AuthService.signOut()}
+                className="border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+              >
+                Sign Out
+              </button>
+            )}
           </div>
         </div>
 

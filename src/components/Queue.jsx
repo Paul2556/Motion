@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -7,26 +7,55 @@ import {
 } from "lucide-react";
 import Flag from "./Flag";
 
+const MAX_SUGGESTIONS = 6;
+
 export default function Queue({
   queue,
   setQueue,
+  suggestions = [],
 }) {
   const [newSpeaker, setNewSpeaker] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [inputFocused, setInputFocused] = useState(false);
 
-  function addSpeaker() {
-    const name = newSpeaker.trim();
+  const filtered = useMemo(() => {
+    const query = newSpeaker.trim().toLowerCase();
+    if (!query || suggestions.length === 0) return [];
+    return suggestions
+      .filter((s) => s.name.toLowerCase().includes(query))
+      .slice(0, MAX_SUGGESTIONS);
+  }, [newSpeaker, suggestions]);
 
-    if (!name) return;
+  function addSpeaker({ name, code = null }) {
+    const trimmed = name.trim();
+
+    if (!trimmed) return;
 
     setQueue([
       ...queue,
       {
         id: crypto.randomUUID(),
-        country: name,
+        country: trimmed,
+        countryCode: code,
       },
     ]);
 
     setNewSpeaker("");
+    setActiveIndex(-1);
+  }
+
+  // Enter with a suggestion highlighted adds that suggestion (with its flag
+  // code); otherwise falls back to the typed text, still attaching a code if
+  // it happens to exactly match a known suggestion.
+  function submitTyped() {
+    if (activeIndex >= 0 && filtered[activeIndex]) {
+      addSpeaker(filtered[activeIndex]);
+      return;
+    }
+
+    const typed = newSpeaker.trim();
+    const exact = suggestions.find((s) => s.name.toLowerCase() === typed.toLowerCase());
+    addSpeaker(exact ?? { name: typed });
   }
 
   function removeSpeaker(id) {
@@ -68,19 +97,56 @@ export default function Queue({
         </p>
       </div>
 
-      <div className="mt-6 flex gap-2">
-        <input
-          value={newSpeaker}
-          onChange={(e) => setNewSpeaker(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") addSpeaker();
-          }}
-          placeholder="Country..."
-          className="flex-1 rounded-none border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-white/30"
-        />
+      <div className="relative mt-6 flex gap-2">
+        <div className="relative flex-1">
+          <input
+            value={newSpeaker}
+            onChange={(e) => {
+              setNewSpeaker(e.target.value);
+              setActiveIndex(-1);
+            }}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                if (filtered.length) setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                if (filtered.length) setActiveIndex((i) => Math.max(i - 1, 0));
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                submitTyped();
+              } else if (e.key === "Escape") {
+                setInputFocused(false);
+              }
+            }}
+            placeholder="Country..."
+            className="w-full rounded-none border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-white/30"
+          />
+
+          {inputFocused && filtered.length > 0 && (
+            <div className="absolute inset-x-0 top-full z-10 mt-1 max-h-56 overflow-y-auto border border-white/10 bg-[#181818] shadow-[0_12px_30px_rgba(0,0,0,.35)]">
+              {filtered.map((s, index) => (
+                <button
+                  key={s.code ?? s.name}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => addSpeaker(s)}
+                  className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition ${
+                    index === activeIndex ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"
+                  }`}
+                >
+                  <Flag countryCode={s.code} />
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <button
-          onClick={addSpeaker}
+          onClick={submitTyped}
           className="rounded-none border border-white/10 bg-white/5 px-4 transition hover:bg-white/10"
         >
           <Plus size={18} />

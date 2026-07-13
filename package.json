@@ -3,9 +3,14 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "vercel-build": "node scripts/build-source-archive.js && vite build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings 0"
   },
@@ -14,7 +19,11 @@
     "@vercel/speed-insights": "2.0.0",
     "@vitejs/plugin-react": "latest",
     "exceljs": "^4.4.0",
+    "firebase": "12.16.0",
+    "firebase-admin": "14.1.0",
+    "jszip": "3.10.1",
     "lucide-react": "^1.21.0",
+    "qrcode.react": "4.2.0",
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "^7.18.0",
