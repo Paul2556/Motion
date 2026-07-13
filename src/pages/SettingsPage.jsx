@@ -53,7 +53,9 @@ export default function SettingsPage() {
 
         <header className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Logo compact light />
+            <Link to="/home" className="flex items-center gap-3">
+              <Logo compact light />
+            </Link>
             <span className="text-xs uppercase tracking-[0.18em] text-white/50">Settings</span>
           </div>
 

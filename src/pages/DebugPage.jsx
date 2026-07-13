@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ConferenceService from "../services/ConferenceService";
 import AllocationParser from "../services/AllocationParser";
 import AuthService from "../services/AuthService";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
 import Flag from "../components/Flag";
+import Logo from "../components/Logo";
 
 // Dev-only tooling, not for casual visitors - gated to a hardcoded allowlist
 // of owner/contributor emails rather than any signed-in account. This is a
@@ -130,6 +131,10 @@ export default function DebugPage() {
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
 
       <div className="mx-auto max-w-7xl">
+
+        <Link to="/" className="mb-2 inline-flex items-center gap-3">
+          <Logo compact light />
+        </Link>
 
         <h1 className="text-4xl font-semibold">
           Motion Debug

@@ -51,7 +51,9 @@ export default function SessionBoard({
     <div className="flex h-full min-h-0 flex-col">
       <header className="mb-6 flex flex-col gap-4 rounded-none border border-white/10 bg-[#0f0f0f] p-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div className="flex items-center gap-3">
-          <Logo compact light />
+          <NavItem to="/home" linked={linked} className="flex items-center gap-3">
+            <Logo compact light />
+          </NavItem>
           <span className="text-xs uppercase tracking-[0.18em] text-white/50">{committeeLabel}</span>
         </div>
         <div className="flex items-center gap-3">

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus } from "lucide-react";
 import Logo from "../components/Logo";
 import MotionInput from "../components/MotionInput";
@@ -129,8 +129,9 @@ export default function MotionPage() {
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
       <div className="mx-auto max-w-5xl">
         <header className="mb-8 flex items-center gap-3">
-          <Logo compact light />
-          <span className="text-xs uppercase tracking-[0.18em] text-white/50">Motion</span>
+          <Link to="/home" className="flex items-center gap-3">
+            <Logo light />
+          </Link>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">

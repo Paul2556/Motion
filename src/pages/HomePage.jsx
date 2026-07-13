@@ -116,7 +116,7 @@ export default function HomePage() {
 
         <header className="flex items-center justify-between border border-white/10 bg-[#111111] p-6">
 
-          <Logo light/>
+          <Link to="/home"><Logo light/></Link>
 
           <div className="flex items-center gap-3">
             <span className="border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/50">

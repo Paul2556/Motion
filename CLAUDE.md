@@ -15,6 +15,11 @@ tab's session. See `README.md` for brand/vision context (tagline, roadmap phases
 Keep comments short and sparse. Only comment on non-obvious *why* (a hidden constraint, a bug
 workaround, a subtle invariant) — never restate what the code already says. Don't add a paragraph to your comments, keep it at most 2 sentences.
 
+## Workflow
+
+If a task will require more than 3 changes (files touched, or distinct edits within a file),
+enter plan mode first rather than making the changes directly.
+
 ## Commands
 
 ```

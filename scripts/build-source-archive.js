@@ -23,6 +23,27 @@ if (!tag) {
 
 mkdirSync(outputDir, { recursive: true });
 
+// Vercel's build clone is shallow and single-commit (no tag refs), so the
+// tag can exist on the remote yet still be unresolvable here - fetch it
+// explicitly before archiving rather than assuming it's already present.
+if (tag) {
+  try {
+    execFileSync("git", ["rev-parse", "--verify", "--quiet", tag], { cwd: repoRoot, stdio: "ignore" });
+  } catch {
+    try {
+      execFileSync("git", ["fetch", "--depth=1", "origin", `refs/tags/${tag}:refs/tags/${tag}`], {
+        cwd: repoRoot,
+        stdio: "inherit",
+      });
+    } catch {
+      console.error(
+        `[build-source-archive] Could not fetch tag "${tag}" from origin - ` +
+          `confirm it's pushed with: git ls-remote --tags origin`
+      );
+    }
+  }
+}
+
 try {
   execFileSync(
     "git",
@@ -32,8 +53,8 @@ try {
 } catch (error) {
   if (tag) {
     console.error(
-      `[build-source-archive] Failed to archive tag "${tag}" - does it exist? ` +
-        `Run: git tag ${tag} && git push origin ${tag}`
+      `[build-source-archive] Failed to archive tag "${tag}" - does it exist locally after fetch? ` +
+        `Verify with: git tag -l "${tag}"`
     );
   }
   throw error;

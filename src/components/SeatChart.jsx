@@ -170,8 +170,7 @@ export default function SeatChart({
   }
 
   const majorityIndex = Math.floor(totalSeats / 2) + 1; // seats needed to win
-  // The seats coloredSeats fills first. Every row's gap comes from this set, never an angle approximation.
-  const trueBeforeSeats = new Set(seats.slice(0, majorityIndex - 1));
+  const twoThirdsIndex = Math.floor((totalSeats * 2) / 3) + 1; // seats needed for a supermajority
 
   const sidePadding = seatRadius + 4;
   // Reserves room for seat radius plus the majority label so nothing clips the viewBox edge.
@@ -182,7 +181,14 @@ export default function SeatChart({
   const centerX = width / 2;
   const centerY = height - bottomPadding;
 
-  const majorityLine = trueBeforeSeats.size === totalSeats || rows.length === 0 || seats.length < 2 ? null : (() => {
+  // Builds a dashed threshold line at the boundary before the given seat
+  // index (1-based, e.g. majorityIndex/twoThirdsIndex) - shared by every
+  // threshold line the chart can show, since the geometry (row gaps, seat
+  // clearance) is identical, only the boundary position differs.
+  function buildThresholdLine(thresholdIndex) {
+    const trueBeforeSeats = new Set(seats.slice(0, thresholdIndex - 1));
+    if (trueBeforeSeats.size === totalSeats || rows.length === 0 || seats.length < 2) return null;
+
     // A row entirely before or after the boundary still gets a gap past its outermost seat.
     const rowAngles = rows.map((row) => {
       const sorted = [...row.rowSeats].sort((a, b) => b.angle - a.angle);
@@ -242,10 +248,28 @@ export default function SeatChart({
       labelX: centerX + Math.cos(outerAngle) * (outerRadius + seatRadius * 1.5 + 14),
       labelY: centerY - Math.sin(outerAngle) * (outerRadius + seatRadius * 1.5 + 14),
     };
-  })();
+  }
+
+  const majorityLine = buildThresholdLine(majorityIndex);
+
+  // The seats needed to win are counted in fill order (group[0] first), so a
+  // vote "passes" a threshold once group[0]'s own seat count reaches it -
+  // the leading bloc is always assumed to be at index 0 (see MotionPage's
+  // "For" group). The two-thirds line only appears once actually reached,
+  // so it reads as confirmation rather than a target shown from the start.
+  const forSeats = groups[0]?.seats ?? 0;
+  const passedSupermajority = totalSeats > 0 && forSeats >= twoThirdsIndex;
+  const twoThirdsLine = passedSupermajority ? buildThresholdLine(twoThirdsIndex) : null;
+  const fullHouse = totalSeats > 0 && forSeats === totalSeats;
 
   return (
     <div className="w-full">
+      {fullHouse && (
+        <p className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.3em] text-amber-400">
+          Full House
+        </p>
+      )}
+
       {(title || subtitle) && (
         <div className="mb-4">
           {title && <h2 className="text-xl font-semibold text-white">{title}</h2>}
@@ -277,6 +301,28 @@ export default function SeatChart({
               style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}
             >
               Simple Majority
+            </text>
+          </>
+        )}
+
+        {twoThirdsLine && (
+          <>
+            <path
+              d={twoThirdsLine.path}
+              fill="none"
+              stroke="#e5b73a"
+              strokeWidth="1.5"
+              strokeDasharray="4 3"
+              strokeLinejoin="round"
+            />
+            <text
+              x={twoThirdsLine.labelX}
+              y={twoThirdsLine.labelY + 8}
+              textAnchor="middle"
+              className="fill-amber-400/80"
+              style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}
+            >
+              Two-Thirds Majority
             </text>
           </>
         )}

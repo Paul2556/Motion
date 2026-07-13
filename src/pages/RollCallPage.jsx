@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check } from "lucide-react";
 import Logo from "../components/Logo";
+import Flag from "../components/Flag";
 import ConferenceService from "../services/ConferenceService";
 
 const STATES = [
@@ -108,7 +109,9 @@ export default function RollCallPage() {
 
         <header className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Logo compact light />
+            <Link to="/home" className="flex items-center gap-3">
+              <Logo compact light />
+            </Link>
             <span className="text-xs uppercase tracking-[0.18em] text-white/50">Roll Call</span>
           </div>
 
@@ -141,7 +144,10 @@ export default function RollCallPage() {
           <div className="max-h-[60vh] overflow-y-auto divide-y divide-white/5">
             {delegates.map((delegate) => (
               <div key={delegate.id} className="flex items-center justify-between px-5 py-4">
-                <span className="font-medium">{delegate.countryDisplay || delegate.country}</span>
+                <span className="flex items-center gap-2.5 font-medium">
+                  <Flag countryCode={delegate.countryCode} className="text-lg" />
+                  {delegate.countryDisplay || delegate.country}
+                </span>
                 <SegmentedToggle value={getDelegateState(delegate)} onChange={(state) => applyToDelegate(delegate.id, state)} />
               </div>
             ))}
