@@ -38,6 +38,7 @@ export default function CloudSessionsPage() {
   const [attendance, setAttendance] = useState({});
   const [newCollaboratorUid, setNewCollaboratorUid] = useState("");
   const [pendingDeleteSessionId, setPendingDeleteSessionId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => AuthService.subscribe(setUser), []);
 
@@ -121,7 +122,8 @@ export default function CloudSessionsPage() {
   }
 
   async function handleDeleteSession() {
-    if (!pendingDeleteSessionId || !user) return;
+    if (!pendingDeleteSessionId || !user || isDeleting) return;
+    setIsDeleting(true);
     try {
       setError(null);
       await CloudSessionService.deleteSession(pendingDeleteSessionId);
@@ -133,6 +135,8 @@ export default function CloudSessionsPage() {
       setSessions(await CloudSessionService.listMySessions(user.uid));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -370,15 +374,17 @@ export default function CloudSessionsPage() {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setPendingDeleteSessionId(null)}
-                className="flex-1 border border-white/10 px-4 py-2.5 text-sm text-white/50 transition hover:bg-white/5"
+                disabled={isDeleting}
+                className="flex-1 border border-white/10 px-4 py-2.5 text-sm text-white/50 transition hover:bg-white/5 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteSession}
-                className="flex-1 border border-white/10 bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-white/90"
+                disabled={isDeleting}
+                className="flex-1 border border-white/10 bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-white/90 disabled:opacity-50"
               >
-                Delete
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

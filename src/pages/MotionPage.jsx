@@ -189,6 +189,9 @@ export default function MotionPage() {
                 <div className="flex items-center gap-2.5">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: groups[2].color }} />
                   <span className="text-sm text-white/80">Abstain</span>
+                  <span className="rounded-none border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/40">
+                    3
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-3">

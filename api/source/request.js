@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { getAdminDb } from "./_lib/firebaseAdmin.js";
 import { checkRateLimit, RateLimitError } from "./_lib/rateLimit.js";
+import { postSourceRequestNotification } from "./_lib/postDiscordNotification.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -49,13 +50,24 @@ export default async function handler(req, res) {
   }
 
   const db = getAdminDb();
-  await db.collection("sourceRequests").add({
-    name: name.trim(),
-    email: email.trim(),
-    purpose: purpose.trim(),
+  const trimmedName = name.trim();
+  const trimmedEmail = email.trim();
+  const trimmedPurpose = purpose.trim();
+
+  const ref = await db.collection("sourceRequests").add({
+    name: trimmedName,
+    email: trimmedEmail,
+    purpose: trimmedPurpose,
     status: "pending",
     createdAt: Timestamp.now(),
     reviewedAt: null,
+  });
+
+  await postSourceRequestNotification({
+    requestId: ref.id,
+    name: trimmedName,
+    email: trimmedEmail,
+    purpose: trimmedPurpose,
   });
 
   res.status(200).json({ ok: true });

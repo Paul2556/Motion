@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 
 import LandingPage from "./pages/LandingPage";
@@ -24,6 +25,17 @@ const APP_HOSTS = ["app.motionmun.com"];
 const DEBUG_HOSTS = ["debug.motionmun.com"];
 const MARKETING_HOSTS = ["motionmun.com", "www.motionmun.com"];
 
+// /licensing and /source only exist on the marketing domain (see MarketingRoutes
+// below) - a full cross-origin redirect rather than <Navigate>, since that
+// component only handles same-app client-side navigation and these are a
+// different subdomain entirely.
+function RedirectToMarketing({ path }) {
+  useEffect(() => {
+    window.location.replace(`https://motionmun.com${path}`);
+  }, [path]);
+  return null;
+}
+
 function MarketingRoutes() {
   return (
     <Routes>
@@ -47,6 +59,8 @@ function AppRoutes() {
       <Route path="/motion" element={<MotionPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cloud" element={<CloudSessionsPage />} />
+      <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
+      <Route path="/source" element={<RedirectToMarketing path="/source" />} />
     </Routes>
   );
 }
@@ -55,6 +69,8 @@ function DebugRoutes() {
   return (
     <Routes>
       <Route path="/" element={<DebugPage />} />
+      <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
+      <Route path="/source" element={<RedirectToMarketing path="/source" />} />
     </Routes>
   );
 }

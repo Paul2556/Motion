@@ -397,4 +397,4 @@ export const MEASUREMENT_WORDS = new Set([
 // subject, e.g. "...on the topic of nuclear disarmament". Distinct from
 // TOPIC_WORDS above, which is header/row classification vocab for
 // AllocationParser, not floor language a chair actually says.
-export const TOPIC_MARKER_PHRASE = ["ON THE TOPIC OF","DISCUSSING", "FOR THE PURPOSE OF"];
+export const TOPIC_MARKER_PHRASE = ["ON THE TOPIC OF","DISCUSSING", "FOR THE PURPOSE OF", "TOPIC OF", "PURPOSE OF"];
