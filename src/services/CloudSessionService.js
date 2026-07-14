@@ -7,9 +7,8 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   serverTimestamp,
-  runTransaction,
+  writeBatch,
   arrayUnion,
   arrayRemove,
 } from "firebase/firestore";
@@ -32,10 +31,32 @@ export function stableDelegateKey(countryName) {
   );
 }
 
+// Formats a Date as its calendar date (Y-M-D) inside a given IANA timezone -
+// used instead of raw offset math since it sidesteps DST entirely: two
+// timestamps are "the same calendar day in that timezone" iff this string
+// matches, no matter what the zone's UTC offset is on either date.
+function calendarDateInZone(date, timeZone) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(date);
+}
+
+// Day count is derived, not stored - it's just "how many local midnights
+// have passed since this session was created", computed fresh whenever it's
+// displayed rather than incremented by any button or write.
+export function dayNumberForSession(session) {
+  if (!session?.createdAt?.toDate || !session.timezone) return null;
+
+  const startDateStr = calendarDateInZone(session.createdAt.toDate(), session.timezone);
+  const nowDateStr = calendarDateInZone(new Date(), session.timezone);
+  const start = new Date(`${startDateStr}T00:00:00Z`);
+  const now = new Date(`${nowDateStr}T00:00:00Z`);
+
+  return Math.round((now - start) / 86400000) + 1;
+}
+
 class CloudSessionService {
   // memberIds always starts as just [ownerId] - collaborators get appended
   // via addCollaborator. firestore.rules keys every access check (including
-  // days/attendance, via one get() on this doc) off this single list, so an
+  // attendance, via one get() on this doc) off this single list, so an
   // owner is just a member who also happens to satisfy the extra
   // owner-only checks (rename, delete, managing collaborators).
   async createSession({ title, committeeId, ownerId }) {
@@ -46,9 +67,25 @@ class CloudSessionService {
       ownerId,
       memberIds: [ownerId],
       createdAt: serverTimestamp(),
-      dayCount: 0,
+      // Captured once at creation - the day count is computed against this
+      // fixed zone for the session's whole lifetime, not whatever zone
+      // whoever's viewing happens to be in later.
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
     return ref.id;
+  }
+
+  // Firestore doesn't cascade-delete subcollections, so attendance docs are
+  // batch-deleted first - otherwise they'd be orphaned (inert, since
+  // isSessionMember's get() on the now-gone parent would fail either way,
+  // but there's no reason to leave dead docs behind when it's this cheap).
+  async deleteSession(sessionId) {
+    const db = getFirebaseDb();
+    const attendanceSnap = await getDocs(collection(db, "sessions", sessionId, "attendance"));
+    const batch = writeBatch(db);
+    attendanceSnap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
+    batch.delete(doc(db, "sessions", sessionId));
+    await batch.commit();
   }
 
   // Sorts client-side by createdAt instead of an orderBy+where composite
@@ -70,48 +107,15 @@ class CloudSessionService {
     await updateDoc(doc(db, "sessions", sessionId), { memberIds: arrayRemove(collaboratorUid) });
   }
 
-  async listDays(sessionId) {
+  async setAttendance(sessionId, delegateKey, status) {
     const db = getFirebaseDb();
-    const snap = await getDocs(
-      query(collection(db, "sessions", sessionId, "days"), orderBy("dayNumber", "asc"))
-    );
-    return snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-  }
-
-  // dayNumber auto-increments via a denormalized dayCount counter on the
-  // parent session doc, read/written inside one transaction - avoids a race
-  // between two simultaneous "add day" clicks (e.g. two open tabs).
-  async addDay(sessionId, { date, agenda }) {
-    const db = getFirebaseDb();
-    const sessionRef = doc(db, "sessions", sessionId);
-    const newDayRef = doc(collection(db, "sessions", sessionId, "days"));
-
-    return runTransaction(db, async (tx) => {
-      const sessionSnap = await tx.get(sessionRef);
-      if (!sessionSnap.exists()) throw new Error("Session not found");
-
-      const dayNumber = (sessionSnap.data().dayCount ?? 0) + 1;
-      tx.update(sessionRef, { dayCount: dayNumber });
-      tx.set(newDayRef, { dayNumber, date, agenda });
-
-      return { id: newDayRef.id, dayNumber, date, agenda };
-    });
-  }
-
-  async resumeLatestDay(sessionId) {
-    const days = await this.listDays(sessionId);
-    return days.length ? days[days.length - 1] : null;
-  }
-
-  async setAttendance(sessionId, dayId, delegateKey, status) {
-    const db = getFirebaseDb();
-    const ref = doc(db, "sessions", sessionId, "days", dayId, "attendance", delegateKey);
+    const ref = doc(db, "sessions", sessionId, "attendance", delegateKey);
     await setDoc(ref, { status }, { merge: true });
   }
 
-  async listAttendance(sessionId, dayId) {
+  async listAttendance(sessionId) {
     const db = getFirebaseDb();
-    const snap = await getDocs(collection(db, "sessions", sessionId, "days", dayId, "attendance"));
+    const snap = await getDocs(collection(db, "sessions", sessionId, "attendance"));
     const map = {};
     snap.docs.forEach((docSnap) => {
       map[docSnap.id] = docSnap.data().status;

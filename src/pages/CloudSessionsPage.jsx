@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, QrCode } from "lucide-react";
+import { ArrowLeft, QrCode, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
 import Logo from "../components/Logo";
 import AuthService from "../services/AuthService";
-import CloudSessionService, { stableDelegateKey } from "../services/CloudSessionService";
+import CloudSessionService, { stableDelegateKey, dayNumberForSession } from "../services/CloudSessionService";
 import ConferenceService from "../services/ConferenceService";
 
 const PILL = "border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10";
@@ -35,13 +35,9 @@ export default function CloudSessionsPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newCommitteeId, setNewCommitteeId] = useState(ConferenceService.getActiveCommitteeId() ?? "");
 
-  const [days, setDays] = useState([]);
-  const [activeDayId, setActiveDayId] = useState(null);
-  const [newDate, setNewDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [newAgenda, setNewAgenda] = useState("");
-
   const [attendance, setAttendance] = useState({});
   const [newCollaboratorUid, setNewCollaboratorUid] = useState("");
+  const [pendingDeleteSessionId, setPendingDeleteSessionId] = useState(null);
 
   useEffect(() => AuthService.subscribe(setUser), []);
 
@@ -50,10 +46,10 @@ export default function CloudSessionsPage() {
     AuthService.consumeQuickLoginParams().catch((err) => setError(err.message));
   }, []);
 
-  // Panels that read `sessions`/`days`/`attendance` are only rendered while
-  // `user`/`activeSessionId`/`activeDayId` are truthy (see JSX below), so
-  // stale data left behind after logout/deselect never actually surfaces -
-  // no need to reset it here, only to fetch when there's something to fetch.
+  // Panels that read `sessions`/`attendance` are only rendered while
+  // `user`/`activeSessionId` are truthy (see JSX below), so stale data left
+  // behind after logout/deselect never actually surfaces - no need to reset
+  // it here, only to fetch when there's something to fetch.
   useEffect(() => {
     if (!user) return;
     CloudSessionService.listMySessions(user.uid).then(setSessions).catch((err) => setError(err.message));
@@ -61,18 +57,8 @@ export default function CloudSessionsPage() {
 
   useEffect(() => {
     if (!activeSessionId) return;
-    CloudSessionService.listDays(activeSessionId)
-      .then((loadedDays) => {
-        setDays(loadedDays);
-        setActiveDayId(loadedDays.length ? loadedDays[loadedDays.length - 1].id : null);
-      })
-      .catch((err) => setError(err.message));
+    CloudSessionService.listAttendance(activeSessionId).then(setAttendance).catch((err) => setError(err.message));
   }, [activeSessionId]);
-
-  useEffect(() => {
-    if (!activeSessionId || !activeDayId) return;
-    CloudSessionService.listAttendance(activeSessionId, activeDayId).then(setAttendance).catch((err) => setError(err.message));
-  }, [activeSessionId, activeDayId]);
 
   async function handleGoogleSignIn() {
     try {
@@ -123,29 +109,28 @@ export default function CloudSessionsPage() {
     }
   }
 
-  async function handleAddDay() {
+  async function handleCycleAttendance(delegateKey) {
     if (!activeSessionId || !user) return;
+    const next = nextAttendanceState(attendance[delegateKey]);
+    setAttendance((prev) => ({ ...prev, [delegateKey]: next }));
     try {
-      setError(null);
-      await CloudSessionService.addDay(activeSessionId, {
-        date: newDate,
-        agenda: newAgenda,
-      });
-      setNewAgenda("");
-      const loadedDays = await CloudSessionService.listDays(activeSessionId);
-      setDays(loadedDays);
-      setActiveDayId(loadedDays[loadedDays.length - 1].id);
+      await CloudSessionService.setAttendance(activeSessionId, delegateKey, next);
     } catch (err) {
       setError(err.message);
     }
   }
 
-  async function handleCycleAttendance(delegateKey) {
-    if (!activeSessionId || !activeDayId || !user) return;
-    const next = nextAttendanceState(attendance[delegateKey]);
-    setAttendance((prev) => ({ ...prev, [delegateKey]: next }));
+  async function handleDeleteSession() {
+    if (!pendingDeleteSessionId || !user) return;
     try {
-      await CloudSessionService.setAttendance(activeSessionId, activeDayId, delegateKey, next);
+      setError(null);
+      await CloudSessionService.deleteSession(pendingDeleteSessionId);
+      if (activeSessionId === pendingDeleteSessionId) {
+        setActiveSessionId(null);
+        setAttendance({});
+      }
+      setPendingDeleteSessionId(null);
+      setSessions(await CloudSessionService.listMySessions(user.uid));
     } catch (err) {
       setError(err.message);
     }
@@ -175,7 +160,6 @@ export default function CloudSessionsPage() {
   }
 
   const roster = ConferenceService.isLoaded() ? ConferenceService.getDelegates() : [];
-  const activeDay = days.find((day) => day.id === activeDayId) ?? null;
   const activeSession = sessions.find((session) => session.id === activeSessionId) ?? null;
   const isSessionOwner = activeSession && user && activeSession.ownerId === user.uid;
 
@@ -271,16 +255,32 @@ export default function CloudSessionsPage() {
               <p className={LABEL}>Sessions</p>
 
               <div className="mt-4 space-y-2">
-                {sessions.map((session) => (
-                  <button
-                    key={session.id}
-                    onClick={() => setActiveSessionId(session.id)}
-                    className={ROW + (activeSessionId === session.id ? " border-white/30 bg-white/10" : "")}
-                  >
-                    <span className="font-medium">{session.title}</span>
-                    <span className="shrink-0 whitespace-nowrap pl-4 text-xs text-white/40">{session.committeeId}</span>
-                  </button>
-                ))}
+                {sessions.map((session) => {
+                  const dayNumber = dayNumberForSession(session);
+                  return (
+                    <div
+                      key={session.id}
+                      className={ROW + (activeSessionId === session.id ? " border-white/30 bg-white/10" : "")}
+                    >
+                      <button onClick={() => setActiveSessionId(session.id)} className="flex flex-1 items-center justify-between text-left">
+                        <span className="font-medium">{session.title}</span>
+                        <span className="shrink-0 whitespace-nowrap pl-4 text-xs text-white/40">
+                          {session.committeeId}
+                          {dayNumber ? ` · Day ${dayNumber}` : ""}
+                        </span>
+                      </button>
+                      {user && session.ownerId === user.uid && (
+                        <button
+                          onClick={() => setPendingDeleteSessionId(session.id)}
+                          aria-label={`Delete ${session.title}`}
+                          className="ml-4 shrink-0 text-white/30 transition hover:text-red-300"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
                 {sessions.length === 0 && <p className="text-sm text-white/40">No cloud sessions yet.</p>}
               </div>
 
@@ -295,7 +295,7 @@ export default function CloudSessionsPage() {
               <div className={`mt-6 ${PANEL}`}>
                 <p className={LABEL}>Collaborators</p>
                 <p className="mt-2 text-sm text-white/45">
-                  Co-chairs get full read/write on this session's days and attendance, but can't delete the session itself.
+                  Co-chairs get full read/write on this session's attendance, but can't delete the session itself.
                 </p>
 
                 <div className="mt-4 space-y-2">
@@ -326,37 +326,6 @@ export default function CloudSessionsPage() {
 
             {activeSessionId && (
               <div className={`mt-6 ${PANEL}`}>
-                <p className={LABEL}>Days</p>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {days.map((day) => (
-                    <button
-                      key={day.id}
-                      onClick={() => setActiveDayId(day.id)}
-                      className={activeDayId === day.id ? PILL_ACTIVE : PILL}
-                    >
-                      Day {day.dayNumber}
-                    </button>
-                  ))}
-                  {days.length === 0 && <p className="text-sm text-white/40">No days yet.</p>}
-                </div>
-
-                <div className="mt-5 flex gap-3">
-                  <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none" />
-                  <input placeholder="Agenda" value={newAgenda} onChange={(e) => setNewAgenda(e.target.value)} className="w-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none" />
-                  <button onClick={handleAddDay} className={PILL}>Add Day</button>
-                </div>
-
-                {activeDay && (
-                  <p className="mt-4 text-sm text-white/45">
-                    {activeDay.date} &mdash; {activeDay.agenda || "No agenda set."}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {activeSessionId && activeDayId && (
-              <div className={`mt-6 ${PANEL}`}>
                 <p className={LABEL}>Attendance</p>
 
                 {roster.length === 0 && (
@@ -385,6 +354,36 @@ export default function CloudSessionsPage() {
         )}
 
       </div>
+
+      {pendingDeleteSessionId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+          <div className="w-full max-w-md border border-white/10 bg-[#111111] p-6">
+            <div className="flex items-center gap-3">
+              <Trash2 size={20} className="text-white/50" />
+              <h2 className="text-lg font-medium">Delete this session?</h2>
+            </div>
+
+            <p className="mt-4 text-sm text-white/60">
+              This permanently deletes the session and all of its attendance data. This can't be undone.
+            </p>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setPendingDeleteSessionId(null)}
+                className="flex-1 border border-white/10 px-4 py-2.5 text-sm text-white/50 transition hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteSession}
+                className="flex-1 border border-white/10 bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-white/90"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

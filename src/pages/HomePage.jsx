@@ -1,7 +1,6 @@
 import {
   Play,
   FolderOpen,
-  Plus,
   Settings,
   BarChart3,
   ChevronRight,
@@ -149,13 +148,6 @@ export default function HomePage() {
               title="Open Conference"
               subtitle="Load an existing conference workbook."
               icon={<FolderOpen size={24} />}
-              to="#"
-            />
-
-            <MenuCard
-              title="New Conference"
-              subtitle="Create a new conference from Excel."
-              icon={<Plus size={24} />}
               to="#"
             />
 

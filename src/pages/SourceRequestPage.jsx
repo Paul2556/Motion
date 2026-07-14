@@ -67,7 +67,7 @@ export default function SourceRequestPage() {
         <p className="mt-4 text-sm leading-relaxed text-white/60">
           Motion's source is available on request. Tell me your name and what you'd like to use
           it for, and I'll add you. In practice, nearly all reasonable requests are granted —
-          usually quickly.
+          usually quickly if it's during my downtime (usually 12 am - 7 pm).
         </p>
         <p className="mt-4 text-sm leading-relaxed text-white/60">
           Access is granted case-by-case at the sole discretion of the copyright holder. Nothing
