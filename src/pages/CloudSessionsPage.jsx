@@ -185,7 +185,7 @@ export default function CloudSessionsPage() {
         </header>
 
         {error && (
-          <div className="mb-6 border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+          <div className="mb-6 border border-[rgba(var(--danger-rgb),0.3)] bg-[rgba(var(--danger-rgb),0.1)] p-4 text-sm text-[var(--danger)]">
             {error}
           </div>
         )}
@@ -277,7 +277,7 @@ export default function CloudSessionsPage() {
                         <button
                           onClick={() => setPendingDeleteSessionId(session.id)}
                           aria-label={`Delete ${session.title}`}
-                          className="ml-4 shrink-0 text-white/30 transition hover:text-red-300"
+                          className="ml-4 shrink-0 text-white/30 outline-none transition hover:text-[var(--danger)] focus-visible:text-[var(--danger)]"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -306,7 +306,7 @@ export default function CloudSessionsPage() {
                   {(activeSession.memberIds ?? []).filter((uid) => uid !== activeSession.ownerId).map((uid) => (
                     <div key={uid} className={ROW}>
                       <span className="truncate font-mono text-xs text-white/70">{uid}</span>
-                      <button onClick={() => handleRemoveCollaborator(uid)} className="shrink-0 pl-4 text-xs uppercase tracking-[0.16em] text-red-300 hover:text-red-200">
+                      <button onClick={() => handleRemoveCollaborator(uid)} className="shrink-0 pl-4 text-xs uppercase tracking-[0.16em] text-[var(--danger)] outline-none transition hover:brightness-125 focus-visible:brightness-125">
                         Remove
                       </button>
                     </div>

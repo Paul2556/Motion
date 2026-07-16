@@ -6,7 +6,12 @@ const MOTION_PHRASES = MOTIONS.flatMap((motion) =>
     text,
     lower: text.toLowerCase(),
     category: "motion",
-    canonical: text,
+    // Always resolve to the shortest alias ("Moderated Caucus"), regardless
+    // of which variant (the verbose motion.text or another alias) actually
+    // matched - meta.motion is a status label shown elsewhere (SessionBoard's
+    // badge, MotionLog), which shouldn't carry the "Open a"/"Open an" verb
+    // filler only useful in the chair's own typed sentence.
+    canonical: motion.alias?.[0] ?? motion.text,
     requireExactWordCount: motion.explicit === true,
     durationField: motion.durationField ?? null,
     requiresTopic: motion.topic === true,

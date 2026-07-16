@@ -186,6 +186,28 @@ class ConferenceService {
   }
 
   // ============================================================
+  // Active Motion
+  // ============================================================
+
+  // Stored on the committee record itself (not a separate top-level field)
+  // so it persists/restores automatically alongside everything else in
+  // `this.conference`, and naturally resets per-committee like attendance/
+  // speaking-time already do. Drives the /session timer's motion badge.
+  getActiveMotion() {
+    return this.getActiveCommittee()?.activeMotion ?? null;
+  }
+
+  setActiveMotion(motion) {
+    const committee = this.getActiveCommittee();
+    if (!committee) return false;
+
+    committee.activeMotion = motion;
+    this.persist();
+
+    return true;
+  }
+
+  // ============================================================
   // Delegates
   // ============================================================
 

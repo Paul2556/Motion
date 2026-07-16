@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ArrowLeft, Check } from "lucide-react";
 import Logo from "../components/Logo";
 import Flag from "../components/Flag";
+import NoCommitteeModal from "../components/NoCommitteeModal";
 import ConferenceService from "../services/ConferenceService";
 
 const STATES = [
@@ -49,7 +50,6 @@ function SegmentedToggle({ value, onChange, indeterminate = false }) {
 }
 
 export default function RollCallPage() {
-  const navigate = useNavigate();
   const committee = ConferenceService.getActiveCommittee();
 
   // ConferenceService mutates delegate objects in place rather than emitting
@@ -58,11 +58,7 @@ export default function RollCallPage() {
   const [, setTick] = useState(0);
   const [pendingBulk, setPendingBulk] = useState(null);
 
-  useEffect(() => {
-    if (!committee) navigate("/home");
-  }, [committee, navigate]);
-
-  if (!committee) return null;
+  if (!committee) return <NoCommitteeModal />;
 
   // Sorted for display only (alphabetical roll call is the real-world
   // convention) - a local copy, not ConferenceService.sortDelegates(), so

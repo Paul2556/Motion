@@ -26,6 +26,7 @@ import { useEffect, useRef, useState } from 'react'
 import Queue from "../components/Queue"
 import Timer from "../components/Timer"
 import SeatChart from "../components/SeatChart"
+import { getVoteStatusLabel } from "../utils/voteStatus"
 import MotionInput from "../components/MotionInput"
 import SessionBoard from "../components/SessionBoard"
 import { MOTIONS, countries } from "../constants"
@@ -33,7 +34,7 @@ import { MOTIONS, countries } from "../constants"
 // The hero preview's seed data - a snapshot of what a real committee mid-session
 // looks like. Suggestions use the full ISO list (constants.js's `countries`)
 // rather than a committee roster, since no real committee is loaded here.
-const HERO_SUGGESTIONS = countries.map((c) => ({ name: c.name, code: c.code }))
+const HERO_SUGGESTIONS = countries.map((c) => ({ name: c.name, code: c.code, alias: c.alias }))
 const HERO_SPEAKER = { country: "United Kingdom", countryCode: "GBR" }
 const HERO_QUEUE = [
   { id: "hero-1", country: "Brazil", countryCode: "BRA" },
@@ -317,10 +318,11 @@ function LandingPage() {
               {/* The real SessionBoard (src/components/SessionBoard.jsx) - the same
                   Timer/Queue used on the actual /session route, just seeded with
                   demo data and `linked=false` so the header buttons don't route a
-                  visitor off the marketing page. Outside .app-shell here, so both
-                  --timer-remaining and the base text-white it normally inherits
-                  from that class are supplied directly. */}
-              <div className="h-[860px] p-4 text-white sm:p-6" style={{ '--timer-remaining': '#b7774d' }}>
+                  visitor off the marketing page. Outside .app-shell here, so
+                  --timer-remaining, --danger (Timer's overtime state), and the
+                  base text-white it normally inherits from that class are all
+                  supplied directly. */}
+              <div className="h-[860px] p-4 text-white sm:p-6" style={{ '--timer-remaining': '#b7774d', '--danger': '#ef4444' }}>
                 <SessionBoard
                   committeeLabel="DISEC"
                   initialSpeaker={HERO_SPEAKER}
@@ -615,8 +617,9 @@ function QueueDemo() {
     // provide ambiently but this light landing page doesn't. Wider than the
     // other cards deliberately: Queue's own lg:p-8 padding plus its 3
     // always-reserved (opacity-0 until hover) row icons need more room than
-    // max-w-xs gives before content clips.
-    <div className="h-[300px] w-full max-w-sm text-white">
+    // max-w-xs gives before content clips. --danger supplied directly too,
+    // for its remove-speaker button - same reasoning as TimerDemo.
+    <div className="product-demo h-[300px] w-full max-w-sm text-white" style={{ '--danger': '#ef4444' }}>
       <Queue queue={queue} setQueue={setQueue} />
     </div>
   )
@@ -625,14 +628,14 @@ function QueueDemo() {
 // The real Timer component. Its ring is a fixed 320px SVG with no size prop,
 // so unlike the others here it's shrunk with a scale transform inside a
 // clipped, fixed-height frame rather than by narrowing its container.
-// It also reads --timer-remaining off an .app-shell ancestor normally;
-// outside that theme system here, so the one CSS var it needs is supplied
-// directly rather than pulling in the whole app-shell cascade.
+// It also reads --timer-remaining/--danger off an .app-shell ancestor
+// normally; outside that theme system here, so both CSS vars it needs are
+// supplied directly rather than pulling in the whole app-shell cascade.
 function TimerDemo() {
   return (
     <div
-      className="flex h-[280px] w-full max-w-xs items-center justify-center overflow-hidden border border-black/15 bg-[#0d0d0d] p-6 shadow-[0_14px_40px_rgba(0,0,0,.10)]"
-      style={{ '--timer-remaining': '#b7774d' }}
+      className="product-demo flex h-[280px] w-full max-w-xs items-center justify-center overflow-hidden border border-black/15 bg-[#0d0d0d] p-6 shadow-[0_14px_40px_rgba(0,0,0,.10)]"
+      style={{ '--timer-remaining': '#b7774d', '--danger': '#ef4444' }}
     >
       <div className="origin-center scale-50">
         <Timer initialTime={90} />
@@ -655,6 +658,7 @@ function VoteDemo() {
     { name: 'Against', seats: VOTE_DELEGATE_COUNT, color: '#c98500' },
   ])
   const allowAbstain = groups.length > 2
+  const voteStatus = getVoteStatusLabel([groups[0], groups[1]])
 
   function adjustVotes(index, delta) {
     setGroups((prev) => {
@@ -676,7 +680,7 @@ function VoteDemo() {
   }
 
   return (
-    <div className="w-full max-w-xs border border-black/15 bg-[#0d0d0d] p-5 shadow-[0_14px_40px_rgba(0,0,0,.10)]">
+    <div className="product-demo w-full max-w-xs border border-black/15 bg-[#0d0d0d] p-5 shadow-[0_14px_40px_rgba(0,0,0,.10)]">
       <div className="mb-4 flex items-center justify-between gap-4">
         <p className="text-xs text-white/50">Allow abstentions</p>
         <button
@@ -688,6 +692,22 @@ function VoteDemo() {
           <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${allowAbstain ? 'translate-x-[20px]' : 'translate-x-0'}`} />
         </button>
       </div>
+
+      {voteStatus === "Full House" && (
+        <p className="mb-3 text-center text-2xl font-bold uppercase tracking-normal text-amber-400 whitespace-nowrap">
+          Full House
+        </p>
+      )}
+      {voteStatus === "Super Majority" && (
+        <p className="mb-3 text-center text-2xl uppercase tracking-normal text-amber-400/80 whitespace-nowrap">
+          Super Majority
+        </p>
+      )}
+      {voteStatus === "Simple Majority" && (
+        <p className="mb-3 text-center text-2xl uppercase tracking-normal text-white/45 whitespace-nowrap">
+          Simple Majority
+        </p>
+      )}
 
       <SeatChart
         groups={[groups[0], groups[1]]}
@@ -730,7 +750,7 @@ function MotionInputDemo() {
 
   return (
     <div
-      className="w-full max-w-lg border border-black/15 bg-[#0d0d0d] p-4 shadow-[0_14px_40px_rgba(0,0,0,.10)]"
+      className="product-demo w-full max-w-lg border border-black/15 bg-[#0d0d0d] p-4 shadow-[0_14px_40px_rgba(0,0,0,.10)]"
       // MotionInput highlights each category (motion/delegation/speaking-time/
       // total-time/topic) via CSS vars that only exist inside .app-shell
       // (themes.css) - --accent already resolves here via the landing page's

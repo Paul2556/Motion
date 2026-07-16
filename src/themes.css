@@ -39,6 +39,20 @@
   --accent-duration: #d4a24c;
   /* Fifth accent (MotionInput's topic highlight), same pre-inversion technique. */
   --accent-topic: #4a90e2;
+  /* Vote group colors (MotionPage's SeatChart groups). Blue/orange are near
+     complements of each other, so without pre-inversion "For"/"Against"
+     would visually swap identity under the light variant instead of just
+     changing shade - pre-inverted below like everything else here. */
+  --vote-for: #3987e5;
+  --vote-against: #c98500;
+  --vote-abstain: #7a7a7a;
+  /* "Motion in progress" accent (SessionBoard's nav dot, MotionPage's vote
+     status labels, StatsPage's speaking-time bars) - same pre-inversion technique. */
+  --motion-accent: #fbbf24;
+  --motion-accent-rgb: 251, 191, 36;
+  /* Destructive/danger red (delete buttons, error banners), same pre-inversion technique. */
+  --danger: #ef4444;
+  --danger-rgb: 239, 68, 68;
 }
 
 html[data-app-theme="light"] .app-shell {
@@ -49,6 +63,13 @@ html[data-app-theme="light"] .app-shell {
   --accent-time: #5c802e;
   --accent-duration: #2b5db3;
   --accent-topic: #b56f1d;
+  --vote-for: #c6781a;
+  --vote-against: #367aff;
+  --vote-abstain: #858585;
+  --motion-accent: #0440db;
+  --motion-accent-rgb: 4, 64, 219;
+  --danger: #10bbbb;
+  --danger-rgb: 16, 187, 187;
 }
 
 /* [data-motion-exempt] carves out the reduced-motion toggle's own knob:

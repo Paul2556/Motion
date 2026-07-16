@@ -8,6 +8,7 @@ import RollCallPage from "./pages/RollCallPage";
 import MotionPage from "./pages/MotionPage";
 import SettingsPage from "./pages/SettingsPage";
 import CloudSessionsPage from "./pages/CloudSessionsPage";
+import StatsPage from "./pages/StatsPage";
 import DebugPage from "./pages/DebugPage";
 import LicensePage from "./pages/LicensePage";
 import SourceRequestPage from "./pages/SourceRequestPage";
@@ -59,6 +60,7 @@ function AppRoutes() {
       <Route path="/motion" element={<MotionPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cloud" element={<CloudSessionsPage />} />
+      <Route path="/stats" element={<StatsPage />} />
       <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
       <Route path="/source" element={<RedirectToMarketing path="/source" />} />
     </Routes>
@@ -85,6 +87,7 @@ function AllRoutes() {
       <Route path="/motion" element={<MotionPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cloud" element={<CloudSessionsPage />} />
+      <Route path="/stats" element={<StatsPage />} />
       <Route path="/debug" element={<DebugPage />} />
       <Route path="/licensing" element={<LicensePage />} />
       <Route path="/source" element={<SourceRequestPage />} />

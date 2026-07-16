@@ -2,7 +2,7 @@
 // first - a plain snapshot of each motion's parsed meta at submit time, so
 // later edits to the committee roster/constants can't retroactively change
 // what a chair already logged.
-export default function MotionLog({ entries, onDelete }) {
+export default function MotionLog({ entries, onDelete, onVote }) {
   if (entries.length === 0) return null;
 
   return (
@@ -21,12 +21,15 @@ export default function MotionLog({ entries, onDelete }) {
           </div>
 
           <div className="mt-3 flex gap-2">
-            <button className="border border-white/10 px-4 py-1.5 text-xs uppercase tracking-[0.16em] text-white/60 transition hover:bg-white/10">
+            <button
+              onClick={() => onVote?.(entry)}
+              className="border border-white/10 px-4 py-1.5 text-xs uppercase tracking-[0.16em] text-white/60 transition hover:bg-white/10"
+            >
               Voting
             </button>
             <button
               onClick={() => onDelete?.(i)}
-              className="border border-red-500/40 px-4 py-1.5 text-xs uppercase tracking-[0.16em] text-red-400 transition hover:bg-red-500/10"
+              className="border border-[rgba(var(--danger-rgb),0.4)] px-4 py-1.5 text-xs uppercase tracking-[0.16em] text-[var(--danger)] outline-none transition hover:bg-[rgba(var(--danger-rgb),0.1)] focus-visible:border-[var(--danger)]"
             >
               Delete
             </button>

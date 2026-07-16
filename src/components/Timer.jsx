@@ -125,8 +125,9 @@ export default function Timer({
   };
 
   const nextSpeaker = () => {
+    const elapsed = maxTime - seconds;
     reset();
-    onNext();
+    onNext(elapsed);
   };
 
   return (
@@ -154,7 +155,7 @@ export default function Timer({
             cy="160"
             r={radius}
             fill="none"
-            stroke={overtime ? "#ef4444" : "var(--timer-remaining)"}
+            stroke={overtime ? "var(--danger)" : "var(--timer-remaining)"}
             strokeWidth="4"
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -167,7 +168,7 @@ export default function Timer({
         <div className="relative text-center">
           <div
             className={`text-[5.5rem] font-light tracking-[-0.06em] ${
-              overtime ? "text-red-500" : "text-white"
+              overtime ? "text-[var(--danger)]" : "text-white"
             }`}
           >
             {formatTime(seconds)}
@@ -200,7 +201,7 @@ export default function Timer({
         {overtime ? (
             <button
             onClick={nextSpeaker}
-            className="w-full rounded-none border border-red-500 bg-red-500 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-red-600 sm:w-auto"
+            className="w-full rounded-none border border-[var(--danger)] bg-[var(--danger)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:brightness-90 sm:w-auto"
             >
             Next
             </button>

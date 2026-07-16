@@ -173,8 +173,7 @@ export default function SeatChart({
   const twoThirdsIndex = Math.floor((totalSeats * 2) / 3) + 1; // seats needed for a supermajority
 
   const sidePadding = seatRadius + 4;
-  // Reserves room for seat radius plus the majority label so nothing clips the viewBox edge.
-  const topPadding = seatRadius + 34;
+  const topPadding = seatRadius + 4;
   const bottomPadding = seatRadius + 4;
   const width = (outerRadius + sidePadding) * 2;
   const height = outerRadius + topPadding + bottomPadding;
@@ -245,12 +244,8 @@ export default function SeatChart({
 
     return {
       path: roundedPathThroughPoints(points, seatPositions, seatRadius),
-      labelX: centerX + Math.cos(outerAngle) * (outerRadius + seatRadius * 1.5 + 14),
-      labelY: centerY - Math.sin(outerAngle) * (outerRadius + seatRadius * 1.5 + 14),
     };
   }
-
-  const majorityLine = buildThresholdLine(majorityIndex);
 
   // The seats needed to win are counted in fill order (group[0] first), so a
   // vote "passes" a threshold once group[0]'s own seat count reaches it -
@@ -259,17 +254,19 @@ export default function SeatChart({
   // so it reads as confirmation rather than a target shown from the start.
   const forSeats = groups[0]?.seats ?? 0;
   const passedSupermajority = totalSeats > 0 && forSeats >= twoThirdsIndex;
-  const twoThirdsLine = passedSupermajority ? buildThresholdLine(twoThirdsIndex) : null;
   const fullHouse = totalSeats > 0 && forSeats === totalSeats;
+
+  // Once supermajority is reached, the simple-majority line is redundant -
+  // it's already been passed too, so only the higher, more relevant
+  // threshold stays visible.
+  const majorityLine = passedSupermajority ? null : buildThresholdLine(majorityIndex);
+  // Full house makes the supermajority line redundant too, same reasoning
+  // as majorityLine above - there's no boundary left to point at once every
+  // seat has already crossed it.
+  const twoThirdsLine = passedSupermajority && !fullHouse ? buildThresholdLine(twoThirdsIndex) : null;
 
   return (
     <div className="w-full">
-      {fullHouse && (
-        <p className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.3em] text-amber-400">
-          Full House
-        </p>
-      )}
-
       {(title || subtitle) && (
         <div className="mb-4">
           {title && <h2 className="text-xl font-semibold text-white">{title}</h2>}
@@ -284,47 +281,25 @@ export default function SeatChart({
         aria-label={`${totalSeats} seats: ${groups.map((g) => `${g.name} ${g.seats}`).join(", ")}`}
       >
         {majorityLine && (
-          <>
-            <path
-              d={majorityLine.path}
-              fill="none"
-              stroke="#898781"
-              strokeWidth="1.5"
-              strokeDasharray="4 3"
-              strokeLinejoin="round"
-            />
-            <text
-              x={majorityLine.labelX}
-              y={majorityLine.labelY + 8}
-              textAnchor="middle"
-              className="fill-white/45"
-              style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}
-            >
-              Simple Majority
-            </text>
-          </>
+          <path
+            d={majorityLine.path}
+            fill="none"
+            stroke="#898781"
+            strokeWidth="1.5"
+            strokeDasharray="4 3"
+            strokeLinejoin="round"
+          />
         )}
 
         {twoThirdsLine && (
-          <>
-            <path
-              d={twoThirdsLine.path}
-              fill="none"
-              stroke="#e5b73a"
-              strokeWidth="1.5"
-              strokeDasharray="4 3"
-              strokeLinejoin="round"
-            />
-            <text
-              x={twoThirdsLine.labelX}
-              y={twoThirdsLine.labelY + 8}
-              textAnchor="middle"
-              className="fill-amber-400/80"
-              style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}
-            >
-              Two-Thirds Majority
-            </text>
-          </>
+          <path
+            d={twoThirdsLine.path}
+            fill="none"
+            stroke="#e5b73a"
+            strokeWidth="1.5"
+            strokeDasharray="4 3"
+            strokeLinejoin="round"
+          />
         )}
 
         {coloredSeats.map((seat, i) => (

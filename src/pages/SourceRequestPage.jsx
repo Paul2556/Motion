@@ -170,7 +170,7 @@ export default function SourceRequestPage() {
           {submitted && (
             <p className="text-sm text-white/60">Request received — you'll hear back by email.</p>
           )}
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
         </form>
       </div>
     </div>

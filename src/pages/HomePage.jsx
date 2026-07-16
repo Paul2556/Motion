@@ -20,12 +20,12 @@ function MenuCard({
   subtitle,
   icon,
   to,
+  onClick,
 }) {
-  return (
-    <Link
-      to={to}
-      className="group flex items-center justify-between border border-white/10 bg-[#151515] p-6 transition hover:border-white/20 hover:bg-[#1b1b1b]"
-    >
+  const className = "group flex w-full items-center justify-between border border-white/10 bg-[#151515] p-6 text-left transition hover:border-white/20 hover:bg-[#1b1b1b]";
+
+  const content = (
+    <>
       <div className="flex items-center gap-5">
         <div className="border border-white/10 bg-white/5 p-4">
           {icon}
@@ -46,6 +46,22 @@ function MenuCard({
         size={22}
         className="text-white/20 transition group-hover:translate-x-1"
       />
+    </>
+  );
+
+  // onClick-driven cards (e.g. "New Conference" opening the file picker)
+  // render as a plain button instead of a Link - there's no route to go to.
+  if (onClick) {
+    return (
+      <button onClick={onClick} className={className}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link to={to} className={className}>
+      {content}
     </Link>
   );
 }
@@ -103,7 +119,7 @@ export default function HomePage() {
     ConferenceService.setActiveCommittee(id);
     setLoadedConference(ConferenceService.getConference());
     setPendingConference(null);
-    navigate("/motion");
+    navigate("/rollcall");
   }
 
   return (
@@ -145,10 +161,10 @@ export default function HomePage() {
             />
 
             <MenuCard
-              title="Open Conference"
-              subtitle="Load an existing conference workbook."
+              title="New Conference"
+              subtitle="Load a conference workbook to get started."
               icon={<FolderOpen size={24} />}
-              to="#"
+              onClick={() => fileInputRef.current?.click()}
             />
 
             <MenuCard
@@ -242,7 +258,7 @@ export default function HomePage() {
               </Link>
 
               <Link
-                to="#"
+                to="/stats"
                 className="group border border-white/10 bg-[#111111] p-6 transition hover:border-white/20 hover:bg-[#1b1b1b]"
               >
                 <BarChart3

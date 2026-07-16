@@ -4,6 +4,7 @@ import {
   addDoc,
   setDoc,
   updateDoc,
+  getDoc,
   getDocs,
   query,
   where,
@@ -52,6 +53,11 @@ export function dayNumberForSession(session) {
 
   return Math.round((now - start) / 86400000) + 1;
 }
+
+// Reserved attendance-doc id tracking which day attendance was last taken
+// for - lowercase-hyphen-only stableDelegateKey output can never collide
+// with it.
+const DAY_MARKER_ID = "_dayMarker";
 
 class CloudSessionService {
   // memberIds always starts as just [ownerId] - collaborators get appended
@@ -113,11 +119,37 @@ class CloudSessionService {
     await setDoc(ref, { status }, { merge: true });
   }
 
+  // Attendance from a previous day is stale, not a starting point - if the
+  // last time attendance was taken was an earlier calendar day than today,
+  // it's cleared out here so the roster comes back as all-absent instead of
+  // silently carrying yesterday's roll call forward. The day marker lives
+  // as its own doc *inside* the attendance collection (id "_dayMarker",
+  // impossible for stableDelegateKey to ever produce) rather than a field on
+  // the session doc, since firestore.rules only lets the owner update the
+  // session doc, but any collaborator needs to be able to trigger this reset.
   async listAttendance(sessionId) {
     const db = getFirebaseDb();
-    const snap = await getDocs(collection(db, "sessions", sessionId, "attendance"));
+    const attendanceCol = collection(db, "sessions", sessionId, "attendance");
+    const snap = await getDocs(attendanceCol);
+
+    const sessionSnap = await getDoc(doc(db, "sessions", sessionId));
+    const session = sessionSnap.exists() ? { id: sessionSnap.id, ...sessionSnap.data() } : null;
+    const currentDay = dayNumberForSession(session);
+
+    const markerDoc = snap.docs.find((docSnap) => docSnap.id === DAY_MARKER_ID);
+    const lastDay = markerDoc?.data().day ?? null;
+
+    if (currentDay != null && lastDay !== currentDay) {
+      const batch = writeBatch(db);
+      snap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
+      batch.set(doc(db, "sessions", sessionId, "attendance", DAY_MARKER_ID), { day: currentDay });
+      await batch.commit();
+      return {};
+    }
+
     const map = {};
     snap.docs.forEach((docSnap) => {
+      if (docSnap.id === DAY_MARKER_ID) return;
       map[docSnap.id] = docSnap.data().status;
     });
     return map;

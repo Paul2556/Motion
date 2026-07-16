@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Minus, Plus } from "lucide-react";
 import Logo from "../components/Logo";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
 import SeatChart from "../components/SeatChart";
+import NoCommitteeModal from "../components/NoCommitteeModal";
+import { getVoteStatusLabel } from "../utils/voteStatus";
+import { formatMotionSummary } from "../utils/motionSummary";
 import ConferenceService from "../services/ConferenceService";
 
 // Colors use the app's categorical palette (slot 1 blue, slot 3 yellow - see
@@ -13,8 +16,8 @@ import ConferenceService from "../services/ConferenceService";
 // for/against, only some substantive votes allow abstention - see toggleAbstain.
 function buildInitialGroups(delegateCount) {
   return [
-    { name: "For", seats: 0, color: "#3987e5" },
-    { name: "Against", seats: delegateCount, color: "#c98500" },
+    { name: "For", seats: 0, color: "var(--vote-for)" },
+    { name: "Against", seats: delegateCount, color: "var(--vote-against)" },
   ];
 }
 
@@ -40,7 +43,6 @@ function loadCachedVote(committeeId, delegateCount) {
 }
 
 export default function MotionPage() {
-  const navigate = useNavigate();
   const committee = ConferenceService.getActiveCommittee();
   const delegateCount = committee?.delegates.length ?? 0;
   const cachedVote = committee ? loadCachedVote(committee.id, delegateCount) : null;
@@ -49,16 +51,32 @@ export default function MotionPage() {
   // (including non-country ones like press corps), not the full ISO list.
   const delegations = committee?.delegates.map((d) => ({ name: d.countryDisplay, code: d.countryCode })) ?? [];
 
-  // No committee means there's nothing to vote on - a delegate count of 0
-  // would render an empty chart, so send the chair back to load a conference.
-  useEffect(() => {
-    if (!committee) navigate("/home");
-  }, [committee, navigate]);
-
   const [motionText, setMotionText] = useState(cachedVote?.motionText ?? "");
   const [groups, setGroups] = useState(cachedVote?.groups ?? buildInitialGroups(delegateCount));
   const [motionLog, setMotionLog] = useState(cachedVote?.motionLog ?? []);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  // Hidden until a chair explicitly opens voting on a logged motion - null
+  // means hidden, an entry means "voting is open for this motion".
+  const [votingMotion, setVotingMotion] = useState(null);
+
+  // Opening voting always starts the tally fresh - it's voting *on this
+  // motion*, not a running total carried over from whatever was voted on
+  // before it. Also marks it as the committee's active motion (a chair
+  // reopening voting on an older logged motion is explicitly bringing it
+  // back to the floor), which is what the /session timer's badge reads.
+  function startVoting(entry) {
+    setVotingMotion(entry);
+    setGroups(buildInitialGroups(delegateCount));
+    ConferenceService.setActiveMotion(entry);
+  }
+
+  // The most recently logged motion becomes the committee's active motion
+  // too - most motions (procedural ones especially) govern the floor as
+  // soon as they're moved, well before/without an explicit vote.
+  function handleMotionSubmit(meta) {
+    setMotionLog((prev) => [meta, ...prev]);
+    ConferenceService.setActiveMotion(meta);
+  }
 
   useEffect(() => {
     if (!committee) return;
@@ -88,6 +106,7 @@ export default function MotionPage() {
   }, []);
 
   const allowAbstain = groups.length > 2;
+  const voteStatus = getVoteStatusLabel([groups[0], groups[1]]);
 
   // Toggling on appends a fresh Abstain bucket; toggling off folds any
   // existing abstentions back into Against so the total never changes.
@@ -96,7 +115,7 @@ export default function MotionPage() {
       if (prev.length > 2) {
         return [prev[0], { ...prev[1], seats: prev[1].seats + prev[2].seats }];
       }
-      return [...prev, { name: "Abstain", seats: 0, color: "#7a7a7a" }];
+      return [...prev, { name: "Abstain", seats: 0, color: "var(--vote-abstain)" }];
     });
   }
 
@@ -123,7 +142,7 @@ export default function MotionPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedIndex, adjustVotes, allowAbstain]);
 
-  if (!committee) return null;
+  if (!committee) return <NoCommitteeModal />;
 
   return (
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
@@ -134,8 +153,8 @@ export default function MotionPage() {
           </Link>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-          <div className="border border-white/10 bg-[#121212] p-6">
+        <div className={votingMotion ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]" : "flex justify-center"}>
+          <div className={`border border-white/10 bg-[#121212] p-6 ${votingMotion ? "" : "w-full max-w-2xl"}`}>
             <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">Motion text</p>
 
             <MotionInput
@@ -145,79 +164,98 @@ export default function MotionPage() {
               rows={8}
               className="mt-4"
               delegations={delegations}
-              onSubmit={(meta) => setMotionLog((prev) => [meta, ...prev])}
+              onSubmit={handleMotionSubmit}
             />
 
             <MotionLog
               entries={motionLog}
               onDelete={(index) => setMotionLog((prev) => prev.filter((_, i) => i !== index))}
+              onVote={startVoting}
             />
           </div>
 
-          <div className="border border-white/10 bg-[#121212] p-6">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <p className="text-xs text-white/50">Allow abstentions</p>
+          {votingMotion && (
+            <div className="border border-white/10 bg-[#121212] p-6">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <p className="text-xs text-white/50">Allow abstentions</p>
 
-              <button
-                onClick={toggleAbstain}
-                role="switch"
-                aria-checked={allowAbstain}
-                className={`relative h-7 w-12 shrink-0 rounded-full border transition ${
-                  allowAbstain ? "border-white/40 bg-white/30" : "border-white/10 bg-white/5"
-                }`}
-              >
-                <span
-                  className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                    allowAbstain ? "translate-x-[22px]" : "translate-x-0"
+                <button
+                  onClick={toggleAbstain}
+                  role="switch"
+                  aria-checked={allowAbstain}
+                  className={`relative h-7 w-12 shrink-0 rounded-full border transition ${
+                    allowAbstain ? "border-white/40 bg-white/30" : "border-white/10 bg-white/5"
                   }`}
-                />
-              </button>
-            </div>
+                >
+                  <span
+                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                      allowAbstain ? "translate-x-[22px]" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
 
-            <SeatChart
-              title="Voting"
-              subtitle="The motion (placeholder)"
-              groups={[groups[0], groups[1]]}
-              selectedIndex={selectedIndex}
-              onSelect={setSelectedIndex}
-              onIncrement={(index) => adjustVotes(index, 1)}
-              onDecrement={(index) => adjustVotes(index, -1)}
-            />
+              {voteStatus === "Full House" && (
+                <p className="mb-3 text-center text-2xl font-bold uppercase tracking-normal text-[var(--motion-accent)] whitespace-nowrap">
+                  Full House
+                </p>
+              )}
+              {voteStatus === "Super Majority" && (
+                <p className="mb-3 text-center text-2xl uppercase tracking-normal text-[rgba(var(--motion-accent-rgb),0.8)] whitespace-nowrap">
+                  Super Majority
+                </p>
+              )}
+              {voteStatus === "Simple Majority" && (
+                <p className="mb-3 text-center text-2xl uppercase tracking-normal text-white/45 whitespace-nowrap">
+                  Simple Majority
+                </p>
+              )}
 
-            {allowAbstain && (
-              <div className="-mx-2 mt-2 flex items-center justify-between border-t border-white/5 px-2 py-2.5">
-                <div className="flex items-center gap-2.5">
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: groups[2].color }} />
-                  <span className="text-sm text-white/80">Abstain</span>
-                  <span className="rounded-none border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/40">
-                    3
-                  </span>
-                </div>
+              <SeatChart
+                title="Voting"
+                subtitle={formatMotionSummary(votingMotion)}
+                groups={[groups[0], groups[1]]}
+                selectedIndex={selectedIndex}
+                onSelect={setSelectedIndex}
+                onIncrement={(index) => adjustVotes(index, 1)}
+                onDecrement={(index) => adjustVotes(index, -1)}
+              />
 
-                <div className="flex items-center gap-3">
-                  <span className="w-10 text-right text-sm text-white/50">{groups[2].seats}</span>
+              {allowAbstain && (
+                <div className="-mx-2 mt-2 flex items-center justify-between border-t border-white/5 px-2 py-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: groups[2].color }} />
+                    <span className="text-sm text-white/80">Abstain</span>
+                    <span className="rounded-none border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/40">
+                      3
+                    </span>
+                  </div>
 
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => adjustVotes(2, -1)}
-                      aria-label="Decrease Abstain votes"
-                      className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
-                    >
-                      <Minus size={12} />
-                    </button>
+                  <div className="flex items-center gap-3">
+                    <span className="w-10 text-right text-sm text-white/50">{groups[2].seats}</span>
 
-                    <button
-                      onClick={() => adjustVotes(2, 1)}
-                      aria-label="Increase Abstain votes"
-                      className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
-                    >
-                      <Plus size={12} />
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => adjustVotes(2, -1)}
+                        aria-label="Decrease Abstain votes"
+                        className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
+                      >
+                        <Minus size={12} />
+                      </button>
+
+                      <button
+                        onClick={() => adjustVotes(2, 1)}
+                        aria-label="Increase Abstain votes"
+                        className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

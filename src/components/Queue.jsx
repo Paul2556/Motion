@@ -22,7 +22,11 @@ export default function Queue({
     const query = newSpeaker.trim().toLowerCase();
     if (!query || suggestions.length === 0) return [];
     return suggestions
-      .filter((s) => s.name.toLowerCase().includes(query))
+      .filter(
+        (s) =>
+          s.name.toLowerCase().includes(query) ||
+          s.alias?.some((a) => a.toLowerCase().includes(query))
+      )
       .slice(0, MAX_SUGGESTIONS);
   }, [newSpeaker, suggestions]);
 
@@ -54,7 +58,10 @@ export default function Queue({
     }
 
     const typed = newSpeaker.trim();
-    const exact = suggestions.find((s) => s.name.toLowerCase() === typed.toLowerCase());
+    const typedLower = typed.toLowerCase();
+    const exact = suggestions.find(
+      (s) => s.name.toLowerCase() === typedLower || s.alias?.some((a) => a.toLowerCase() === typedLower)
+    );
     addSpeaker(exact ?? { name: typed });
   }
 
@@ -197,7 +204,7 @@ export default function Queue({
 
                 <button
                   onClick={() => removeSpeaker(speaker.id)}
-                  className="border border-red-500/30 p-2 text-red-400 hover:bg-red-500/10"
+                  className="border border-[rgba(var(--danger-rgb),0.3)] p-2 text-[var(--danger)] outline-none transition hover:bg-[rgba(var(--danger-rgb),0.1)] focus-visible:border-[var(--danger)]"
                 >
                   <Trash2 size={14} />
                 </button>

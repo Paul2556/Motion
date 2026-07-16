@@ -4,6 +4,7 @@ import Timer from "./Timer";
 import Queue from "./Queue";
 import Flag from "./Flag";
 import Logo from "./Logo";
+import ConferenceService from "../services/ConferenceService";
 
 function NavItem({ to, linked, className, children }) {
   return linked ? (
@@ -32,10 +33,11 @@ export default function SessionBoard({
   const [queue, setQueue] = useState(initialQueue);
   const [history, setHistory] = useState([]);
 
-  const nextSpeaker = () => {
+  const nextSpeaker = (elapsedSeconds = 0) => {
     if (queue.length === 0) return;
 
     if (currentSpeaker) {
+      ConferenceService.markSpoken(currentSpeaker.id, Math.round(elapsedSeconds));
       setHistory((prev) => [...prev, currentSpeaker]);
     }
 
@@ -69,8 +71,8 @@ export default function SessionBoard({
             linked={linked}
             className="inline-flex items-center gap-2 rounded-none border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-white/60 transition hover:border-white/20 hover:bg-white/10"
           >
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-            Motion: {activeMotion}
+            <span className="h-2.5 w-2.5 rounded-full bg-[var(--motion-accent)]" />
+            Motion
           </NavItem>
         </div>
       </header>
@@ -85,7 +87,7 @@ export default function SessionBoard({
                 {currentSpeaker?.country ?? "No speaker selected"}
               </h1>
             </div>
-            <span className="rounded-none border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-white/60">Moderated caucus</span>
+            <span className="rounded-none border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-white/60">{activeMotion}</span>
           </div>
 
           <div className="flex flex-1 flex-col items-center justify-center gap-12">
@@ -96,19 +98,19 @@ export default function SessionBoard({
           </div>
 
           <div className="mt-auto grid grid-cols-3 gap-5 sm:gap-4">
-            <div className="rounded-none border border-white/10 bg-white/5 px-6 py-8 xl:py-10 text-center">
+            <div className="rounded-none border border-white/10 bg-white/5 px-6 py-4 xl:py-5 text-center">
               <p className="text-2xl sm:text-xl sm:text-4xl font-semibold">
                 {estimatedMinutes} min
               </p>
               <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-white/40">Estimated</p>
             </div>
-            <div className="rounded-none border border-white/10 bg-white/5 px-6 py-8 xl:py-10 text-center">
+            <div className="rounded-none border border-white/10 bg-white/5 px-6 py-4 xl:py-5 text-center">
               <p className="text-2xl sm:text-xl sm:text-4xl font-semibold">
                 {history.length}
               </p>
               <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-white/40">Spoken</p>
             </div>
-            <div className="rounded-none border border-white/10 bg-white/5 px-6 py-8 xl:py-10 text-center">
+            <div className="rounded-none border border-white/10 bg-white/5 px-6 py-4 xl:py-5 text-center">
               <p className="text-2xl sm:text-xl sm:text-4xl font-semibold">
                 {queue.length}
               </p>

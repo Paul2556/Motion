@@ -10,7 +10,7 @@ body { margin: 0; min-width: 320px; background: var(--color-page-light); font-fa
 
 /* MotionInput's invalid-duration feedback (speaking time > total time). The
    app-shell's reduced-motion rule (transition/animation: none !important)
-   already suppresses this for users who've turned that on. */
+   already suppresses this for users who've turned that on. why do I have to do this myself ;-;*/
 @keyframes motion-input-shake {
   10%, 90% { transform: translateX(-1px); }
   20%, 80% { transform: translateX(2px); }
@@ -147,11 +147,28 @@ body { margin: 0; min-width: 320px; background: var(--color-page-light); font-fa
 }
 .group:hover .step-icon { background: var(--accent); border-color: var(--accent); color: white; }
 .theme-shell > header,
-.theme-shell > main,
-.theme-shell > footer { transition: filter .45s cubic-bezier(.22, 1, .36, 1); }
+.theme-shell > main { transition: filter .45s cubic-bezier(.22, 1, .36, 1); }
 .theme-dark > header,
-.theme-dark > main,
-.theme-dark > footer { filter: invert(1); }
+.theme-dark > main { filter: invert(1); }
+
+/* Footer is unconditionally dark-authored (bg-[#101010], text-white) rather
+   than flipping with the theme like header/main - it never inverts, so it
+   just stays the same dark band in both modes instead of flipping to a
+   jarring light one under dark mode. */
+
+/* The embedded SessionBoard preview (.product-shell) and the feature-section
+   demo widgets (.product-demo: VoteDemo/TimerDemo/QueueDemo/MotionInputDemo)
+   are real demos of the actual (permanently dark) app UI, deliberately kept
+   outside .app-shell - see LandingPage.jsx's comments above each. Nested
+   inside .theme-dark > main, they'd otherwise inherit that invert and flip to
+   a bright light card; a second invert here cancels the ancestor's out,
+   keeping them dark like the real product. --accent is re-overridden to the
+   true (non-pre-inverted) brown too - the inherited --accent from
+   .theme-shell.theme-dark is already pre-inverted for exactly one ancestor
+   invert (the page-wide one), so surviving this second, local invert as well
+   needs the plain value instead. */
+.theme-dark .product-shell,
+.theme-dark .product-demo { filter: invert(1); --accent: #9a5b3a; }
 
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes dropdown-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }

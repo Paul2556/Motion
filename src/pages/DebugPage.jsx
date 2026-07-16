@@ -436,7 +436,7 @@ export default function DebugPage() {
 
               <button
                 onClick={resetConference}
-                className="border border-red-500/40 px-5 py-3 text-red-400 hover:bg-red-500/10"
+                className="border border-[rgba(var(--danger-rgb),0.4)] px-5 py-3 text-[var(--danger)] outline-none transition hover:bg-[rgba(var(--danger-rgb),0.1)] focus-visible:border-[var(--danger)]"
               >
                 Reset Conference
               </button>
