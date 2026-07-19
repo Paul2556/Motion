@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Minus, Plus } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Minus, Plus } from "lucide-react";
 import Logo from "../components/Logo";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
@@ -43,6 +43,7 @@ function loadCachedVote(committeeId, delegateCount) {
 }
 
 export default function MotionPage() {
+  const navigate = useNavigate();
   const committee = ConferenceService.getActiveCommittee();
   const delegateCount = committee?.delegates.length ?? 0;
   const cachedVote = committee ? loadCachedVote(committee.id, delegateCount) : null;
@@ -76,6 +77,15 @@ export default function MotionPage() {
   function handleMotionSubmit(meta) {
     setMotionLog((prev) => [meta, ...prev]);
     ConferenceService.setActiveMotion(meta);
+  }
+
+  // votingMotion is already the committee's active motion (set in
+  // startVoting) - re-setting here is just belt-and-suspenders so /session
+  // picks up this exact passed motion even if something else changed the
+  // active motion mid-vote.
+  function continueToSession() {
+    ConferenceService.setActiveMotion(votingMotion);
+    navigate("/session");
   }
 
   useEffect(() => {
@@ -209,6 +219,17 @@ export default function MotionPage() {
                 <p className="mb-3 text-center text-2xl uppercase tracking-normal text-white/45 whitespace-nowrap">
                   Simple Majority
                 </p>
+              )}
+
+              {voteStatus && (
+                <button
+                  onClick={continueToSession}
+                  className="mb-5 flex w-full items-center justify-center gap-2 border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium uppercase tracking-[0.14em] transition hover:border-white/20 hover:bg-white/10"
+                >
+                  
+                  Continue to session
+                  <ArrowRight size={15} />
+                </button>
               )}
 
               <SeatChart
