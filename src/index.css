@@ -22,6 +22,7 @@ body { margin: 0; min-width: 320px; background: var(--color-page-light); font-fa
 @layer components {
   .page-container { @apply mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12; }
   .section-pad { @apply py-20 sm:py-28 lg:py-36; }
+  .section-pad-sm { @apply py-12 sm:py-16; }
   .section-label, .eyebrow { @apply text-[10px] font-medium uppercase tracking-[0.2em] text-black/40; }
   .eyebrow { @apply inline-flex items-center gap-2 border border-black/15 bg-white/60 px-3 py-2; }
   .eyebrow::before { content: ''; @apply h-1.5 w-1.5 rounded-full; background: var(--accent); }
@@ -210,6 +211,10 @@ body { margin: 0; min-width: 320px; background: var(--color-page-light); font-fa
 }
 .motion-reduced .logo-link:hover svg {
   transform: none;
+}
+.motion-reduced .faq-panel,
+.motion-reduced .faq-chevron {
+  transition-duration: .01ms;
 }
 .email-caret {
   position: absolute;

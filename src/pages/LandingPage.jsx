@@ -95,6 +95,13 @@ const steps = [
   ['04', 'Present resolutions', 'Move adopted work to the room-facing display.'],
 ]
 
+const FAQ_ITEMS = [
+  ['What is Model United Nations?', 'MUN is an educational simulation where students act as country delegates, debating global issues and negotiating resolutions through the same procedures used at the real UN.'],
+  ['Who is Motion for?', 'Chairs running an MUN committee: importing the delegate roster, running debate, managing votes, and keeping time, all from one screen.'],
+  ['Do I need to install anything?', 'No. Motion runs in your browser. Upload a delegate roster and you are ready to chair.'],
+  ['Is our conference data stored anywhere?', 'No. Motion has no backend. A loaded conference lives only in your browser tab for that session, and closing the tab clears it completely. No traces, no worries.'],
+]
+
 import Logo from "../components/Logo";
 
 function LandingPage() {
@@ -257,6 +264,7 @@ function LandingPage() {
             <a className="nav-link" href="#problem" onClick={handleHeaderLink}>Why Motion</a>
             <a className="nav-link" href="#features" onClick={handleHeaderLink}>Features</a>
             <a className="nav-link" href="#how" onClick={handleHeaderLink}>How it works</a>
+            <a className="nav-link" href="#faq" onClick={handleHeaderLink}>FAQ</a>
           </nav>
           <div className="flex items-center justify-self-end gap-1.5">
             <a href="#waitlist" className="button-primary hidden md:inline-flex" onClick={handleHeaderLink}>Join the waitlist <ArrowRight size={15} /></a>
@@ -272,6 +280,7 @@ function LandingPage() {
                 <a className="dropdown-link" href="#problem" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>Why Motion</a>
                 <a className="dropdown-link" href="#features" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>Features</a>
                 <a className="dropdown-link" href="#how" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>How it works</a>
+                <a className="dropdown-link" href="#faq" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>FAQ</a>
                 <a className="dropdown-link" href="#waitlist" onClick={(event) => { setMenuOpen(false); handleHeaderLink(event) }}>Join the waitlist</a>
               </div>
               <div className="space-y-1 p-2">
@@ -306,7 +315,7 @@ function LandingPage() {
                 From motion<br />to <span className="accent-text">resolution.</span>
               </h1>
               <p className="fade-up-delay-2 mx-auto mt-8 max-w-xl text-lg leading-relaxed text-black/55 sm:text-xl">
-                Modern committee management for Model United Nations. Built to keep chairs focused on the room, not the software.
+                Modern committee management for Model United Nations, the simulation where students debate and vote as country delegates. Built to keep chairs focused on the room, not the software.
               </p>
               <div className="fade-up-delay-2 mt-9 flex flex-col justify-center gap-3 sm:flex-row">
                 <a href="#waitlist" className="button-primary justify-center px-5 py-3.5">Join the waitlist <ArrowRight size={16} /></a>
@@ -334,6 +343,20 @@ function LandingPage() {
               </div>
             </div>
             <p className="mt-4 text-center text-[10px] uppercase tracking-[0.18em] text-black/35">One room. One system. Full control.</p>
+          </div>
+        </section>
+
+        <section className="border-b border-black/10 section-pad-sm">
+          <div className="page-container">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="section-label text-base sm:text-lg">What is Motion?</p>
+              <p className="mt-4 text-base leading-relaxed text-black/60 sm:text-lg">
+                Motion is software for running Model United Nations debate. It replaces
+                the spreadsheets, timers, and documents chairs normally juggle with one
+                screen: import your delegate list, run the speaker queue and clock, and
+                record votes as they happen.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -436,6 +459,15 @@ function LandingPage() {
           </div>
         </section>
 
+        <section id="faq" className="section-pad border-b border-black/10">
+          <div className="page-container">
+            <div><p className="section-label">Questions</p><h2 className="section-title mt-5">Before you join.</h2></div>
+            <div className="mt-14 grid gap-px overflow-hidden border border-black/10 bg-black/10 sm:grid-cols-2 lg:mt-20">
+              {FAQ_ITEMS.map(([question, answer]) => <FaqItem key={question} question={question} answer={answer} />)}
+            </div>
+          </div>
+        </section>
+
         <section ref={waitlistRef} id="waitlist" className="relative overflow-hidden bg-[#f4f4f0] py-24 sm:py-32">
           <div className="hero-grid hero-grid-float absolute inset-0 opacity-40" />
           <div className="page-container relative text-center">
@@ -505,6 +537,7 @@ function LandingPage() {
             <div className="flex gap-6">
               <a className="hover:text-white" href="#features">Features</a>
               <a className="hover:text-white" href="#how">Process</a>
+              <a className="hover:text-white" href="#faq">FAQ</a>
               <a className="hover:text-white" href="#waitlist">Waitlist</a>
             </div>
             <a
@@ -521,6 +554,29 @@ function LandingPage() {
 }
 
 function Tool({ icon: Icon, label, detail }) { return <div className="border-b border-r border-black/10 bg-[#f8f8f5] p-4 sm:p-5"><Icon size={18} strokeWidth={1.5} /><p className="mt-8 text-sm font-medium">{label}</p><p className="mt-1 text-xs text-black/35">{detail}</p></div> }
+
+function FaqItem({ question, answer }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="bg-white p-6 sm:p-8">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-4 text-left"
+      >
+        <h3 className="text-base font-medium">{question}</h3>
+        <ChevronRight size={16} className={`faq-chevron shrink-0 text-black/30 transition-transform duration-300 ${open ? 'rotate-90' : ''}`} />
+      </button>
+      <div className={`faq-panel grid transition-[grid-template-rows] duration-300 ease-out ${open ? 'grid-rows-[1fr] mt-3' : 'grid-rows-[0fr]'}`}>
+        <div className="overflow-hidden">
+          <p className="text-sm leading-relaxed text-black/50">{answer}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
   const cardRef = useRef(null)
   const [visible, setVisible] = useState(

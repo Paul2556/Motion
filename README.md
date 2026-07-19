@@ -114,8 +114,6 @@ Motion aims to reflect both sides of that experience.
 
 ### Phase 2
 
-* Resolution display
-* Draft resolution management
 * Committee presets
 
 ### Phase 3

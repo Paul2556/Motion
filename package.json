@@ -17,7 +17,7 @@
   "dependencies": {
     "@vercel/analytics": "2.0.1",
     "@vercel/speed-insights": "2.0.0",
-    "@vitejs/plugin-react": "latest",
+    "@vitejs/plugin-react": "^6.0.3",
     "discord-interactions": "4.4.0",
     "exceljs": "^4.4.0",
     "firebase": "12.16.0",
@@ -25,20 +25,20 @@
     "jszip": "3.10.1",
     "lucide-react": "^1.21.0",
     "qrcode.react": "4.2.0",
-    "react": "latest",
-    "react-dom": "latest",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.0",
-    "typescript": "latest",
-    "vite": "latest"
+    "typescript": "^6.0.3",
+    "vite": "^8.1.0"
   },
   "devDependencies": {
-    "@eslint/js": "latest",
-    "autoprefixer": "latest",
-    "eslint": "latest",
-    "eslint-plugin-react-hooks": "latest",
-    "eslint-plugin-react-refresh": "latest",
-    "globals": "latest",
-    "postcss": "latest",
+    "@eslint/js": "^10.0.1",
+    "autoprefixer": "^10.5.1",
+    "eslint": "^10.5.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0",
+    "postcss": "^8.5.15",
     "tailwindcss": "^3.4.17"
   }
 }
