@@ -34,8 +34,17 @@ export default async function handler(req, res) {
     throw error;
   }
 
-  const { subject, html } = waitlistWelcomeEmail();
-  await sendEmail({ to: email.trim(), subject, html });
+  try {
+    const { subject, html } = waitlistWelcomeEmail();
+    await sendEmail({ to: email.trim(), subject, html });
+  } catch (error) {
+    // Caught (rather than left to crash the function) so a Resend failure - e.g. a missing
+    // RESEND_API_KEY - shows up as a normal, diagnosable JSON error instead of Vercel's opaque
+    // FUNCTION_INVOCATION_FAILED page.
+    console.error("Failed to send waitlist welcome email:", error);
+    res.status(500).json({ error: "email_failed" });
+    return;
+  }
 
   res.status(200).json({ ok: true });
 }

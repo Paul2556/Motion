@@ -49,7 +49,7 @@ export function waitlistWelcomeEmail() {
   return {
     subject: "Thanks for joining the Motion waitlist",
     html: `<p>Hi,</p>
-<p>Thanks for joining the Motion waitlist. While you wait for full access, you can try a live demo right now — no sign-up needed:</p>
+<p>Thanks for joining the Motion waitlist. While you wait for full access, you can try a live demo right now, no sign-up needed:</p>
 <p><a href="https://demo.motionmun.com">https://demo.motionmun.com</a></p>
 <p>${GSIGNATURE}</p>`,
   };

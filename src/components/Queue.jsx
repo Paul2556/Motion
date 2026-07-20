@@ -57,21 +57,20 @@ const Queue = forwardRef(function Queue({
     setActiveIndex(-1);
   }
 
-  // Enter with a suggestion highlighted adds that suggestion (with its flag
-  // code); otherwise falls back to the typed text, still attaching a code if
-  // it happens to exactly match a known suggestion.
+  // Enter with a suggestion highlighted (arrow keys) adds that one; otherwise
+  // it adds the first autosuggestion match. `suggestions` is already scoped
+  // to this committee's own delegates (see SessionPage.jsx), so an empty
+  // `filtered` means the typed text isn't an actual delegation here - Enter
+  // is a no-op rather than adding arbitrary typed text as a fake speaker.
   function submitTyped() {
     if (activeIndex >= 0 && filtered[activeIndex]) {
       addSpeaker(filtered[activeIndex]);
       return;
     }
 
-    const typed = newSpeaker.trim();
-    const typedLower = typed.toLowerCase();
-    const exact = suggestions.find(
-      (s) => s.name.toLowerCase() === typedLower || s.alias?.some((a) => a.toLowerCase() === typedLower)
-    );
-    addSpeaker(exact ?? { name: typed });
+    if (filtered[0]) {
+      addSpeaker(filtered[0]);
+    }
   }
 
   function removeSpeaker(id) {

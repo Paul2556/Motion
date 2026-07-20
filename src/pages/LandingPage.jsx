@@ -99,7 +99,7 @@ const FAQ_ITEMS = [
   ['What is Model United Nations?', 'MUN is an educational simulation where students act as country delegates, debating global issues and negotiating resolutions through the same procedures used at the real UN.'],
   ['Who is Motion for?', 'Chairs running an MUN committee: importing the delegate roster, running debate, managing votes, and keeping time, all from one screen.'],
   ['Do I need to install anything?', 'No. Motion runs in your browser. Upload a delegate roster and you are ready to chair.'],
-  ['Is our conference data stored anywhere?', 'No. Motion has no backend. A loaded conference lives only in your browser tab for that session, and closing the tab clears it completely. No traces, no worries.'],
+  ['Is our conference data stored anywhere?', 'No, at least not fully. Motion has backend to store conference ONLY when logged in this is for multi-day conferences, if not, a loaded conference lives only in your browser tab for that session, and closing the tab clears it completely. No traces, no worries.'],
 ]
 
 import Logo from "../components/Logo";
@@ -205,11 +205,17 @@ function LandingPage() {
         setEmail('')
 
         // Best-effort - the Sheet write above is the source of truth for the signup itself, so
-        // a failed welcome email shouldn't surface as a failed signup.
+        // a failed welcome email shouldn't surface as a failed signup. Still logged loudly
+        // though: a non-ok response doesn't reject fetch()'s promise on its own, so this has to
+        // check response.ok explicitly or a 4xx/5xx here fails completely silently.
         fetch('/api/waitlist/welcome', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: submittedEmail }),
+        }).then(async (welcomeResponse) => {
+          if (!welcomeResponse.ok) {
+            console.error('Waitlist welcome email failed:', welcomeResponse.status, await welcomeResponse.text())
+          }
         }).catch((error) => {
           console.error('Waitlist welcome email failed:', error)
         })
@@ -568,7 +574,7 @@ function LandingPage() {
               href="/licensing"
               className="inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors hover:text-white/50"
             >
-              Licensed under the Motion Attribution License.
+              Source Avaliable & Licensed under the Motion Attribution License.
             </a>
           </div>
         </div>
