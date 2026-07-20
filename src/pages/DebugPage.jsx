@@ -3,21 +3,18 @@ import { Link, useNavigate } from "react-router-dom";
 import ConferenceService from "../services/ConferenceService";
 import AllocationParser from "../services/AllocationParser";
 import AuthService from "../services/AuthService";
+import { isAuthorizedUser } from "../services/ownerAccess";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
 import Flag from "../components/Flag";
 import Logo from "../components/Logo";
 
 // Dev-only tooling, not for casual visitors - gated to a hardcoded allowlist
-// of owner/contributor emails rather than any signed-in account. This is a
-// client-side convenience redirect, not a real security boundary (there's no
-// backend to enforce it), which is fine here since this page only ever
-// touches the current tab's in-memory ConferenceService state, never other
-// users' data. Add a contributor's email to CONTRIBUTOR_EMAILS to grant them
-// access - no other change needed.
-const OWNER_EMAIL = "paultae2506@proton.me";
-const CONTRIBUTOR_EMAILS = [];
-const AUTHORIZED_EMAILS = [OWNER_EMAIL, ...CONTRIBUTOR_EMAILS];
+// of owner/contributor emails (see ownerAccess.js) rather than any signed-in
+// account. This is a client-side convenience redirect, not a real security
+// boundary (there's no backend to enforce it), which is fine here since this
+// page only ever touches the current tab's in-memory ConferenceService
+// state, never other users' data.
 
 export default function DebugPage() {
   const navigate = useNavigate();
@@ -29,7 +26,7 @@ export default function DebugPage() {
     setAuthReady(AuthService.isReady());
   }), []);
 
-  const isAuthorized = AUTHORIZED_EMAILS.includes(user?.email);
+  const isAuthorized = isAuthorizedUser(user);
 
   // Wait for authReady - AuthService reports `null` synchronously before
   // Firebase has confirmed a persisted session, so redirecting immediately

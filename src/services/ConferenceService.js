@@ -50,14 +50,26 @@ class ConferenceService {
   }
 
   async loadConference(file) {
-    this.reset();
-
     const parser = new AllocationParser();
     const parsed = await parser.load(file);
 
-    this.conference.name = parsed.name;
+    return this.ingestCommittees(parsed.name, parsed.committees);
+  }
 
-    parsed.committees.forEach((sheet) => {
+  // Bundled sample conferences (src/data/demoConferences.js) are already shaped exactly like
+  // AllocationParser's output, so demo.motionmun.com can load one without a file or the parser.
+  loadDemoConference(demo) {
+    return this.ingestCommittees(demo.name, demo.committees);
+  }
+
+  // Shared by loadConference/loadDemoConference - `sheets` is a list of parsed committees
+  // (AllocationParser's shape: { id, title, topic, chairs, delegates, pages }).
+  ingestCommittees(name, sheets) {
+    this.reset();
+
+    this.conference.name = name;
+
+    sheets.forEach((sheet) => {
       try {
         const committee = this.buildCommittee(sheet);
 

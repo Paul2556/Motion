@@ -10,19 +10,23 @@ import SettingsPage from "./pages/SettingsPage";
 import CloudSessionsPage from "./pages/CloudSessionsPage";
 import StatsPage from "./pages/StatsPage";
 import DebugPage from "./pages/DebugPage";
+import ReferPage from "./pages/ReferPage";
 import LicensePage from "./pages/LicensePage";
 import SourceRequestPage from "./pages/SourceRequestPage";
+import FeedbackPage from "./pages/FeedbackPage";
+import OwnerGate from "./components/OwnerGate";
 
-// One deployment serves three custom domains (Vercel: attach all three to
+// One deployment serves four custom domains (Vercel: attach all four to
 // this same project) - which route tree mounts is decided at runtime from
 // the hostname, since this is a plain client-rendered SPA with no per-domain
-// server routing. Anything that isn't one of the two recognized production
+// server routing. Anything that isn't one of the recognized production
 // subdomains (localhost, Vercel preview *.vercel.app URLs, the original
 // motion-navy.vercel.app default domain, IP addresses used for local network
 // testing, etc.) falls back to the full combined route table below, so
 // local dev and preview deploys can still reach every page without needing
 // real subdomains wired up.
 const APP_HOSTS = ["app.motionmun.com"];
+const DEMO_HOSTS = ["demo.motionmun.com"];
 const DEBUG_HOSTS = ["debug.motionmun.com"];
 const MARKETING_HOSTS = ["motionmun.com", "www.motionmun.com"];
 
@@ -61,9 +65,31 @@ function AppRoutes() {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cloud" element={<CloudSessionsPage />} />
       <Route path="/stats" element={<StatsPage />} />
+      <Route path="/feedback" element={<FeedbackPage />} />
       <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
       <Route path="/source" element={<RedirectToMarketing path="/source" />} />
     </Routes>
+  );
+}
+
+// Renders the same route tree as app.motionmun.com, minus the OwnerGate - demo.motionmun.com is
+// a public, unauthenticated preview. The badge is a small fixed pill rather than a full-width
+// banner that reserves layout space, since SessionPage uses h-screen/overflow-hidden calibrated
+// to fit exactly one viewport; a fixed overlay floats on top without touching any page's layout.
+function DemoBanner() {
+  return (
+    <div className="pointer-events-none fixed right-4 top-4 z-[999] border border-amber-400/40 bg-amber-400/90 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-black shadow-lg">
+      Early Access Demo
+    </div>
+  );
+}
+
+function DemoRoutes() {
+  return (
+    <>
+      <DemoBanner />
+      <AppRoutes />
+    </>
   );
 }
 
@@ -71,6 +97,7 @@ function DebugRoutes() {
   return (
     <Routes>
       <Route path="/" element={<DebugPage />} />
+      <Route path="/refer" element={<ReferPage />} />
       <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
       <Route path="/source" element={<RedirectToMarketing path="/source" />} />
     </Routes>
@@ -88,7 +115,9 @@ function AllRoutes() {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cloud" element={<CloudSessionsPage />} />
       <Route path="/stats" element={<StatsPage />} />
+      <Route path="/feedback" element={<FeedbackPage />} />
       <Route path="/debug" element={<DebugPage />} />
+      <Route path="/debug/refer" element={<ReferPage />} />
       <Route path="/licensing" element={<LicensePage />} />
       <Route path="/source" element={<SourceRequestPage />} />
     </Routes>
@@ -98,7 +127,8 @@ function AllRoutes() {
 export default function App() {
   const hostname = window.location.hostname;
 
-  if (APP_HOSTS.includes(hostname)) return <AppRoutes />;
+  if (APP_HOSTS.includes(hostname)) return <OwnerGate><AppRoutes /></OwnerGate>;
+  if (DEMO_HOSTS.includes(hostname)) return <DemoRoutes />;
   if (DEBUG_HOSTS.includes(hostname)) return <DebugRoutes />;
   if (MARKETING_HOSTS.includes(hostname)) return <MarketingRoutes />;
   return <AllRoutes />;

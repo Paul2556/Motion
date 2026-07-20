@@ -7,6 +7,7 @@ import {
   FileX,
   FileSpreadsheet,
   Cloud,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -14,6 +15,9 @@ import { Link, useNavigate } from "react-router-dom";
 import Logo from "../components/Logo";
 import ConferenceService from "../services/ConferenceService";
 import AuthService from "../services/AuthService";
+import demoConferences from "../data/demoConferences";
+
+const isDemoHost = window.location.hostname === "demo.motionmun.com";
 
 function MenuCard({
   title,
@@ -78,6 +82,9 @@ export default function HomePage() {
   // modal can render - null means "no picker showing".
   const [pendingConference, setPendingConference] = useState(null);
 
+  // demo.motionmun.com only - which bundled sample conference to pick from.
+  const [showDemoPicker, setShowDemoPicker] = useState(false);
+
   const [loadedConference, setLoadedConference] = useState(() =>
     ConferenceService.isLoaded() ? ConferenceService.getConference() : null
   );
@@ -120,6 +127,16 @@ export default function HomePage() {
     setLoadedConference(ConferenceService.getConference());
     setPendingConference(null);
     navigate("/rollcall");
+  }
+
+  // Feeds a bundled sample conference into the same "which committee are you chairing?"
+  // picker used for uploaded workbooks, so nothing about that flow needs to change.
+  function loadDemoConference(demo) {
+    const conference = ConferenceService.loadDemoConference(demo);
+    const committees = ConferenceService.getCommittees();
+
+    setShowDemoPicker(false);
+    setPendingConference({ name: conference.name, committees });
   }
 
   return (
@@ -173,6 +190,15 @@ export default function HomePage() {
               icon={<Cloud size={24} />}
               to="/cloud"
             />
+
+            {isDemoHost && (
+              <MenuCard
+                title="Try a Demo Conference"
+                subtitle="Load a bundled sample conference instead of your own workbook."
+                icon={<Sparkles size={24} />}
+                onClick={() => setShowDemoPicker(true)}
+              />
+            )}
                       </div>
 
           {/* Right */}
@@ -288,6 +314,10 @@ export default function HomePage() {
             Motion Alpha
           </span>
 
+          <Link to="/feedback" className="transition hover:text-white/60">
+            Send Feedback
+          </Link>
+
           <span>
             From motion to resolution.
           </span>
@@ -295,6 +325,44 @@ export default function HomePage() {
         </footer>
 
       </div>
+
+      {showDemoPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+          <div className="w-full max-w-md border border-white/10 bg-[#111111] p-6">
+
+            <div className="flex items-center gap-3">
+              <Sparkles size={20} className="text-white/50" />
+              <div>
+                <h2 className="text-lg font-medium">Choose a demo conference</h2>
+                <p className="text-xs text-white/40">Bundled sample data, no upload needed.</p>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-2">
+              {demoConferences.map((demo) => (
+                <button
+                  key={demo.id}
+                  onClick={() => loadDemoConference(demo)}
+                  className="flex w-full items-center justify-between border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-white/20 hover:bg-white/10"
+                >
+                  <span className="font-medium">{demo.name}</span>
+                  <span className="shrink-0 whitespace-nowrap pl-4 text-xs text-white/40">
+                    {demo.committees.reduce((sum, committee) => sum + committee.delegates.length, 0)} delegates
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowDemoPicker(false)}
+              className="mt-4 w-full border border-white/10 px-4 py-2.5 text-sm text-white/50 transition hover:bg-white/5"
+            >
+              Cancel
+            </button>
+
+          </div>
+        </div>
+      )}
 
       {pendingConference && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
