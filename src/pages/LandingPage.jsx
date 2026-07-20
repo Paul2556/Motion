@@ -174,6 +174,8 @@ function LandingPage() {
     setJoinSpamCount(0)
     setIsSubmitting(true)
 
+    const submittedEmail = email
+
     try {
       const formData = new FormData()
       formData.append('email', email)
@@ -201,6 +203,16 @@ function LandingPage() {
       if (response.ok) {
         setSubmitted(true)
         setEmail('')
+
+        // Best-effort - the Sheet write above is the source of truth for the signup itself, so
+        // a failed welcome email shouldn't surface as a failed signup.
+        fetch('/api/waitlist/welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: submittedEmail }),
+        }).catch((error) => {
+          console.error('Waitlist welcome email failed:', error)
+        })
       }
     } catch (error) {
       console.error('Waitlist submission failed:', error)

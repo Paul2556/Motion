@@ -4,6 +4,11 @@ const SIGNATURE = `Best regards,<br>
 Paul Taechaaukarakul<br>
 Founder of Motion`;
 
+const GSIGNATURE = `Best regards,<br>
+The Motion Team<br>
+From Motion To Resolution`;
+
+
 // name/note reach here from the public request form (name) and an admin's
 // Discord modal (note) - neither is trusted, so both are escaped before
 // interpolation into HTML rather than sent verbatim.
@@ -37,5 +42,15 @@ export function denialEmail({ name }) {
     html: `<p>Hi ${escapeHtml(name)},</p>
 <p>Thanks for your interest in Motion's source code. I'm not able to grant access for this request.</p>
 <p>${SIGNATURE}</p>`,
+  };
+}
+
+export function waitlistWelcomeEmail() {
+  return {
+    subject: "Thanks for joining the Motion waitlist",
+    html: `<p>Hi,</p>
+<p>Thanks for joining the Motion waitlist. While you wait for full access, you can try a live demo right now — no sign-up needed:</p>
+<p><a href="https://demo.motionmun.com">https://demo.motionmun.com</a></p>
+<p>${GSIGNATURE}</p>`,
   };
 }
