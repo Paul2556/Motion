@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
 
 function formatTime(seconds) {
@@ -12,11 +12,11 @@ function formatTime(seconds) {
   return seconds < 0 ? `-${formatted}` : formatted;
 }
 
-export default function Timer({
+const Timer = forwardRef(function Timer({
   initialTime = 72,
   onComplete = () => {},
   onNext = () => {},
-}) {
+}, ref) {
   const [seconds, setSeconds] = useState(initialTime);
   const [maxTime, setMaxTime] = useState(initialTime);
   const [running, setRunning] = useState(false);
@@ -130,6 +130,18 @@ export default function Timer({
     onNext(elapsed);
   };
 
+  // Exposes just the actions a parent needs to drive from outside (the dais
+  // keyboard shortcuts' Space/R/Enter) - everything else about the timer's
+  // internal animation/state stays fully encapsulated. triggerNext reuses
+  // this same nextSpeaker (not a raw onNext(0) call from the parent), so a
+  // keyboard-triggered advance still reports the real elapsed time, exactly
+  // like the mouse "Next" button does.
+  useImperativeHandle(ref, () => ({
+    toggleRunning: () => setRunning((r) => !r),
+    reset,
+    triggerNext: nextSpeaker,
+  }));
+
   return (
     <div className="flex flex-col items-center gap-12">
       <div
@@ -216,4 +228,6 @@ export default function Timer({
         </div>
     </div>
   );
-}
+});
+
+export default Timer;

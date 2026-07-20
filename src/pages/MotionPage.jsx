@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Minus, Plus } from "lucide-react";
+import { ArrowRight, Keyboard, Minus, Plus } from "lucide-react";
 import Logo from "../components/Logo";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
 import SeatChart from "../components/SeatChart";
 import NoCommitteeModal from "../components/NoCommitteeModal";
+import ShortcutLegend from "../components/ShortcutLegend";
 import { getVoteStatusLabel } from "../utils/voteStatus";
 import { formatMotionSummary } from "../utils/motionSummary";
 import ConferenceService from "../services/ConferenceService";
+import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
 // Colors use the app's categorical palette (slot 1 blue, slot 3 yellow - see
 // src/index.css / the dataviz skill's palette reference) rather than freehand hex picks.
@@ -60,6 +62,19 @@ export default function MotionPage() {
   // means hidden, an entry means "voting is open for this motion".
   const [votingMotion, setVotingMotion] = useState(null);
 
+  // Distinct from the vote-bloc `selectedIndex` above (different concept:
+  // this is "which logged motion the keyboard cursor is on", kept separate
+  // rather than conflated with it).
+  const [selectedMotionIndex, setSelectedMotionIndex] = useState(0);
+  const [legendOpen, setLegendOpen] = useState(false);
+  const motionInputRef = useRef(null);
+  // Single-slot undo (not a history stack) - same pattern as SessionBoard.jsx
+  // and RollCallPage.jsx. Covers the last deleted motion only.
+  const undoRef = useRef(null);
+
+  const clampedMotionIndex = motionLog.length === 0 ? -1 : Math.min(selectedMotionIndex, motionLog.length - 1);
+  const selectedMotion = clampedMotionIndex >= 0 ? motionLog[clampedMotionIndex] : null;
+
   // Opening voting always starts the tally fresh - it's voting *on this
   // motion*, not a running total carried over from whatever was voted on
   // before it. Also marks it as the committee's active motion (a chair
@@ -86,6 +101,26 @@ export default function MotionPage() {
   function continueToSession() {
     ConferenceService.setActiveMotion(votingMotion);
     navigate("/session");
+  }
+
+  function deleteMotion(index) {
+    undoRef.current = { entry: motionLog[index], index };
+    setMotionLog((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function toggleSecond(index) {
+    setMotionLog((prev) => prev.map((entry, i) => (i === index ? { ...entry, seconded: !entry.seconded } : entry)));
+  }
+
+  function performUndo() {
+    const action = undoRef.current;
+    if (!action) return;
+    undoRef.current = null;
+    setMotionLog((prev) => {
+      const next = [...prev];
+      next.splice(Math.min(action.index, next.length), 0, action.entry);
+      return next;
+    });
   }
 
   useEffect(() => {
@@ -129,38 +164,54 @@ export default function MotionPage() {
     });
   }
 
-  useEffect(() => {
-    function handleKeyDown(event) {
-      // Don't hijack these keys while the user is typing the motion text.
-      const tag = event.target.tagName;
-      if (tag === "TEXTAREA" || tag === "INPUT") return;
-
-      if (event.key === "1") {
-        setSelectedIndex(0);
-      } else if (event.key === "2") {
-        setSelectedIndex(1);
-      } else if (event.key === "3" && allowAbstain) {
-        setSelectedIndex(2);
-      } else if (event.key === "+" || event.key === "=") {
-        adjustVotes(selectedIndex, 1);
-      } else if (event.key === "-" || event.key === "_") {
-        adjustVotes(selectedIndex, -1);
-      }
+  // Voting is a fixed contextual override (spec: "cannot be remapped away")
+  // - while votingMotion is set, 1/2/3/+/- go straight to these handlers
+  // before the motions scope below ever sees them, reusing the exact same
+  // select-bloc-then-adjust behavior this page already shipped (not the
+  // "cast one vote per keypress" reading of the spec's literal wording -
+  // that'd be a UX change to already-designed voting, not a shortcuts pass).
+  useDaisShortcuts(
+    "motions",
+    {
+      "motions.newMotion": () => motionInputRef.current?.focus(),
+      "motions.second": () => selectedMotion && toggleSecond(clampedMotionIndex),
+      "motions.openVote": () => selectedMotion && startVoting(selectedMotion),
+      "motions.confirm": () => selectedMotion && startVoting(selectedMotion),
+      "motions.moveUp": () => setSelectedMotionIndex((i) => Math.max(0, (i < 0 ? 0 : i) - 1)),
+      "motions.moveDown": () => setSelectedMotionIndex((i) => Math.min(motionLog.length - 1, (i < 0 ? -1 : i) + 1)),
+      "global.undo": performUndo,
+      "global.legend": () => setLegendOpen((open) => !open),
+      "global.viewSpeakerList": () => navigate("/session"),
+      "global.viewRollCall": () => navigate("/rollcall"),
+    },
+    {
+      votingActive: Boolean(votingMotion),
+      voteHandlers: {
+        "voting.selectFor": () => setSelectedIndex(0),
+        "voting.selectAgainst": () => setSelectedIndex(1),
+        "voting.selectAbstain": () => allowAbstain && setSelectedIndex(2),
+        "voting.increment": () => adjustVotes(selectedIndex, 1),
+        "voting.decrement": () => adjustVotes(selectedIndex, -1),
+      },
     }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIndex, adjustVotes, allowAbstain]);
+  );
 
   if (!committee) return <NoCommitteeModal />;
 
   return (
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-8 flex items-center gap-3">
+        <header className="mb-8 flex items-center justify-between gap-3">
           <Link to="/home" className="flex items-center gap-3">
             <Logo light />
           </Link>
+          <button
+            onClick={() => setLegendOpen(true)}
+            aria-label="Keyboard shortcuts"
+            className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+          >
+            <Keyboard size={14} />
+          </button>
         </header>
 
         <div className={votingMotion ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]" : "flex justify-center"}>
@@ -168,6 +219,7 @@ export default function MotionPage() {
             <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">Motion text</p>
 
             <MotionInput
+              ref={motionInputRef}
               value={motionText}
               onChange={setMotionText}
               placeholder="You can type as naturally as you want"
@@ -179,8 +231,10 @@ export default function MotionPage() {
 
             <MotionLog
               entries={motionLog}
-              onDelete={(index) => setMotionLog((prev) => prev.filter((_, i) => i !== index))}
+              onDelete={deleteMotion}
               onVote={startVoting}
+              onToggleSecond={toggleSecond}
+              selectedIndex={clampedMotionIndex}
             />
           </div>
 
@@ -212,7 +266,7 @@ export default function MotionPage() {
               )}
               {voteStatus === "Super Majority" && (
                 <p className="mb-3 text-center text-2xl uppercase tracking-normal text-[rgba(var(--motion-accent-rgb),0.8)] whitespace-nowrap">
-                  Super Majority
+                  Supermajority
                 </p>
               )}
               {voteStatus === "Simple Majority" && (
@@ -279,6 +333,8 @@ export default function MotionPage() {
           )}
         </div>
       </div>
+
+      <ShortcutLegend scopeName="motions" open={legendOpen} onClose={() => setLegendOpen(false)} />
     </div>
   );
 }

@@ -1,16 +1,27 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Check } from "lucide-react";
+import { useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Check, Keyboard } from "lucide-react";
 import Logo from "../components/Logo";
 import Flag from "../components/Flag";
 import NoCommitteeModal from "../components/NoCommitteeModal";
+import ShortcutLegend from "../components/ShortcutLegend";
 import ConferenceService from "../services/ConferenceService";
+import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
 const STATES = [
   { key: "absent", label: "Absent" },
   { key: "present", label: "Present" },
   { key: "voting", label: "Present & Voting" },
 ];
+
+const STATE_ORDER = STATES.map((s) => s.key);
+
+// No wraparound (locked spec decision) - cycling stops at each end instead
+// of looping back around.
+function cycleState(current, direction) {
+  const next = STATE_ORDER.indexOf(current) + direction;
+  return next < 0 || next >= STATE_ORDER.length ? current : STATE_ORDER[next];
+}
 
 function getDelegateState(delegate) {
   if (!delegate.present) return "absent";
@@ -51,21 +62,84 @@ function SegmentedToggle({ value, onChange, indeterminate = false }) {
 
 export default function RollCallPage() {
   const committee = ConferenceService.getActiveCommittee();
+  const navigate = useNavigate();
 
   // ConferenceService mutates delegate objects in place rather than emitting
   // change events, so this tick just forces a re-render after each mutation -
   // the subsequent read of committee.delegates picks up the fresh values.
   const [, setTick] = useState(0);
   const [pendingBulk, setPendingBulk] = useState(null);
-
-  if (!committee) return <NoCommitteeModal />;
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [legendOpen, setLegendOpen] = useState(false);
+  // Single-slot undo (not a history stack) - see SessionBoard.jsx's
+  // undoRef for the same pattern. Covers both an individual toggle and a
+  // bulk "everyone" change (as a list of every delegate's prior state).
+  const undoRef = useRef(null);
 
   // Sorted for display only (alphabetical roll call is the real-world
   // convention) - a local copy, not ConferenceService.sortDelegates(), so
-  // this page doesn't reorder the roster everywhere else it's used.
-  const delegates = [...committee.delegates].sort((a, b) =>
-    (a.countryDisplay || a.country).localeCompare(b.countryDisplay || b.country)
+  // this page doesn't reorder the roster everywhere else it's used. Falls
+  // back to [] (rather than being skipped) so the hooks below stay
+  // unconditional even before the `!committee` check.
+  const delegates = committee
+    ? [...committee.delegates].sort((a, b) => (a.countryDisplay || a.country).localeCompare(b.countryDisplay || b.country))
+    : [];
+
+  const clampedIndex = delegates.length === 0 ? -1 : Math.min(selectedIndex, delegates.length - 1);
+  const selectedDelegate = clampedIndex >= 0 ? delegates[clampedIndex] : null;
+
+  function applyToDelegate(id, state) {
+    const delegate = delegates.find((d) => d.id === id);
+    if (delegate) {
+      undoRef.current = { changes: [{ id, previousState: getDelegateState(delegate) }] };
+    }
+    ConferenceService.setAttendanceState(id, state);
+    setTick((t) => t + 1);
+  }
+
+  function requestEveryone(nextState) {
+    const changesCount = delegates.filter((d) => getDelegateState(d) !== nextState).length;
+
+    if (shouldConfirmBulkChange(delegates.length, changesCount)) {
+      setPendingBulk({ nextState, changesCount });
+      return;
+    }
+
+    applyEveryone(nextState);
+  }
+
+  function performUndo() {
+    const action = undoRef.current;
+    if (!action) return;
+    undoRef.current = null;
+    action.changes.forEach(({ id, previousState }) => ConferenceService.setAttendanceState(id, previousState));
+    setTick((t) => t + 1);
+  }
+
+  useDaisShortcuts(
+    "rollCall",
+    {
+      "rollCall.moveUp": () => setSelectedIndex((i) => Math.max(0, (i < 0 ? 0 : i) - 1)),
+      "rollCall.moveDown": () => setSelectedIndex((i) => Math.min(delegates.length - 1, (i < 0 ? -1 : i) + 1)),
+      "rollCall.cycleNext": () =>
+        selectedDelegate && applyToDelegate(selectedDelegate.id, cycleState(getDelegateState(selectedDelegate), 1)),
+      "rollCall.cyclePrev": () =>
+        selectedDelegate && applyToDelegate(selectedDelegate.id, cycleState(getDelegateState(selectedDelegate), -1)),
+      "rollCall.setAbsent": () => selectedDelegate && applyToDelegate(selectedDelegate.id, "absent"),
+      "rollCall.setPresent": () => selectedDelegate && applyToDelegate(selectedDelegate.id, "present"),
+      "rollCall.setPresentVoting": () => selectedDelegate && applyToDelegate(selectedDelegate.id, "voting"),
+      "rollCall.bulkPresent": () => requestEveryone("present"),
+      "rollCall.confirmModal": () => pendingBulk && applyEveryone(pendingBulk.nextState),
+      "rollCall.cancelModal": () => setPendingBulk(null),
+      "global.undo": performUndo,
+      "global.legend": () => setLegendOpen((open) => !open),
+      "global.viewSpeakerList": () => navigate("/session"),
+      "global.viewMotions": () => navigate("/motion"),
+    },
+    { active: Boolean(committee) }
   );
+
+  if (!committee) return <NoCommitteeModal />;
 
   const rosterSize = delegates.length;
   const presentCount = delegates.filter((d) => d.present).length;
@@ -75,23 +149,8 @@ export default function RollCallPage() {
   const everyoneUniform = delegateStates.length > 0 && delegateStates.every((s) => s === delegateStates[0]);
   const everyoneState = everyoneUniform ? delegateStates[0] : null;
 
-  function applyToDelegate(id, state) {
-    ConferenceService.setAttendanceState(id, state);
-    setTick((t) => t + 1);
-  }
-
-  function requestEveryone(nextState) {
-    const changesCount = delegates.filter((d) => getDelegateState(d) !== nextState).length;
-
-    if (shouldConfirmBulkChange(rosterSize, changesCount)) {
-      setPendingBulk({ nextState, changesCount });
-      return;
-    }
-
-    applyEveryone(nextState);
-  }
-
   function applyEveryone(nextState) {
+    undoRef.current = { changes: delegates.map((d) => ({ id: d.id, previousState: getDelegateState(d) })) };
     ConferenceService.setAllAttendanceState(nextState);
     setPendingBulk(null);
     setTick((t) => t + 1);
@@ -111,12 +170,21 @@ export default function RollCallPage() {
             <span className="text-xs uppercase tracking-[0.18em] text-white/50">Roll Call</span>
           </div>
 
-          <Link
-            to="/session"
-            className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
-          >
-            <ArrowLeft size={14} /> Back
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setLegendOpen(true)}
+              aria-label="Keyboard shortcuts"
+              className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+            >
+              <Keyboard size={14} />
+            </button>
+            <Link
+              to="/session"
+              className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+            >
+              <ArrowLeft size={14} /> Back
+            </Link>
+          </div>
         </header>
 
         <div className="mb-6 flex items-center gap-6 border border-white/10 bg-[#111111] p-6">
@@ -138,8 +206,14 @@ export default function RollCallPage() {
           </div>
 
           <div className="max-h-[60vh] overflow-y-auto divide-y divide-white/5">
-            {delegates.map((delegate) => (
-              <div key={delegate.id} className="flex items-center justify-between px-5 py-4">
+            {delegates.map((delegate, index) => (
+              <div
+                key={delegate.id}
+                onClick={() => setSelectedIndex(index)}
+                className={`flex items-center justify-between px-5 py-4 transition ${
+                  index === clampedIndex ? "bg-white/5" : ""
+                }`}
+              >
                 <span className="flex items-center gap-2.5 font-medium">
                   <Flag countryCode={delegate.countryCode} className="text-lg" />
                   {delegate.countryDisplay || delegate.country}
@@ -185,6 +259,8 @@ export default function RollCallPage() {
           </div>
         </div>
       )}
+
+      <ShortcutLegend scopeName="rollCall" open={legendOpen} onClose={() => setLegendOpen(false)} />
     </div>
   );
 }

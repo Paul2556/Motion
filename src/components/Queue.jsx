@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -9,14 +9,23 @@ import Flag from "./Flag";
 
 const MAX_SUGGESTIONS = 6;
 
-export default function Queue({
+const Queue = forwardRef(function Queue({
   queue,
   setQueue,
   suggestions = [],
-}) {
+  selectedIndex = -1,
+  onSelectIndex,
+}, ref) {
   const [newSpeaker, setNewSpeaker] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const [inputFocused, setInputFocused] = useState(false);
+  const inputRef = useRef(null);
+
+  // Lets the dais keyboard shortcuts (Speaker List's "A") focus the add
+  // box from outside, without exposing anything else about this component.
+  useImperativeHandle(ref, () => ({
+    focusAddInput: () => inputRef.current?.focus(),
+  }));
 
   const filtered = useMemo(() => {
     const query = newSpeaker.trim().toLowerCase();
@@ -107,6 +116,7 @@ export default function Queue({
       <div className="relative mt-6 flex gap-2">
         <div className="relative flex-1">
           <input
+            ref={inputRef}
             value={newSpeaker}
             onChange={(e) => {
               setNewSpeaker(e.target.value);
@@ -171,7 +181,10 @@ export default function Queue({
         {queue.map((speaker, index) => (
           <div
             key={speaker.id}
-            className="group border border-white/10 bg-white/5 px-5 py-4 transition hover:bg-white/10"
+            onClick={() => onSelectIndex?.(index)}
+            className={`group border px-5 py-4 transition hover:bg-white/10 ${
+              index === selectedIndex ? "border-white/40 bg-white/10" : "border-white/10 bg-white/5"
+            }`}
           >
             <div className="flex items-center justify-between">
 
@@ -219,4 +232,6 @@ export default function Queue({
 
     </div>
   );
-}
+});
+
+export default Queue;

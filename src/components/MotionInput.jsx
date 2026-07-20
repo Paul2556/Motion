@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { MOTIONS, countries, historicalCountries, CONNECTIVE_WORDS, MEASUREMENT_WORDS, TOPIC_MARKER_PHRASE } from "../constants";
 
 const MOTION_PHRASES = MOTIONS.flatMap((motion) =>
@@ -656,10 +656,16 @@ function shouldAutoExpand(matchedText, canonical) {
 // - e.g. to log it in a list rendered below (see MotionLog). A plain
 // textarea can't render colored spans, so a read-only backdrop with the
 // highlighted text sits behind a transparent textarea, keeping the real caret/selection.
-export default function MotionInput({ value, onChange, placeholder, rows = 8, className = "", fuzzyLevel = 0.3, delegations, onSubmit }) {
+const MotionInput = forwardRef(function MotionInput({ value, onChange, placeholder, rows = 8, className = "", fuzzyLevel = 0.3, delegations, onSubmit }, ref) {
   const textareaRef = useRef(null);
   const backdropRef = useRef(null);
   const [invalid, setInvalid] = useState(false);
+
+  // Lets the dais keyboard shortcuts (Motions view's "M") focus the box from
+  // outside without exposing anything else about its internals.
+  useImperativeHandle(ref, () => ({
+    focus: () => textareaRef.current?.focus(),
+  }));
 
   const phraseIndex = useMemo(() => buildPhraseIndex(delegations), [delegations]);
   const { ranges, meta } = useMemo(
@@ -773,7 +779,9 @@ export default function MotionInput({ value, onChange, placeholder, rows = 8, cl
       </div>
     </div>
   );
-}
+});
+
+export default MotionInput;
 
 function MetaStat({ label, value }) {
   return (

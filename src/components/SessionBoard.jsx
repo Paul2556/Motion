@@ -1,10 +1,13 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Keyboard } from "lucide-react";
 import Timer from "./Timer";
 import Queue from "./Queue";
 import Flag from "./Flag";
 import Logo from "./Logo";
+import ShortcutLegend from "./ShortcutLegend";
 import ConferenceService from "../services/ConferenceService";
+import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
 function NavItem({ to, linked, className, children }) {
   return linked ? (
@@ -32,6 +35,19 @@ export default function SessionBoard({
   const [currentSpeaker, setCurrentSpeaker] = useState(initialSpeaker);
   const [queue, setQueue] = useState(initialQueue);
   const [history, setHistory] = useState([]);
+  const [selectedQueueIndex, setSelectedQueueIndex] = useState(-1);
+  const [legendOpen, setLegendOpen] = useState(false);
+
+  const navigate = useNavigate();
+  const timerRef = useRef(null);
+  const queueRef = useRef(null);
+  // Single-slot "undo the last thing" - not a history stack. Overwritten by
+  // the next undoable action, same as a clipboard. A ref (not state) since
+  // it doesn't need to trigger a render on its own, only the undo/redo it
+  // drives does.
+  const undoRef = useRef(null);
+
+  const clampedQueueIndex = queue.length === 0 ? -1 : Math.min(selectedQueueIndex, queue.length - 1);
 
   const nextSpeaker = (elapsedSeconds = 0) => {
     if (queue.length === 0) return;
@@ -44,6 +60,67 @@ export default function SessionBoard({
     setCurrentSpeaker(queue[0]);
     setQueue((prev) => prev.slice(1));
   };
+
+  // Snapshots pre-advance state for undo, then drives the advance through
+  // Timer's own nextSpeaker (via triggerNext) rather than calling the
+  // SessionBoard nextSpeaker above directly - that's the only path that
+  // computes real elapsed speaking time, same as the mouse "Next" button.
+  function recognizeNext() {
+    if (queue.length === 0) return;
+    undoRef.current = {
+      type: "advance",
+      previousSpeaker: currentSpeaker,
+      previousQueue: queue,
+      hadPreviousSpeaker: Boolean(currentSpeaker),
+    };
+    timerRef.current?.triggerNext();
+  }
+
+  function removeSelected() {
+    if (clampedQueueIndex < 0) return;
+    const removed = queue[clampedQueueIndex];
+    undoRef.current = { type: "remove", speaker: removed, index: clampedQueueIndex };
+    setQueue((prev) => prev.filter((_, i) => i !== clampedQueueIndex));
+  }
+
+  function performUndo() {
+    const action = undoRef.current;
+    if (!action) return;
+    undoRef.current = null;
+
+    if (action.type === "remove") {
+      setQueue((prev) => {
+        const next = [...prev];
+        next.splice(Math.min(action.index, next.length), 0, action.speaker);
+        return next;
+      });
+    } else if (action.type === "advance") {
+      setCurrentSpeaker(action.previousSpeaker);
+      setQueue(action.previousQueue);
+      if (action.hadPreviousSpeaker) {
+        setHistory((prev) => prev.slice(0, -1));
+      }
+    }
+  }
+
+  useDaisShortcuts(
+    "speakerList",
+    {
+      "speakerList.recognizeNext": recognizeNext,
+      "speakerList.toggleTimer": () => timerRef.current?.toggleRunning(),
+      "speakerList.resetTimer": () => timerRef.current?.reset(),
+      "speakerList.removeSelected": removeSelected,
+      "speakerList.addSpeaker": () => queueRef.current?.focusAddInput(),
+      "speakerList.moveUp": () => setSelectedQueueIndex((i) => Math.max(0, (i < 0 ? 0 : i) - 1)),
+      "speakerList.moveDown": () =>
+        setSelectedQueueIndex((i) => Math.min(queue.length - 1, (i < 0 ? -1 : i) + 1)),
+      "global.undo": performUndo,
+      "global.legend": () => setLegendOpen((open) => !open),
+      "global.viewRollCall": () => navigate("/rollcall"),
+      "global.viewMotions": () => navigate("/motion"),
+    },
+    { active: linked }
+  );
 
   const estimatedMinutes = Math.ceil(
     ((queue.length + (currentSpeaker ? 1 : 0)) * speechLength) / 60
@@ -74,6 +151,15 @@ export default function SessionBoard({
             <span className="h-2.5 w-2.5 rounded-full bg-[var(--motion-accent)]" />
             Motion
           </NavItem>
+          {linked && (
+            <button
+              onClick={() => setLegendOpen(true)}
+              aria-label="Keyboard shortcuts"
+              className="inline-flex items-center gap-2 rounded-none border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-white/60 transition hover:border-white/20 hover:bg-white/10"
+            >
+              <Keyboard size={14} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -92,6 +178,7 @@ export default function SessionBoard({
 
           <div className="flex flex-1 flex-col items-center justify-center gap-12">
             <Timer
+              ref={timerRef}
               initialTime={speechLength}
               onNext={nextSpeaker}
             />
@@ -120,11 +207,18 @@ export default function SessionBoard({
         </div>
 
         <Queue
+          ref={queueRef}
           queue={queue}
           setQueue={setQueue}
           suggestions={suggestions}
+          selectedIndex={clampedQueueIndex}
+          onSelectIndex={setSelectedQueueIndex}
         />
       </div>
+
+      {linked && (
+        <ShortcutLegend scopeName="speakerList" open={legendOpen} onClose={() => setLegendOpen(false)} />
+      )}
     </div>
   );
 }

@@ -275,10 +275,11 @@ export const countries = [
 // successor (a split, dissolution, or legally distinct former government),
 // unlike the rename-only cases above (Zaire, Burma, Ceylon, Upper Volta,
 // etc.) which are aliases since the same continuous state just renamed
-// itself. Codes are the former ISO 3166-3 withdrawn codes, for historical
-// MUN crisis committees (e.g. Cold War, Yugoslav Wars, decolonization).
+// itself. Codes for the 20th-century entries are the former ISO 3166-3
+// withdrawn codes, for historical MUN crisis committees (e.g. Cold War,
+// Yugoslav Wars, decolonization).
 export const historicalCountries = [
-  { name: "Soviet Union", code: "SUN", alias: ["USSR", "CCCP", "Union of Soviet Socialist Republics"] },
+  { name: "Soviet Union", code: "SUN", alias: ["USSR", "CCCP", "Union of Soviet Socialist Republics", "Cоюз Советских Социалистических Республик"] },
   { name: "Yugoslavia", code: "YUG", alias: ["Socialist Federal Republic of Yugoslavia", "SFR Yugoslavia"] },
   { name: "Serbia and Montenegro", code: "SCG" },
   { name: "Czechoslovakia", code: "CSK" },
@@ -287,6 +288,15 @@ export const historicalCountries = [
   { name: "North Vietnam", code: "VDR", alias: ["Democratic Republic of Vietnam"] },
   { name: "Netherlands Antilles", code: "ANT" },
   { name: "Pacific Islands, Trust Territory of the", code: "PCI" },
+
+  // Pre-ISO empires for ancient/medieval crisis committees - no ISO 3166-3
+  // code exists this far back (that standard only covers 20th-century
+  // changes), so these use invented 3-letter codes instead of official ones.
+  { name: "Ottoman Empire", code: "OTT", alias: ["Ottoman Turkey", "Turkish Empire", "Sublime Porte"] },
+  { name: "Roman Empire", code: "ROE", alias: ["Ancient Rome", "Imperium Romanum"] },
+  { name: "Byzantine Empire", code: "BYZ", alias: ["Eastern Roman Empire"] },
+  { name: "Austria-Hungary", code: "AHE", alias: ["Austro-Hungarian Empire", "Habsburg Empire", "Dual Monarchy"] },
+  { name: "Prussia", code: "PRU", alias: ["Kingdom of Prussia"] },
 ];
 
 
@@ -359,6 +369,7 @@ export const NAME_WORDS = new Set([
   "STUDENT",
   "PARTICIPANT",
   "FULL NAME",
+  "DELEGATION",
 ]);
 
 export const EMAIL_WORDS = new Set([
@@ -366,6 +377,7 @@ export const EMAIL_WORDS = new Set([
   "E-MAIL",
   "MAIL",
   "CORREO",
+  "GMAIL",
 ]);
 
 export const TOPIC_WORDS = new Set([
@@ -397,4 +409,11 @@ export const MEASUREMENT_WORDS = new Set([
 // subject, e.g. "...on the topic of nuclear disarmament". Distinct from
 // TOPIC_WORDS above, which is header/row classification vocab for
 // AllocationParser, not floor language a chair actually says.
-export const TOPIC_MARKER_PHRASE = ["ON THE TOPIC OF","DISCUSSING", "FOR THE PURPOSE OF", "TOPIC OF", "PURPOSE OF"];
+export const TOPIC_MARKER_PHRASE = [
+  "ON THE TOPIC OF",
+  "DISCUSSING", 
+  "FOR THE PURPOSE OF", 
+  "TOPIC OF", 
+  "PURPOSE OF", 
+  "TOPIC"
+];
