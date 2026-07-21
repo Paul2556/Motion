@@ -1,4 +1,5 @@
 import SessionBoard from "../components/SessionBoard";
+import NoCommitteeModal from "../components/NoCommitteeModal";
 import ConferenceService from "../services/ConferenceService";
 import { countries, historicalCountries } from "../constants";
 
@@ -7,6 +8,12 @@ const COUNTRY_BY_CODE = new Map([...countries, ...historicalCountries].map((c) =
 export default function SessionPage() {
 
   const committee = ConferenceService.getActiveCommittee();
+
+  // Same guard as RollCallPage/MotionPage/StatsPage - "Resume Session" on the home
+  // screen links straight here regardless of whether a conference is loaded, so
+  // this needs its own check rather than rendering SessionBoard against an empty
+  // committee.
+  if (!committee) return <NoCommitteeModal />;
 
   // Scope the "Add speaker" autosuggestions to delegations actually in this
   // committee, not the full ISO country list - same reasoning as MotionInput's
@@ -25,8 +32,10 @@ export default function SessionPage() {
 
   // A passed motion's speaking time (minutes, from MotionInput's parsing)
   // becomes the per-speaker timer length here - falls back to SessionBoard's
-  // own default when no motion set one (e.g. no motion voted on yet).
-  const speechLength = motion?.speakingTime != null ? motion.speakingTime * 60 : undefined;
+  // own default when no motion set one (e.g. no motion voted on yet). Rounded
+  // since a seconds-derived value (e.g. 12 sec -> 0.2 min) can otherwise hit
+  // this as something like 19.999999999998 due to float imprecision.
+  const speechLength = motion?.speakingTime != null ? Math.round(motion.speakingTime * 60) : undefined;
 
   return (
     <div className="app-shell h-screen overflow-hidden bg-[#0d0d0d] text-white">

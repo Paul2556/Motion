@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { MOTIONS, countries, historicalCountries, CONNECTIVE_WORDS, MEASUREMENT_WORDS, TOPIC_MARKER_PHRASE } from "../constants";
+import { MOTIONS, countries, historicalCountries, CONNECTIVE_WORDS, MEASUREMENT_WORDS, SECOND_WORDS, TOPIC_MARKER_PHRASE } from "../constants";
+import { formatDuration } from "../utils/duration";
 
 const MOTION_PHRASES = MOTIONS.flatMap((motion) =>
   [motion.text, ...(motion.alias ?? [])].map((text) => ({
@@ -219,6 +220,15 @@ function isCloseToAny(word, wordSet, fuzzyLevel) {
 
 const isConnectiveWord = (w, fuzzyLevel) => isCloseToAny(w, CONNECTIVE_WORDS, fuzzyLevel);
 const isMeasurementWord = (w, fuzzyLevel) => isCloseToAny(w, MEASUREMENT_WORDS, fuzzyLevel);
+const isSecondWord = (w, fuzzyLevel) => isCloseToAny(w, SECOND_WORDS, fuzzyLevel);
+
+// The unit a word represents, or null - checked in this order so a word close to both (shouldn't
+// normally happen given how distinct the two vocabularies are) prefers minutes.
+function matchedUnit(word, fuzzyLevel) {
+  if (isMeasurementWord(word, fuzzyLevel)) return "minute";
+  if (isSecondWord(word, fuzzyLevel)) return "second";
+  return null;
+}
 
 // Strips leading/trailing punctuation a token might carry from adjacent text
 // ("10," or "minutes.") so word matching isn't thrown off by it.
@@ -261,10 +271,13 @@ function explicitLabel(tokens, text, fromIndex, toIndex) {
 function resolveDurationAt(tokens, text, numberIndex, connectiveIndex, motionStartIndex, fuzzyLevel) {
   const minuteStart = Math.max(0, numberIndex - 2);
   let minuteIndex = -1;
+  let unit = null;
   for (let i = minuteStart; i <= Math.min(numberIndex + 2, tokens.length - 1); i++) {
     if (i === numberIndex) continue;
-    if (isMeasurementWord(bareWord(text, tokens[i]), fuzzyLevel)) {
+    const found = matchedUnit(bareWord(text, tokens[i]), fuzzyLevel);
+    if (found) {
       minuteIndex = i;
+      unit = found;
       break;
     }
   }
@@ -272,10 +285,13 @@ function resolveDurationAt(tokens, text, numberIndex, connectiveIndex, motionSta
 
   const endIndex = Math.max(numberIndex, minuteIndex);
   const startIndex = connectiveIndex === -1 ? numberIndex : connectiveIndex;
+  const rawAmount = Number(bareWord(text, tokens[numberIndex]));
   return {
     start: tokens[startIndex].start,
     end: tokens[endIndex].end,
-    amount: Number(bareWord(text, tokens[numberIndex])),
+    // Stored as minutes throughout the app (see src/utils/duration.js) - a value given in
+    // seconds is converted here, at the point the unit was actually read.
+    amount: unit === "second" ? rawAmount / 60 : rawAmount,
     label: explicitLabel(tokens, text, motionStartIndex, endIndex + 2),
   };
 }
@@ -321,13 +337,14 @@ function findBareDuration(tokens, text, fromIndex, limit, fuzzyLevel) {
 
     for (let j = Math.max(fromIndex, i - 2); j <= Math.min(i + 2, tokens.length - 1); j++) {
       if (j === i || tokens[j].start >= limit) continue;
-      if (isMeasurementWord(bareWord(text, tokens[j]), fuzzyLevel)) {
+      const unit = matchedUnit(bareWord(text, tokens[j]), fuzzyLevel);
+      if (unit) {
         const lo = Math.min(i, j);
         const hi = Math.max(i, j);
         return {
           start: tokens[lo].start,
           end: tokens[hi].end,
-          amount: Number(word),
+          amount: unit === "second" ? Number(word) / 60 : Number(word),
           label: explicitLabel(tokens, text, Math.max(fromIndex, lo - 2), hi + 2),
         };
       }
@@ -774,8 +791,8 @@ const MotionInput = forwardRef(function MotionInput({ value, onChange, placehold
         <MetaStat label="Motion" value={meta.motion} />
         <MetaStat label="Country" value={meta.delegation} />
         <MetaStat label="Topic" value={meta.topic} />
-        <MetaStat label="Speaking Time" value={meta.speakingTime != null ? `${meta.speakingTime} min` : null} />
-        <MetaStat label="Total Time" value={meta.totalTime != null ? `${meta.totalTime} min` : null} />
+        <MetaStat label="Speaking Time" value={formatDuration(meta.speakingTime)} />
+        <MetaStat label="Total Time" value={formatDuration(meta.totalTime)} />
       </div>
     </div>
   );

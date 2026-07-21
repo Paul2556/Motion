@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import Logo from "../components/Logo";
+import CommitteeIcon from "../components/CommitteeIcon";
 import ConferenceService from "../services/ConferenceService";
 import AuthService from "../services/AuthService";
 import demoConferences from "../data/demoConferences";
@@ -74,7 +75,6 @@ export default function HomePage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -88,6 +88,12 @@ export default function HomePage() {
   const [loadedConference, setLoadedConference] = useState(() =>
     ConferenceService.isLoaded() ? ConferenceService.getConference() : null
   );
+
+  // The active committee's own title (e.g. "United Nations Security Council"), not the overall
+  // conference/workbook name - that's what CommitteeIcon matches against, since a real
+  // conference's workbook name (e.g. "MUNXYZ 2026") won't itself name a committee.
+  const activeCommitteeTitle =
+    loadedConference?.committees?.[loadedConference.activeCommittee]?.committee ?? null;
 
   const [user, setUser] = useState(() => AuthService.getCurrentUser());
   useEffect(() => AuthService.subscribe(setUser), []);
@@ -114,12 +120,6 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  }
-
-  function handleDrop(event) {
-    event.preventDefault();
-    setIsDragging(false);
-    handleFile(event.dataTransfer.files?.[0]);
   }
 
   function selectCommittee(id) {
@@ -223,21 +223,8 @@ export default function HomePage() {
                   onChange={(event) => handleFile(event.target.files?.[0])}
                 />
 
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleDrop}
-                  className={`flex h-16 w-16 cursor-pointer items-center justify-center border border-dashed text-white transition ${
-                    isDragging
-                      ? "border-white/40 bg-white/10"
-                      : "border-white/15 hover:border-white/30"
-                  }`}
-                >
-                  <FileX size={24} />
+                <div className="flex h-16 w-16 items-center justify-center border border-white/15 text-white">
+                  <CommitteeIcon title={activeCommitteeTitle} size={24} fallback={<FileX size={24} />} />
                 </div>
 
                 <h2 className="mt-6 text-2xl font-semibold">
@@ -252,8 +239,8 @@ export default function HomePage() {
                   {error
                     ? error
                     : loadedConference?.name
-                    ? "Drop another workbook to replace it, or resume the session above."
-                    : "Drag an Excel workbook onto the icon above, or click it to browse."}
+                    ? "Use New Conference to load a different workbook."
+                    : "Use New Conference to load a workbook and get started."}
                 </p>
 
               </div>

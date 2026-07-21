@@ -56,7 +56,7 @@ export default function FeedbackPage() {
         </h1>
 
         <p className="mt-4 text-sm leading-relaxed text-white/60">
-          Bugs, rough edges, feature requests — whatever you've got. It goes straight to me.
+          Bugs, rough edges, feature requests. Whatever you've got. We'll try our best to react to them as fast and effectively as we can.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5 border border-white/10 bg-[#121212] p-6 sm:p-8">

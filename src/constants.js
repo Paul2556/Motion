@@ -404,6 +404,13 @@ export const MEASUREMENT_WORDS = new Set([
   "MINS"
 ]);
 
+export const SECOND_WORDS = new Set([
+  "SECOND",
+  "SECONDS",
+  "SEC",
+  "SECS"
+]);
+
 // Used by MotionInput's topic-phrase detection - the whole phrase (matched
 // word-for-word, not just the bare word "topic") that introduces a motion's
 // subject, e.g. "...on the topic of nuclear disarmament". Distinct from
@@ -411,9 +418,30 @@ export const MEASUREMENT_WORDS = new Set([
 // AllocationParser, not floor language a chair actually says.
 export const TOPIC_MARKER_PHRASE = [
   "ON THE TOPIC OF",
-  "DISCUSSING", 
-  "FOR THE PURPOSE OF", 
-  "TOPIC OF", 
-  "PURPOSE OF", 
-  "TOPIC"
+  "DISCUSSING",
+  "FOR THE PURPOSE OF",
+  "TOPIC OF",
+  "PURPOSE OF",
+  "TOPIC",
+  "TOPIC WERE TO BE ABOUT",
+];
+
+// Maps a committee's freeform title (whatever text an uploaded workbook's sheet name/title
+// happens to use, or a bundled demo conference) to one of the icons in src/assets/committee -
+// see src/utils/committeeIcon.js for the matching logic. `icon` is that file's basename.
+// Order matters: more specific committees must come before generic fallbacks, since a title like
+// "General Assembly Third Committee (SOCHUM)" contains both "general assembly" and "sochum".
+export const committee = [
+  { icon: "unsc", name: "United Nations Security Council", aliases: ["security council", "unsc"] },
+  { icon: "disec", name: "GA First Committee — Disarmament & International Security", aliases: ["disarmament", "disec", "first committee", "ga1"] },
+  { icon: "ecofin", name: "GA Second Committee — Economic & Financial", aliases: ["economic and financial", "ecofin", "second committee", "ga2"] },
+  { icon: "sochum", name: "GA Third Committee — Social, Humanitarian & Cultural", aliases: ["sochum", "social, humanitarian", "third committee", "ga3"] },
+  { icon: "specpol", name: "GA Fourth Committee — Special Political & Decolonization", aliases: ["special political", "decolonization", "specpol", "fourth committee", "ga4"] },
+  { icon: "legal", name: "GA Sixth Committee — Legal", aliases: ["legal committee", "sixth committee", "ga6"] },
+  { icon: "ecosoc", name: "Economic and Social Council", aliases: ["economic and social council", "ecosoc"] },
+  { icon: "hrc", name: "Human Rights Council", aliases: ["human rights council", "unhrc", "hrc"] },
+  { icon: "unicef", name: "United Nations Children's Fund", aliases: ["unicef", "children's fund"] },
+  { icon: "who", name: "World Health Organization", aliases: ["world health organization", "who"] },
+  { icon: "unesco", name: "UNESCO", aliases: ["unesco", "educational, scientific and cultural"] },
+  { icon: "ga", name: "General Assembly", aliases: ["general assembly", "unga"] },
 ];

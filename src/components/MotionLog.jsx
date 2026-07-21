@@ -1,3 +1,5 @@
+import { formatDuration } from "../utils/duration";
+
 // List of previously submitted motions (see MotionInput's onSubmit), newest
 // first - a plain snapshot of each motion's parsed meta at submit time, so
 // later edits to the committee roster/constants can't retroactively change
@@ -29,8 +31,8 @@ export default function MotionLog({ entries, onDelete, onVote, onToggleSecond, s
           <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm text-white/60">
             <span>Proposer: {entry.delegation ?? "—"}</span>
             <span className="flex flex-wrap gap-x-4">
-              {entry.totalTime != null && <span>{entry.totalTime} min total</span>}
-              {entry.speakingTime != null && <span>{entry.speakingTime} min per speaker</span>}
+              {entry.totalTime != null && <span>{formatDuration(entry.totalTime)} total</span>}
+              {entry.speakingTime != null && <span>{formatDuration(entry.speakingTime)} per speaker</span>}
             </span>
           </div>
 

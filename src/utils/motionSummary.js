@@ -1,3 +1,5 @@
+import { formatDuration } from "./duration";
+
 // "{motion type} for {total time} with {speaking time} speaking time for the
 // purpose of {topic}" - each clause is only included when that field was
 // actually captured, since not every motion type has a topic/speaking time
@@ -7,8 +9,8 @@
 export function formatMotionSummary(entry) {
   if (!entry) return "";
   const parts = [entry.motion ?? "Motion"];
-  if (entry.totalTime != null) parts.push(`for ${entry.totalTime} minutes`);
-  if (entry.speakingTime != null) parts.push(`with ${entry.speakingTime} minutes speaking time`);
+  if (entry.totalTime != null) parts.push(`for ${formatDuration(entry.totalTime)}`);
+  if (entry.speakingTime != null) parts.push(`with ${formatDuration(entry.speakingTime)} speaking time`);
   if (entry.topic) parts.push(`for the purpose of ${entry.topic}`);
   return parts.join(" ");
 }

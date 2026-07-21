@@ -82,7 +82,7 @@ const features = [
   {
     icon: LayoutTemplate,
     number: '06',
-    title: 'Motion presets',
+    title: 'Custom motion presets',
     body: 'Start with procedures tailored to your committee, then adjust the details that matter.',
     visual: <PresetDemo />,
   },
@@ -574,7 +574,7 @@ function LandingPage() {
               href="/licensing"
               className="inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors hover:text-white/50"
             >
-              Source Avaliable & Licensed under the Motion Attribution License.
+              Source-Avaliable & Licensed under the Motion Attribution License.
             </a>
           </div>
         </div>
@@ -852,17 +852,20 @@ function MotionInputDemo() {
 
 // Pulled from the real MOTIONS vocabulary (src/constants.js) rather than
 // hardcoded chip labels, so the detail line below is always the actual
-// canonical phrasing/aliases Motion recognizes.
+// canonical phrasing/aliases Motion recognizes - unless a preset sets its
+// own `detail`, which overrides that lookup for the description only (the
+// button label is always just `label`).
 const PRESET_PICKS = [
-  { match: 'Open a Moderated Caucus', label: 'Moderated' },
-  { match: 'Open an Unmoderated Caucus', label: 'Unmoderated' },
-  { match: 'Introduce a Draft Resolution', label: 'Draft Resolution' },
-  { match: 'Move into Voting Procedure', label: 'Voting Procedure' },
+  { match: 'Open a Moderated Caucus', label: 'Moderated Caucus\n20 min 1 min', detail: 'Open a Moderated Caucus for 20 minutes with 1 minute speaking time with prompted topic' },
+  { match: 'Open an Unmoderated Caucus', label: 'Unmoderated\n15 min', detail: 'Open an Unmoderated Caucus for 15 minutes' },
+  { match: 'Introduce a Draft Resolution', label: 'Draft Resolution\n40 min', detail: 'Open an Unmoderated Caucus for 40 minutes' },
+  { match: 'Move into Voting Procedure', label: 'Crisis COTW\n10 min', detail: 'Open a Consultation of the Whole for 10 minutes'},
 ].map((preset) => ({ ...preset, motion: MOTIONS.find((m) => m.text === preset.match) }))
 
 function PresetDemo() {
   const [selected, setSelected] = useState(0)
-  const active = PRESET_PICKS[selected].motion
+  const activePreset = PRESET_PICKS[selected]
+  const active = activePreset.motion
 
   return (
     <div className="w-full max-w-sm">
@@ -874,13 +877,13 @@ function PresetDemo() {
             className={`flex aspect-[1.6] flex-col justify-end border p-3 text-left text-xs transition ${i === selected ? 'border-black bg-black text-white' : 'border-black/15 bg-white hover:border-black/30'}`}
           >
             <LayoutTemplate className="mb-auto" size={14} />
-            <span>{preset.label}</span>
+            <span className="whitespace-pre-line">{preset.label}</span>
           </button>
         ))}
       </div>
       <p className="mt-3 border-t border-black/10 pt-3 text-xs text-black/45">
-        <span className="font-medium text-black/70">{active.text}</span>
-        {active.alias?.length ? ` — also recognized as "${active.alias[0]}"` : null}
+        <span className="font-medium text-black/70">{activePreset.detail ?? active.text}</span>
+        {!activePreset.detail && active.alias?.length ? ` — also recognized as "${active.alias[0]}"` : null}
       </p>
     </div>
   )

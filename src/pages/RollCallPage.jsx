@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, Keyboard } from "lucide-react";
 import Logo from "../components/Logo";
@@ -87,6 +87,15 @@ export default function RollCallPage() {
 
   const clampedIndex = delegates.length === 0 ? -1 : Math.min(selectedIndex, delegates.length - 1);
   const selectedDelegate = clampedIndex >= 0 ? delegates[clampedIndex] : null;
+
+  // Keyboard nav (rollCall.moveUp/moveDown) can move the selection past the edge of the
+  // scrollable roster without this - the row itself would still update, just silently
+  // off-screen. "nearest" only scrolls the minimum needed to reveal it, so it doesn't yank
+  // the list around when the row's already visible.
+  const rowRefs = useRef([]);
+  useEffect(() => {
+    rowRefs.current[clampedIndex]?.scrollIntoView({ block: "nearest" });
+  }, [clampedIndex]);
 
   function applyToDelegate(id, state) {
     const delegate = delegates.find((d) => d.id === id);
@@ -209,6 +218,7 @@ export default function RollCallPage() {
             {delegates.map((delegate, index) => (
               <div
                 key={delegate.id}
+                ref={(el) => (rowRefs.current[index] = el)}
                 onClick={() => setSelectedIndex(index)}
                 className={`flex items-center justify-between px-5 py-4 transition ${
                   index === clampedIndex ? "bg-white/5" : ""
