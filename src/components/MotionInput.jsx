@@ -1,23 +1,26 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { MOTIONS, countries, historicalCountries, CONNECTIVE_WORDS, MEASUREMENT_WORDS, SECOND_WORDS, TOPIC_MARKER_PHRASE } from "../constants";
+import { countries, historicalCountries, CONNECTIVE_WORDS, MEASUREMENT_WORDS, SECOND_WORDS, TOPIC_MARKER_PHRASE } from "../constants";
+import { getMotions, canonicalLabel } from "../motionPresets";
 import { formatDuration } from "../utils/duration";
 
-const MOTION_PHRASES = MOTIONS.flatMap((motion) =>
-  [motion.text, ...(motion.alias ?? [])].map((text) => ({
-    text,
-    lower: text.toLowerCase(),
-    category: "motion",
-    // Always resolve to the shortest alias ("Moderated Caucus"), regardless
-    // of which variant (the verbose motion.text or another alias) actually
-    // matched - meta.motion is a status label shown elsewhere (SessionBoard's
-    // badge, MotionLog), which shouldn't carry the "Open a"/"Open an" verb
-    // filler only useful in the chair's own typed sentence.
-    canonical: motion.alias?.[0] ?? motion.text,
-    requireExactWordCount: motion.explicit === true,
-    durationField: motion.durationField ?? null,
-    requiresTopic: motion.topic === true,
-  }))
-);
+function buildMotionPhrases(motions) {
+  return motions.flatMap((motion) =>
+    [motion.text, ...(motion.alias ?? [])].map((text) => ({
+      text,
+      lower: text.toLowerCase(),
+      category: "motion",
+      // Always resolve to the shortest alias ("Moderated Caucus"), regardless
+      // of which variant (the verbose motion.text or another alias) actually
+      // matched - meta.motion is a status label shown elsewhere (SessionBoard's
+      // badge, MotionLog), which shouldn't carry the "Open a"/"Open an" verb
+      // filler only useful in the chair's own typed sentence.
+      canonical: canonicalLabel(motion),
+      requireExactWordCount: motion.explicit === true,
+      durationField: motion.durationField ?? null,
+      requiresTopic: motion.topic === true,
+    }))
+  );
+}
 const ALL_COUNTRIES = [...countries, ...historicalCountries];
 const COUNTRY_BY_CODE = new Map(ALL_COUNTRIES.map((c) => [c.code, c]));
 
@@ -64,8 +67,8 @@ function buildDelegationPhrases(delegations) {
 // ~190-country list, so typos are matched against a much smaller,
 // actually-relevant pool. Longest phrase first, so "Open a Moderated
 // Caucus" wins over any shorter phrase that might match inside it.
-function buildPhraseIndex(delegations) {
-  const allPhrases = [...MOTION_PHRASES, ...buildDelegationPhrases(delegations)].sort((a, b) => b.lower.length - a.lower.length);
+function buildPhraseIndex(delegations, motionPhrases) {
+  const allPhrases = [...motionPhrases, ...buildDelegationPhrases(delegations)].sort((a, b) => b.lower.length - a.lower.length);
 
   const byWordCount = new Map();
   for (const phrase of allPhrases) {
@@ -659,8 +662,9 @@ function shouldAutoExpand(matchedText, canonical) {
   return true;
 }
 
-// Textarea that highlights recognized parliamentary motions (constants.js's
-// MOTIONS, accent color), delegation names/aliases (a second accent color),
+// Textarea that highlights recognized parliamentary motions (motionPresets.js's
+// getMotions(), seeded from constants.js's MOTIONS but user-editable via
+// Settings, accent color), delegation names/aliases (a second accent color),
 // and a motion's duration - total caucus time vs. per-speaker "speaking
 // time" (a third accent color, see classifyDuration) - as the chair types,
 // underlined dashed for a close (typo-tolerant) match rather than an exact
@@ -684,7 +688,8 @@ const MotionInput = forwardRef(function MotionInput({ value, onChange, placehold
     focus: () => textareaRef.current?.focus(),
   }));
 
-  const phraseIndex = useMemo(() => buildPhraseIndex(delegations), [delegations]);
+  const motionPhrases = useMemo(() => buildMotionPhrases(getMotions()), []);
+  const phraseIndex = useMemo(() => buildPhraseIndex(delegations, motionPhrases), [delegations, motionPhrases]);
   const { ranges, meta } = useMemo(
     () => findHighlightRanges(value, fuzzyLevel, phraseIndex),
     [value, fuzzyLevel, phraseIndex]

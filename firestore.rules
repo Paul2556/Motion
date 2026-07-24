@@ -69,5 +69,11 @@ service cloud.firestore {
     match /rateLimits/{ip} {
       allow read, write: if false;
     }
+
+    // Account-synced motion presets/shortcuts (src/services/prefsSync.js) -
+    // one doc per user, only ever read/written by that user themselves.
+    match /userPrefs/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
   }
 }

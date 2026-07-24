@@ -7,6 +7,7 @@ import Flag from "./Flag";
 import Logo from "./Logo";
 import ShortcutLegend from "./ShortcutLegend";
 import ConferenceService from "../services/ConferenceService";
+import { ROTATION_SEQUENCES, positionAt } from "../utils/rotation";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
 function NavItem({ to, linked, className, children }) {
@@ -37,6 +38,11 @@ export default function SessionBoard({
   const [history, setHistory] = useState([]);
   const [selectedQueueIndex, setSelectedQueueIndex] = useState(-1);
   const [legendOpen, setLegendOpen] = useState(false);
+  // Resolution-debate speaker rotation (Against/For, or Against/To/For) -
+  // stored per-committee on ConferenceService (see its "resolution debate
+  // speaker rotation" section), mirrored here the same way queue/speaker
+  // state already is elsewhere in this file.
+  const [rotation, setRotationState] = useState(() => ConferenceService.getRotation());
 
   const navigate = useNavigate();
   const timerRef = useRef(null);
@@ -74,6 +80,26 @@ export default function SessionBoard({
       hadPreviousSpeaker: Boolean(currentSpeaker),
     };
     timerRef.current?.triggerNext();
+  }
+
+  // Manual, independent of recognizeNext - the queue is shared by every
+  // speech type (caucuses included), not just resolution debate, so
+  // advancing it automatically on every recognized speaker would be wrong
+  // outside that specific phase. Chair operates this widget only when it's
+  // actually relevant, same "chair discretion" framing as the RoP itself.
+  function chooseRotationType(type) {
+    ConferenceService.setRotationType(type);
+    setRotationState(ConferenceService.getRotation());
+  }
+
+  function advanceRotation() {
+    ConferenceService.advanceRotation();
+    setRotationState(ConferenceService.getRotation());
+  }
+
+  function resetRotation() {
+    ConferenceService.resetRotation();
+    setRotationState(ConferenceService.getRotation());
   }
 
   function removeSelected() {
@@ -118,6 +144,7 @@ export default function SessionBoard({
       "global.legend": () => setLegendOpen((open) => !open),
       "global.viewRollCall": () => navigate("/rollcall"),
       "global.viewMotions": () => navigate("/motion"),
+      "global.viewGeneralVoting": () => navigate("/vote"),
     },
     { active: linked }
   );
@@ -151,6 +178,13 @@ export default function SessionBoard({
             <span className="h-2.5 w-2.5 rounded-full bg-[var(--motion-accent)]" />
             Motion
           </NavItem>
+          <NavItem
+            to="/vote"
+            linked={linked}
+            className="inline-flex items-center gap-2 rounded-none border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-white/60 transition hover:border-white/20 hover:bg-white/10"
+          >
+            Vote
+          </NavItem>
           {linked && (
             <button
               onClick={() => setLegendOpen(true)}
@@ -175,6 +209,44 @@ export default function SessionBoard({
             </div>
             <span className="rounded-none border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-white/60">{activeMotion}</span>
           </div>
+
+          {linked && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border border-white/10 bg-white/5 px-4 py-3">
+              <div className="flex items-center gap-1">
+                {Object.keys(ROTATION_SEQUENCES).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => chooseRotationType(type)}
+                    className={`border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.14em] transition ${
+                      rotation.type === type
+                        ? "border-white/40 bg-white/10 text-white"
+                        : "border-white/10 bg-transparent text-white/50 hover:border-white/20"
+                    }`}
+                  >
+                    {ROTATION_SEQUENCES[type].join(" → ")}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] uppercase tracking-[0.16em] text-white/50">
+                  Next: <span className="text-white">{positionAt(rotation.type, rotation.index)}</span>
+                </span>
+                <button
+                  onClick={advanceRotation}
+                  className="border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/70 transition hover:bg-white/10"
+                >
+                  Advance
+                </button>
+                <button
+                  onClick={resetRotation}
+                  className="border border-white/10 bg-transparent px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/60"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-1 flex-col items-center justify-center gap-12">
             <Timer

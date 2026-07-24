@@ -6,11 +6,13 @@ import HomePage from "./pages/HomePage";
 import SessionPage from "./pages/SessionPage";
 import RollCallPage from "./pages/RollCallPage";
 import MotionPage from "./pages/MotionPage";
+import GeneralVotingPage from "./pages/GeneralVotingPage";
 import SettingsPage from "./pages/SettingsPage";
 import CloudSessionsPage from "./pages/CloudSessionsPage";
 import StatsPage from "./pages/StatsPage";
 import DebugPage from "./pages/DebugPage";
 import ReferPage from "./pages/ReferPage";
+import AdminPanelPage from "./pages/AdminPanelPage";
 import LicensePage from "./pages/LicensePage";
 import SourceRequestPage from "./pages/SourceRequestPage";
 import FeedbackPage from "./pages/FeedbackPage";
@@ -62,6 +64,7 @@ function AppRoutes() {
       <Route path="/session" element={<SessionPage />} />
       <Route path="/rollcall" element={<RollCallPage />} />
       <Route path="/motion" element={<MotionPage />} />
+      <Route path="/vote" element={<GeneralVotingPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cloud" element={<CloudSessionsPage />} />
       <Route path="/stats" element={<StatsPage />} />
@@ -98,6 +101,7 @@ function DebugRoutes() {
     <Routes>
       <Route path="/" element={<DebugPage />} />
       <Route path="/refer" element={<ReferPage />} />
+      <Route path="/adminPanel" element={<AdminPanelPage />} />
       <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
       <Route path="/source" element={<RedirectToMarketing path="/source" />} />
     </Routes>
@@ -112,12 +116,14 @@ function AllRoutes() {
       <Route path="/session" element={<SessionPage />} />
       <Route path="/rollcall" element={<RollCallPage />} />
       <Route path="/motion" element={<MotionPage />} />
+      <Route path="/vote" element={<GeneralVotingPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cloud" element={<CloudSessionsPage />} />
       <Route path="/stats" element={<StatsPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />
       <Route path="/debug" element={<DebugPage />} />
       <Route path="/debug/refer" element={<ReferPage />} />
+      <Route path="/debug/adminPanel" element={<AdminPanelPage />} />
       <Route path="/licensing" element={<LicensePage />} />
       <Route path="/source" element={<SourceRequestPage />} />
     </Routes>

@@ -15,12 +15,44 @@ function readOverrides() {
   }
 }
 
+// Notified after every local write - src/services/prefsSync.js subscribes to
+// push changes up to a signed-in user's account. Plain pub/sub (not an
+// import of prefsSync.js itself) so this module has no idea account sync
+// exists - avoids a circular import, since prefsSync.js already needs to
+// import *this* file.
+const changeListeners = new Set();
+
+export function onShortcutsChange(callback) {
+  changeListeners.add(callback);
+  return () => changeListeners.delete(callback);
+}
+
 function writeOverrides(overrides) {
   try {
     localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides));
   } catch {
     // storage unavailable (private browsing, quota) - remap just won't persist
   }
+  changeListeners.forEach((callback) => callback(overrides));
+}
+
+// Full blob, not one action - used by prefsSync.js to push a signed-in
+// user's complete remap set as-is.
+export function getAllShortcutOverrides() {
+  return readOverrides();
+}
+
+// Wholesale replace, same write path as writeOverrides - used by
+// prefsSync.js to adopt a signed-in user's server copy.
+export function replaceOverrides(overrides) {
+  writeOverrides(overrides);
+}
+
+// Clears every remap at once (vs. clearShortcutOverride's one-at-a-time) -
+// used by prefsSync.js on sign-out so the next person at a shared device
+// doesn't inherit whoever was last signed in.
+export function resetAllShortcuts() {
+  writeOverrides({});
 }
 
 export function getShortcutOverride(actionId) {

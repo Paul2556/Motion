@@ -31,11 +31,18 @@ export default function SessionPage() {
   const activeMotion = motion?.motion ?? "No motion active";
 
   // A passed motion's speaking time (minutes, from MotionInput's parsing)
-  // becomes the per-speaker timer length here - falls back to SessionBoard's
-  // own default when no motion set one (e.g. no motion voted on yet). Rounded
-  // since a seconds-derived value (e.g. 12 sec -> 0.2 min) can otherwise hit
-  // this as something like 19.999999999998 due to float imprecision.
-  const speechLength = motion?.speakingTime != null ? Math.round(motion.speakingTime * 60) : undefined;
+  // becomes the per-speaker timer length here - falls back to the motion's
+  // total time (e.g. an unmoderated caucus, which has no per-speaker rate at
+  // all) when there's no speaking time, and only falls back to
+  // SessionBoard's own default when neither is set (e.g. no motion voted on
+  // yet). Rounded since a seconds-derived value (e.g. 12 sec -> 0.2 min) can
+  // otherwise hit this as something like 19.999999999998 due to float
+  // imprecision.
+  const speechLength = motion?.speakingTime != null
+    ? Math.round(motion.speakingTime * 60)
+    : motion?.totalTime != null
+      ? Math.round(motion.totalTime * 60)
+      : undefined;
 
   return (
     <div className="app-shell h-screen overflow-hidden bg-[#0d0d0d] text-white">

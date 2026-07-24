@@ -4,6 +4,8 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
+  ChevronsUp,
+  ChevronsDown,
 } from "lucide-react";
 import Flag from "./Flag";
 
@@ -99,6 +101,29 @@ const Queue = forwardRef(function Queue({
       copy[index + 1],
       copy[index],
     ];
+
+    setQueue(copy);
+  }
+
+  // One-click jump to either end - e.g. a moderated caucus's raiser asking
+  // to speak first or last (RoP 21(b)(ii)) - rather than repeated
+  // moveUp/moveDown clicks through a long queue.
+  function moveToTop(index) {
+    if (index === 0) return;
+
+    const copy = [...queue];
+    const [item] = copy.splice(index, 1);
+    copy.unshift(item);
+
+    setQueue(copy);
+  }
+
+  function moveToBottom(index) {
+    if (index === queue.length - 1) return;
+
+    const copy = [...queue];
+    const [item] = copy.splice(index, 1);
+    copy.push(item);
 
     setQueue(copy);
   }
@@ -201,7 +226,16 @@ const Queue = forwardRef(function Queue({
               <div className="flex gap-1 opacity-0 transition group-hover:opacity-100">
 
                 <button
+                  onClick={() => moveToTop(index)}
+                  aria-label="Move to top"
+                  className="border border-white/10 p-2 hover:bg-white/10"
+                >
+                  <ChevronsUp size={14} />
+                </button>
+
+                <button
                   onClick={() => moveUp(index)}
+                  aria-label="Move up"
                   className="border border-white/10 p-2 hover:bg-white/10"
                 >
                   <ChevronUp size={14} />
@@ -209,9 +243,18 @@ const Queue = forwardRef(function Queue({
 
                 <button
                   onClick={() => moveDown(index)}
+                  aria-label="Move down"
                   className="border border-white/10 p-2 hover:bg-white/10"
                 >
                   <ChevronDown size={14} />
+                </button>
+
+                <button
+                  onClick={() => moveToBottom(index)}
+                  aria-label="Move to bottom"
+                  className="border border-white/10 p-2 hover:bg-white/10"
+                >
+                  <ChevronsDown size={14} />
                 </button>
 
                 <button

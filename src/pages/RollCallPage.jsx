@@ -144,6 +144,7 @@ export default function RollCallPage() {
       "global.legend": () => setLegendOpen((open) => !open),
       "global.viewSpeakerList": () => navigate("/session"),
       "global.viewMotions": () => navigate("/motion"),
+      "global.viewGeneralVoting": () => navigate("/vote"),
     },
     { active: Boolean(committee) }
   );

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Check, Moon, RotateCcw, Sun } from "lucide-react";
 
 import Logo from "../components/Logo";
+import MotionPresetManager from "../components/MotionPresetManager";
 import { getAppTheme, setAppTheme, getAppReducedMotion, setAppReducedMotion } from "../appTheme";
 import AuthService from "../services/AuthService";
 import { SHORTCUT_SCOPES, REMAPPABLE_SCOPES } from "../shortcuts";
@@ -233,6 +234,10 @@ export default function SettingsPage() {
           <p className="mt-2 text-sm text-white/45">
             {user ? `Signed in as ${user.email ?? "cloud account"}` : "Not signed in."}
           </p>
+          <p className="mt-2 text-xs text-white/30">
+            Motion presets and keyboard shortcuts sync to your account when signed in - useful on
+            a shared device, since signing in always loads your own settings.
+          </p>
 
           <div className="mt-5 flex gap-3">
             <Link
@@ -262,6 +267,18 @@ export default function SettingsPage() {
 
           <div className="mt-5">
             <ShortcutRemapList />
+          </div>
+        </div>
+
+        <div className="mt-6 border border-white/10 bg-[#111111] p-6">
+          <p className="text-xs uppercase tracking-[0.22em] text-white/40">Motion presets</p>
+          <p className="mt-2 text-sm text-white/45">
+            Add, edit, or remove the motions recognized on the Motions page - including the
+            built-in ones.
+          </p>
+
+          <div className="mt-5">
+            <MotionPresetManager />
           </div>
         </div>
 

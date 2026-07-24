@@ -11,6 +11,7 @@ api/source/_archive/
 # environment variables
 .env
 .env.local
+#! .env.local DON'T REMOVE SINCE IT CONTAINS ALL SECRETS.
 
 # logs
 *.log

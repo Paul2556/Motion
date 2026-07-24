@@ -21,6 +21,7 @@ export const SHORTCUT_SCOPES = {
     { id: "global.viewSpeakerList", label: "Switch to Speaker List", defaultKey: "Digit1", display: "1" },
     { id: "global.viewMotions", label: "Switch to Motions", defaultKey: "Digit2", display: "2" },
     { id: "global.viewRollCall", label: "Switch to Roll Call", defaultKey: "Digit3", display: "3" },
+    { id: "global.viewGeneralVoting", label: "Switch to General Voting", defaultKey: "Digit4", display: "4" },
     { id: "global.undo", label: "Undo last action", defaultKey: "Mod+KeyZ", display: "⌘Z / Ctrl+Z" },
     { id: "global.legend", label: "Toggle shortcut legend", defaultKey: "Shift+Slash", display: "?" },
   ],

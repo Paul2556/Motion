@@ -220,6 +220,53 @@ class ConferenceService {
   }
 
   // ============================================================
+  // Resolution debate speaker rotation
+  // ============================================================
+
+  // Stored on the committee record (same reasoning as activeMotion) so it
+  // persists/restores automatically and resets per-committee. Defaults to
+  // "2-part" (Against/For) - confirmed as the real-conference-practice
+  // benchmark, not the written RoP's 3-part (Against/To/For) default (see
+  // src/utils/rotation.js).
+  getRotation() {
+    return this.getActiveCommittee()?.rotation ?? { type: "2-part", index: 0 };
+  }
+
+  // Changing the rotation type resets the position back to the start of the
+  // cycle - a half-completed 3-part cycle has no sensible equivalent
+  // position in a 2-part one.
+  setRotationType(type) {
+    const committee = this.getActiveCommittee();
+    if (!committee) return false;
+
+    committee.rotation = { type, index: 0 };
+    this.persist();
+
+    return true;
+  }
+
+  advanceRotation() {
+    const committee = this.getActiveCommittee();
+    if (!committee) return false;
+
+    const current = this.getRotation();
+    committee.rotation = { ...current, index: current.index + 1 };
+    this.persist();
+
+    return true;
+  }
+
+  resetRotation() {
+    const committee = this.getActiveCommittee();
+    if (!committee) return false;
+
+    committee.rotation = { ...this.getRotation(), index: 0 };
+    this.persist();
+
+    return true;
+  }
+
+  // ============================================================
   // Delegates
   // ============================================================
 

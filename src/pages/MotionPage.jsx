@@ -1,27 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Keyboard, Minus, Plus } from "lucide-react";
+import { Keyboard } from "lucide-react";
 import Logo from "../components/Logo";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
-import SeatChart from "../components/SeatChart";
+import VotingPanel from "../components/VotingPanel";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
-import { getVoteStatusLabel } from "../utils/voteStatus";
 import { formatMotionSummary } from "../utils/motionSummary";
+import { buildInitialGroups, adjustVoteGroups, toggleAbstainGroups } from "../utils/voteGroups";
 import ConferenceService from "../services/ConferenceService";
+import { getMotions, canonicalLabel } from "../motionPresets";
+import { RESOLUTION_READING_MINUTES, MAIN_SUBMITTER_MINUTES } from "../constants";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
-
-// Colors use the app's categorical palette (slot 1 blue, slot 3 yellow - see
-// src/index.css / the dataviz skill's palette reference) rather than freehand hex picks.
-// Abstain is opt-in, not always present - most procedural motions are strictly
-// for/against, only some substantive votes allow abstention - see toggleAbstain.
-function buildInitialGroups(delegateCount) {
-  return [
-    { name: "For", seats: 0, color: "var(--vote-for)" },
-    { name: "Against", seats: delegateCount, color: "var(--vote-against)" },
-  ];
-}
 
 function voteStorageKey(committeeId) {
   return `motion-vote-${committeeId}`;
@@ -44,18 +35,42 @@ function loadCachedVote(committeeId, delegateCount) {
   }
 }
 
+// Inserts a new motion-log entry immediately above the first existing entry
+// whose rank is no more disruptive than it (so same-rank motions still read
+// newest-first, and a highly disruptive new motion - e.g. a Point of Order -
+// jumps straight to the top instead of just being prepended). An entry whose
+// text the parser didn't recognize as any known motion sinks to the bottom.
+function insertByPrecedence(list, entry, precedenceByLabel) {
+  const rank = entry.motion != null ? (precedenceByLabel.get(entry.motion) ?? Infinity) : Infinity;
+  const at = list.findIndex((existing) => {
+    const existingRank = existing.motion != null ? (precedenceByLabel.get(existing.motion) ?? Infinity) : Infinity;
+    return existingRank >= rank;
+  });
+  const index = at === -1 ? list.length : at;
+  return [...list.slice(0, index), entry, ...list.slice(index)];
+}
+
 export default function MotionPage() {
   const navigate = useNavigate();
   const committee = ConferenceService.getActiveCommittee();
   const delegateCount = committee?.delegates.length ?? 0;
+  const presentCount = committee?.delegates.filter((d) => d.present).length ?? 0;
+  const absentCount = delegateCount - presentCount;
   const cachedVote = committee ? loadCachedVote(committee.id, delegateCount) : null;
 
   // Scope MotionInput's matching to delegations actually in this committee
   // (including non-country ones like press corps), not the full ISO list.
   const delegations = committee?.delegates.map((d) => ({ name: d.countryDisplay, code: d.countryCode })) ?? [];
 
+  // Read once per mount (see motionPresets.js) - used to rank the motion log
+  // by precedence (array order = disruptiveness rank, see insertByPrecedence).
+  const precedenceByLabel = useMemo(
+    () => new Map(getMotions().map((m, i) => [canonicalLabel(m), i])),
+    []
+  );
+
   const [motionText, setMotionText] = useState(cachedVote?.motionText ?? "");
-  const [groups, setGroups] = useState(cachedVote?.groups ?? buildInitialGroups(delegateCount));
+  const [groups, setGroups] = useState(cachedVote?.groups ?? buildInitialGroups(presentCount, absentCount));
   const [motionLog, setMotionLog] = useState(cachedVote?.motionLog ?? []);
   const [selectedIndex, setSelectedIndex] = useState(0);
   // Hidden until a chair explicitly opens voting on a logged motion - null
@@ -82,15 +97,17 @@ export default function MotionPage() {
   // back to the floor), which is what the /session timer's badge reads.
   function startVoting(entry) {
     setVotingMotion(entry);
-    setGroups(buildInitialGroups(delegateCount));
+    setGroups(buildInitialGroups(presentCount, absentCount));
     ConferenceService.setActiveMotion(entry);
   }
 
   // The most recently logged motion becomes the committee's active motion
   // too - most motions (procedural ones especially) govern the floor as
-  // soon as they're moved, well before/without an explicit vote.
+  // soon as they're moved, well before/without an explicit vote. Inserted by
+  // precedence rather than prepended, so a highly disruptive motion (Point
+  // of Order) always shows above a less disruptive one already on the floor.
   function handleMotionSubmit(meta) {
-    setMotionLog((prev) => [meta, ...prev]);
+    setMotionLog((prev) => insertByPrecedence(prev, meta, precedenceByLabel));
     ConferenceService.setActiveMotion(meta);
   }
 
@@ -100,6 +117,20 @@ export default function MotionPage() {
   // active motion mid-vote.
   function continueToSession() {
     ConferenceService.setActiveMotion(votingMotion);
+    navigate("/session");
+  }
+
+  // Ad hoc utility, not tied to a logged/voted motion - same reasoning as
+  // /vote's standalone tool. Reuses the exact plain-object shape a parsed
+  // motion already has (see MotionInput.jsx's meta), so /session's existing
+  // badge/timer wiring picks these up with no changes of its own.
+  function startResolutionReading() {
+    ConferenceService.setActiveMotion({ motion: "Resolution Reading Time", totalTime: RESOLUTION_READING_MINUTES });
+    navigate("/session");
+  }
+
+  function startMainSubmitterSpeech() {
+    ConferenceService.setActiveMotion({ motion: "Main Submitter Speech", speakingTime: MAIN_SUBMITTER_MINUTES });
     navigate("/session");
   }
 
@@ -132,36 +163,18 @@ export default function MotionPage() {
     }
   }, [committee, motionText, groups, motionLog]);
 
-  // Groups always sum to the committee's delegate count - each vote is a
-  // delegate moving from one bloc to another, not an independent tally.
-  // Against (index 1) is the shared default bucket both For and Abstain
-  // exchange with - a delegate moves For<->Against or Abstain<->Against,
-  // never directly between For and Abstain.
   const adjustVotes = useCallback((index, delta) => {
-    setGroups((prev) => {
-      const partner = index === 1 ? 0 : 1;
-      const moved = delta > 0 ? Math.min(delta, prev[partner].seats) : Math.max(delta, -prev[index].seats);
-      if (moved === 0) return prev;
-      return prev.map((group, i) => {
-        if (i === index) return { ...group, seats: group.seats + moved };
-        if (i === partner) return { ...group, seats: group.seats - moved };
-        return group;
-      });
-    });
+    setGroups((prev) => adjustVoteGroups(prev, index, delta));
   }, []);
 
   const allowAbstain = groups.length > 2;
-  const voteStatus = getVoteStatusLabel([groups[0], groups[1]]);
 
-  // Toggling on appends a fresh Abstain bucket; toggling off folds any
-  // existing abstentions back into Against so the total never changes.
+  // Locked (a no-op) whenever anyone's absent - their seats are already
+  // forced into Abstain (see voteGroups.js's buildInitialGroups) and folding
+  // the group away would misrepresent them as real Against votes.
   function toggleAbstain() {
-    setGroups((prev) => {
-      if (prev.length > 2) {
-        return [prev[0], { ...prev[1], seats: prev[1].seats + prev[2].seats }];
-      }
-      return [...prev, { name: "Abstain", seats: 0, color: "var(--vote-abstain)" }];
-    });
+    if (absentCount > 0) return;
+    setGroups((prev) => toggleAbstainGroups(prev));
   }
 
   // Voting is a fixed contextual override (spec: "cannot be remapped away")
@@ -183,6 +196,7 @@ export default function MotionPage() {
       "global.legend": () => setLegendOpen((open) => !open),
       "global.viewSpeakerList": () => navigate("/session"),
       "global.viewRollCall": () => navigate("/rollcall"),
+      "global.viewGeneralVoting": () => navigate("/vote"),
     },
     {
       votingActive: Boolean(votingMotion),
@@ -239,99 +253,46 @@ export default function MotionPage() {
           </div>
 
           {votingMotion && (
-            <div className="border border-white/10 bg-[#121212] p-6">
-              <div className="mb-5 flex items-center justify-between gap-4">
-                <p className="text-xs text-white/50">Allow abstentions</p>
-
-                <button
-                  onClick={toggleAbstain}
-                  role="switch"
-                  aria-checked={allowAbstain}
-                  className={`relative h-7 w-12 shrink-0 rounded-full border transition ${
-                    allowAbstain ? "border-white/40 bg-white/30" : "border-white/10 bg-white/5"
-                  }`}
-                >
-                  <span
-                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                      allowAbstain ? "translate-x-[22px]" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {voteStatus === "Full House" && (
-                <p className="mb-3 text-center text-2xl font-bold uppercase tracking-normal text-[var(--motion-accent)] whitespace-nowrap">
-                  Full House
-                </p>
-              )}
-              {voteStatus === "Super Majority" && (
-                <p className="mb-3 text-center text-2xl uppercase tracking-normal text-[rgba(var(--motion-accent-rgb),0.8)] whitespace-nowrap">
-                  Supermajority
-                </p>
-              )}
-              {voteStatus === "Simple Majority" && (
-                <p className="mb-3 text-center text-2xl uppercase tracking-normal text-white/45 whitespace-nowrap">
-                  Simple Majority
-                </p>
-              )}
-
-              {voteStatus && (
-                <button
-                  onClick={continueToSession}
-                  className="mb-5 flex w-full items-center justify-center gap-2 border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium uppercase tracking-[0.14em] transition hover:border-white/20 hover:bg-white/10"
-                >
-                  
-                  Continue to session
-                  <ArrowRight size={15} />
-                </button>
-              )}
-
-              <SeatChart
-                title="Voting"
-                subtitle={formatMotionSummary(votingMotion)}
-                groups={[groups[0], groups[1]]}
-                selectedIndex={selectedIndex}
-                onSelect={setSelectedIndex}
-                onIncrement={(index) => adjustVotes(index, 1)}
-                onDecrement={(index) => adjustVotes(index, -1)}
-              />
-
-              {allowAbstain && (
-                <div className="-mx-2 mt-2 flex items-center justify-between border-t border-white/5 px-2 py-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: groups[2].color }} />
-                    <span className="text-sm text-white/80">Abstain</span>
-                    <span className="rounded-none border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/40">
-                      3
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="w-10 text-right text-sm text-white/50">{groups[2].seats}</span>
-
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => adjustVotes(2, -1)}
-                        aria-label="Decrease Abstain votes"
-                        className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
-                      >
-                        <Minus size={12} />
-                      </button>
-
-                      <button
-                        onClick={() => adjustVotes(2, 1)}
-                        aria-label="Increase Abstain votes"
-                        className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
-                      >
-                        <Plus size={12} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <VotingPanel
+              subtitle={formatMotionSummary(votingMotion)}
+              groups={groups}
+              selectedIndex={selectedIndex}
+              onSelect={setSelectedIndex}
+              onIncrement={(index) => adjustVotes(index, 1)}
+              onDecrement={(index) => adjustVotes(index, -1)}
+              absentCount={absentCount}
+              onToggleAbstain={toggleAbstain}
+              onContinue={continueToSession}
+            />
           )}
         </div>
+
+        <div className="mt-6 border border-white/10 bg-[#121212] p-6">
+          <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">Resolution tools</p>
+          <p className="mt-2 text-sm text-white/45">
+            Quick timers for a just-introduced resolution - each jumps straight to the session
+            timer with the right duration and label already set.
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              onClick={startResolutionReading}
+              className="border border-white/10 bg-white/5 px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-white/70 transition hover:bg-white/10"
+            >
+              Start Resolution Reading Time ({RESOLUTION_READING_MINUTES} min)
+            </button>
+            <button
+              onClick={startMainSubmitterSpeech}
+              className="border border-white/10 bg-white/5 px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-white/70 transition hover:bg-white/10"
+            >
+              Start Main Submitter Speech ({MAIN_SUBMITTER_MINUTES} min)
+            </button>
+          </div>
+        </div>
+
+        <p className="mt-8 text-center text-[11px] text-white/25">
+          Source of motions are from the ThaiMUN RoP
+        </p>
       </div>
 
       <ShortcutLegend scopeName="motions" open={legendOpen} onClose={() => setLegendOpen(false)} />
