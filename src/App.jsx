@@ -135,7 +135,7 @@ export default function App() {
 
   if (APP_HOSTS.includes(hostname)) return <OwnerGate><AppRoutes /></OwnerGate>;
   if (DEMO_HOSTS.includes(hostname)) return <DemoRoutes />;
-  if (DEBUG_HOSTS.includes(hostname)) return <DebugRoutes />;
+  if (DEBUG_HOSTS.includes(hostname)) return <OwnerGate><DebugRoutes /></OwnerGate>;
   if (MARKETING_HOSTS.includes(hostname)) return <MarketingRoutes />;
   return <AllRoutes />;
 }
