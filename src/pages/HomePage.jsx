@@ -301,9 +301,11 @@ export default function HomePage() {
             Motion Alpha
           </span>
 
-          <Link to="/feedback" className="transition hover:text-white/60">
-            Send Feedback
-          </Link>
+          {isDemoHost && (
+            <Link to="/feedback" className="transition hover:text-white/60">
+              Send Feedback
+            </Link>
+          )}
 
           <span>
             From motion to resolution.

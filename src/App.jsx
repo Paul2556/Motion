@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 
+import { APP_HOSTS, DEMO_HOSTS, DEBUG_HOSTS, MARKETING_HOSTS } from "./hosts";
 import LandingPage from "./pages/LandingPage";
 import HomePage from "./pages/HomePage";
 import SessionPage from "./pages/SessionPage";
@@ -16,6 +17,7 @@ import AdminPanelPage from "./pages/AdminPanelPage";
 import LicensePage from "./pages/LicensePage";
 import SourceRequestPage from "./pages/SourceRequestPage";
 import FeedbackPage from "./pages/FeedbackPage";
+import NotFoundPage from "./pages/NotFoundPage";
 import OwnerGate from "./components/OwnerGate";
 
 // One deployment serves four custom domains (Vercel: attach all four to
@@ -27,10 +29,6 @@ import OwnerGate from "./components/OwnerGate";
 // testing, etc.) falls back to the full combined route table below, so
 // local dev and preview deploys can still reach every page without needing
 // real subdomains wired up.
-const APP_HOSTS = ["app.motionmun.com"];
-const DEMO_HOSTS = ["demo.motionmun.com"];
-const DEBUG_HOSTS = ["debug.motionmun.com"];
-const MARKETING_HOSTS = ["motionmun.com", "www.motionmun.com"];
 
 // /licensing and /source only exist on the marketing domain (see MarketingRoutes
 // below) - a full cross-origin redirect rather than <Navigate>, since that
@@ -49,11 +47,15 @@ function MarketingRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/licensing" element={<LicensePage />} />
       <Route path="/source" element={<SourceRequestPage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
 
-function AppRoutes() {
+// `includeFeedback` is only true for DemoRoutes below - /feedback is a
+// demo-only escape hatch for early-access testers, not something the real
+// app.motionmun.com production host should expose.
+function AppRoutes({ includeFeedback = false } = {}) {
   return (
     <Routes>
       {/* HomePage is reachable at both "/" (the subdomain's root) and
@@ -68,9 +70,10 @@ function AppRoutes() {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cloud" element={<CloudSessionsPage />} />
       <Route path="/stats" element={<StatsPage />} />
-      <Route path="/feedback" element={<FeedbackPage />} />
+      {includeFeedback && <Route path="/feedback" element={<FeedbackPage />} />}
       <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
       <Route path="/source" element={<RedirectToMarketing path="/source" />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
@@ -91,7 +94,7 @@ function DemoRoutes() {
   return (
     <>
       <DemoBanner />
-      <AppRoutes />
+      <AppRoutes includeFeedback />
     </>
   );
 }
@@ -104,6 +107,7 @@ function DebugRoutes() {
       <Route path="/adminPanel" element={<AdminPanelPage />} />
       <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
       <Route path="/source" element={<RedirectToMarketing path="/source" />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
@@ -126,6 +130,7 @@ function AllRoutes() {
       <Route path="/debug/adminPanel" element={<AdminPanelPage />} />
       <Route path="/licensing" element={<LicensePage />} />
       <Route path="/source" element={<SourceRequestPage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

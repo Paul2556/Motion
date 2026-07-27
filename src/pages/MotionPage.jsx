@@ -5,6 +5,7 @@ import Logo from "../components/Logo";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
 import VotingPanel from "../components/VotingPanel";
+import SpeakingTimeSelector from "../components/SpeakingTimeSelector";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
 import { formatMotionSummary } from "../utils/motionSummary";
@@ -132,6 +133,16 @@ export default function MotionPage() {
   function startMainSubmitterSpeech() {
     ConferenceService.setActiveMotion({ motion: "Main Submitter Speech", speakingTime: MAIN_SUBMITTER_MINUTES });
     navigate("/session");
+  }
+
+  // Sets the chosen per-speaker time as the active motion (same field
+  // /session already reads for the timer) and tells SessionPage to seed the
+  // queue with the full roster, alphabetically - a one-time router-state
+  // flag rather than persisted state, so a later refresh of /session doesn't
+  // keep re-seeding over whatever the chair has done with the queue since.
+  function startSpeakingTime(seconds) {
+    ConferenceService.setActiveMotion({ motion: "Speakers' List", speakingTime: seconds / 60 });
+    navigate("/session", { state: { seedQueue: true } });
   }
 
   function deleteMotion(index) {
@@ -289,6 +300,8 @@ export default function MotionPage() {
             </button>
           </div>
         </div>
+
+        <SpeakingTimeSelector onSelect={startSpeakingTime} />
 
         <p className="mt-8 text-center text-[11px] text-white/25">
           Source of motions are from the ThaiMUN RoP

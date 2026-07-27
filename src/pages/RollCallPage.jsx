@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, Keyboard } from "lucide-react";
+import { ArrowRight, Check, Keyboard } from "lucide-react";
 import Logo from "../components/Logo";
 import Flag from "../components/Flag";
 import NoCommitteeModal from "../components/NoCommitteeModal";
@@ -189,10 +189,10 @@ export default function RollCallPage() {
               <Keyboard size={14} />
             </button>
             <Link
-              to="/session"
+              to="/motion"
               className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
             >
-              <ArrowLeft size={14} /> Back
+              Continue <ArrowRight size={14} />
             </Link>
           </div>
         </header>

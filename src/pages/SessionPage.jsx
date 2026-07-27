@@ -1,3 +1,4 @@
+import { useLocation } from "react-router-dom";
 import SessionBoard from "../components/SessionBoard";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ConferenceService from "../services/ConferenceService";
@@ -8,6 +9,7 @@ const COUNTRY_BY_CODE = new Map([...countries, ...historicalCountries].map((c) =
 export default function SessionPage() {
 
   const committee = ConferenceService.getActiveCommittee();
+  const location = useLocation();
 
   // Same guard as RollCallPage/MotionPage/StatsPage - "Resume Session" on the home
   // screen links straight here regardless of whether a conference is loaded, so
@@ -44,6 +46,19 @@ export default function SessionPage() {
       ? Math.round(motion.totalTime * 60)
       : undefined;
 
+  // One-time seed from MotionPage's speaking time selector - router state,
+  // not persisted, so a later refresh of /session doesn't keep re-seeding
+  // over whatever the chair has done with the queue since.
+  const initialQueue = location.state?.seedQueue
+    ? [...committee.delegates]
+        .sort((a, b) => (a.countryDisplay || a.country).localeCompare(b.countryDisplay || b.country))
+        .map((delegate) => ({
+          id: delegate.id,
+          country: delegate.countryDisplay || delegate.country,
+          countryCode: delegate.countryCode,
+        }))
+    : [];
+
   return (
     <div className="app-shell h-screen overflow-hidden bg-[#0d0d0d] text-white">
       <div className="flex h-full flex-col px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
@@ -52,6 +67,7 @@ export default function SessionPage() {
           activeMotion={activeMotion}
           speechLength={speechLength}
           suggestions={suggestions}
+          initialQueue={initialQueue}
         />
       </div>
     </div>

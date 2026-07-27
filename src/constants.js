@@ -12,14 +12,11 @@
 // (except the 11 pre-existing entries kept in place) is sourced from
 // THAIMUN's Rules of Procedure - see the footnote on the Motions page.
 export const MOTIONS = [
-  { text: "Point of Order" },
-  { text: "Point of Personal Privilege", alias: ["Personal Privilege"] },
   { text: "Appeal the Decision of the Chair", alias: ["Appeal the Chair", "Appeal the Decision"] },
   { text: "Adjourn the Meeting", alias: ["Adjourn Meeting"] },
   { text: "Suspend Debate" },
   { text: "Suspend the Meeting", alias: ["Suspend Meeting"] },
   { text: "Motion to Divide the House", alias: ["Divide the House"] },
-  { text: "Motion to Reconsider", alias: ["Reconsider the Vote", "Reconsider"] },
   { text: "Motion for Closure of Debate", alias: ["Closure of Debate", "Close Debate"] },
   { text: "Move into Voting Procedure", alias: ["Move to Voting Procedure", "Voting Procedure"] },
   { text: "Motion to Change the Agenda", alias: ["Change the Agenda"] },
@@ -27,7 +24,6 @@ export const MOTIONS = [
   { text: "Extend the Speaking Time", alias: ["Extend Speaking Time"], explicit: true, durationField: "speaking" },
   { text: "Extend the Moderated Caucus", alias: ["Extend the Mod Caucus", "Extend Mod"], durationField: "total" },
   { text: "Motion to Extend the Speaker's List", alias: ["Extend the Speaker's List", "Extend Speakers List"] },
-  { text: "Motion to Extend Points of Information", alias: ["Extend Points of Information", "Extend POI"] },
   { text: "Open a Moderated Caucus", alias: ["Moderated Caucus", "Mod Caucus", "Mod", "Moderated"], topic: true },
   { text: "Open an Unmoderated Caucus", alias: ["Unmoderated Caucus", "Unmod Caucus", "Unmod", "Unmoderated"], durationField: "total" },
   { text: "Open the General Speaker's List", alias: ["Open the GSL", "Open Speaker's List"] },
@@ -35,9 +31,6 @@ export const MOTIONS = [
   { text: "Introduce a Draft Resolution", alias: ["Introduce Draft Resolution", "Introduce a Draft Res"] },
   { text: "Introduce an Amendment", alias: ["Introduce Amendment"] },
   { text: "Motion to Divide the Question", alias: ["Divide the Question"] },
-  { text: "Point of Information", alias: ["Point of Information", "POI"] },
-  { text: "Point of Parliamentary Inquiry", alias: ["Parliamentary Inquiry"] },
-  { text: "Point of Clarification", alias: ["Clarification", "POC"] },
   { text: "Right to Reply" },
   { text: "Explanation of the Vote", alias: ["Explanation of Vote", "Explain the Vote"] },
 ];
