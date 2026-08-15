@@ -90,11 +90,24 @@ function DemoBanner() {
   );
 }
 
+// Same fixed-overlay reasoning as DemoBanner above (SessionPage's h-screen
+// layout leaves no room for an in-flow footer), anchored to the bottom edge
+// instead of a corner so it reads as a persistent disclaimer rather than a
+// status badge.
+function DemoFooter() {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[999] border-t border-white/10 bg-black/85 px-3 py-1.5 text-center text-[10px] uppercase tracking-[0.2em] text-white/50 backdrop-blur-sm">
+      Intended for computers, laptops, or tablets only
+    </div>
+  );
+}
+
 function DemoRoutes() {
   return (
     <>
       <DemoBanner />
       <AppRoutes includeFeedback />
+      <DemoFooter />
     </>
   );
 }

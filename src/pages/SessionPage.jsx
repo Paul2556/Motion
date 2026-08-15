@@ -21,8 +21,17 @@ export default function SessionPage() {
   // committee, not the full ISO country list - same reasoning as MotionInput's
   // `delegations` prop on MotionPage. Also attach each delegation's known
   // aliases (e.g. "PRC" for China) so typing one still surfaces the delegate.
+  //
+  // Unlike RollCall/Stats (which intentionally show the allocation sheet's
+  // literal placard text via countryDisplay), the queue always shows the
+  // short canonical name from constants.js - a long formal name (e.g.
+  // "Democratic People's Republic of Korea") wraps to several lines in the
+  // queue's narrow card layout, where "North Korea" fits on one.
+  const compressedCountryName = (delegate) =>
+    COUNTRY_BY_CODE.get(delegate.countryCode)?.name ?? delegate.countryDisplay ?? delegate.country;
+
   const suggestions = (committee?.delegates ?? []).map((delegate) => ({
-    name: delegate.countryDisplay || delegate.country,
+    name: compressedCountryName(delegate),
     code: delegate.countryCode,
     alias: (delegate.countryCode && COUNTRY_BY_CODE.get(delegate.countryCode)?.alias) || [],
   }));
@@ -54,7 +63,7 @@ export default function SessionPage() {
         .sort((a, b) => (a.countryDisplay || a.country).localeCompare(b.countryDisplay || b.country))
         .map((delegate) => ({
           id: delegate.id,
-          country: delegate.countryDisplay || delegate.country,
+          country: compressedCountryName(delegate),
           countryCode: delegate.countryCode,
         }))
     : [];

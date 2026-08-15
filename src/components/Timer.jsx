@@ -146,7 +146,7 @@ const Timer = forwardRef(function Timer({
     <div className="flex flex-col items-center gap-12">
       <div
         onDoubleClick={reset}
-        className="relative flex h-80 w-80 select-none items-center justify-center"
+        className="relative flex h-56 w-56 select-none items-center justify-center sm:h-72 sm:w-72 lg:h-80 lg:w-80"
       >
         <svg
           className="absolute inset-0 h-full w-full"
@@ -179,7 +179,7 @@ const Timer = forwardRef(function Timer({
 
         <div className="relative text-center">
           <div
-            className={`text-[5.5rem] font-light tracking-[-0.06em] ${
+            className={`text-[3.25rem] font-light tracking-[-0.06em] sm:text-[4.25rem] lg:text-[5.5rem] ${
               overtime ? "text-[var(--danger)]" : "text-white"
             }`}
           >

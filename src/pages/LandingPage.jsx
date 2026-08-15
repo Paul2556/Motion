@@ -451,7 +451,7 @@ function LandingPage() {
               <div><p className="section-label">Core features</p><h2 className="section-title mt-5">Everything on the dais.<br />Nothing in the way.</h2></div>
               <p className="max-w-sm text-sm leading-relaxed text-black/50">Six focused tools replace the patchwork—without changing the procedure chairs and delegates already know.</p>
             </div>
-            <div className="mt-14 grid gap-px overflow-hidden border border-black/10 bg-black/10 md:grid-cols-2 lg:mt-20 ">
+            <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden border border-black/10 bg-black/10 md:grid-cols-2 lg:mt-20 ">
               {features.map((feature, index) => <FeatureCard key={feature.title} index={index} {...feature} />)}
             </div>
           </div>
@@ -492,7 +492,7 @@ function LandingPage() {
         <section id="faq" className="section-pad border-b border-black/10">
           <div className="page-container">
             <div><p className="section-label">Questions</p><h2 className="section-title mt-5">Before you join.</h2></div>
-            <div className="mt-14 grid gap-px overflow-hidden border border-black/10 bg-black/10 sm:grid-cols-2 lg:mt-20">
+            <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden border border-black/10 bg-black/10 sm:grid-cols-2 lg:mt-20">
               {FAQ_ITEMS.map(([question, answer]) => <FaqItem key={question} question={question} answer={answer} />)}
             </div>
           </div>
@@ -634,10 +634,10 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
   return (
     <article
       ref={cardRef}
-      className={`feature-card-reveal bg-white ${visible ? 'is-visible' : ''}`}
+      className={`feature-card-reveal min-w-0 bg-white ${visible ? 'is-visible' : ''}`}
       style={{ transitionDelay: `${Math.min(index, 5) * 115}ms` }}
     >
-      <div className="feature-card group flex-1 min-h-[400px] flex-col bg-[#f4f4f0] p-6 transition-colors hover:bg-white sm:p-8">
+      <div className="feature-card group min-w-0 flex-1 min-h-[400px] flex-col bg-[#f4f4f0] p-6 transition-colors hover:bg-white sm:p-8">
         <div className="flex items-center justify-between"><Icon className="accent-text" size={20} strokeWidth={1.5} /><span className="accent-text font-mono text-[10px]">{number}</span></div>
         <div className="my-9 flex flex-1 flex-col items-center justify-center gap-3 overflow-visible">
           <span className="self-start text-[9px] uppercase tracking-[0.16em] text-black/25">Live demo — try it</span>
