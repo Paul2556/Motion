@@ -23,3 +23,5 @@ api/source/_archive/
 # OS
 .DS_Store
 Thumbs.db
+.vercel
+.env*

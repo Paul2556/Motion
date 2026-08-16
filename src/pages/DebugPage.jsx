@@ -2,31 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ConferenceService from "../services/ConferenceService";
 import AllocationParser from "../services/AllocationParser";
-import AuthService from "../services/AuthService";
-import { isAuthorizedUser } from "../services/ownerAccess";
+import { usePagePermission } from "../services/permissions";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
 import Flag from "../components/Flag";
 import Logo from "../components/Logo";
 
-// Dev-only tooling, not for casual visitors - gated to a hardcoded allowlist
-// of owner/contributor emails (see ownerAccess.js) rather than any signed-in
-// account. This is a client-side convenience redirect, not a real security
-// boundary (there's no backend to enforce it), which is fine here since this
-// page only ever touches the current tab's in-memory ConferenceService
-// state, never other users' data.
+// Dev-only tooling, not for casual visitors - gated to the "debug" permission
+// (owners always have it; contributors get it via the Admin Panel's
+// Permissions tab, see permissions.js/contributorPermissions). This is a
+// client-side convenience redirect, not a real security boundary (there's no
+// backend to enforce it), which is fine here since this page only ever
+// touches the current tab's in-memory ConferenceService state, never other
+// users' data.
 
 export default function DebugPage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(() => AuthService.getCurrentUser());
-  const [authReady, setAuthReady] = useState(() => AuthService.isReady());
-
-  useEffect(() => AuthService.subscribe((nextUser) => {
-    setUser(nextUser);
-    setAuthReady(AuthService.isReady());
-  }), []);
-
-  const isAuthorized = isAuthorizedUser(user);
+  const { allowed: isAuthorized, ready: authReady } = usePagePermission("debug");
 
   // Wait for authReady - AuthService reports `null` synchronously before
   // Firebase has confirmed a persisted session, so redirecting immediately

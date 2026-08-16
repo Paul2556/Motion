@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Check, Copy } from "lucide-react";
 import Logo from "../components/Logo";
-import AuthService from "../services/AuthService";
-import { isAuthorizedUser } from "../services/ownerAccess";
+import { usePagePermission } from "../services/permissions";
 
-// Same gate as DebugPage.jsx (see ownerAccess.js) - lives in the same
-// not-publicly-linked debug area, so it gets the same treatment (client-side
-// convenience, not a real security boundary, fine here since there's nothing
-// sensitive to protect, just consistency with the rest of .debug).
+// Gated on the "refer" permission (see permissions.js/contributorPermissions) -
+// lives in the same not-publicly-linked debug area as DebugPage, so it gets
+// the same treatment (client-side convenience, not a real security boundary,
+// fine here since there's nothing sensitive to protect, just consistency
+// with the rest of /debug).
 
 const BASE_URL = "https://motionmun.com";
 
@@ -18,15 +18,7 @@ const BASE_URL = "https://motionmun.com";
 // build those query strings than typing them by hand every time.
 export default function ReferPage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(() => AuthService.getCurrentUser());
-  const [authReady, setAuthReady] = useState(() => AuthService.isReady());
-
-  useEffect(() => AuthService.subscribe((nextUser) => {
-    setUser(nextUser);
-    setAuthReady(AuthService.isReady());
-  }), []);
-
-  const isAuthorized = isAuthorizedUser(user);
+  const { allowed: isAuthorized, ready: authReady } = usePagePermission("refer");
 
   useEffect(() => {
     if (!authReady || isAuthorized) return;

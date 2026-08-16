@@ -1,15 +1,10 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { getAdminDb } from "./_lib/firebaseAdmin.js";
 import { checkRateLimit, RateLimitError } from "./_lib/rateLimit.js";
+import { getClientIp } from "./_lib/clientIp.js";
 import { postSourceRequestNotification } from "./_lib/postDiscordNotification.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function clientIp(req) {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string" && forwarded.length) return forwarded.split(",")[0].trim();
-  return req.socket?.remoteAddress ?? "unknown";
-}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -40,7 +35,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    await checkRateLimit(clientIp(req));
+    await checkRateLimit(getClientIp(req));
   } catch (error) {
     if (error instanceof RateLimitError) {
       res.status(429).json({ error: "rate_limited" });
