@@ -140,13 +140,15 @@ export default function HomePage() {
   }
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] text-white">
+    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
 
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-8">
+      <div className="mx-auto flex min-h-screen max-w-7xl flex-col">
 
-        {/* Header */}
+        {/* Header - same bare treatment as every other app-shell page's header
+            (Settings/Motion/Stats/RollCall/GeneralVoting/Admin), not a bordered
+            card. */}
 
-        <header className="flex items-center justify-between border border-white/10 bg-[#111111] p-6">
+        <header className="mb-8 flex items-center justify-between">
 
           <Link to="/home"><Logo light/></Link>
 
@@ -164,7 +166,7 @@ export default function HomePage() {
 
         {/* Main */}
 
-        <div className="mt-8 grid flex-1 gap-8 xl:grid-cols-[1.6fr_.8fr]">
+        <div className="grid flex-1 gap-8 xl:grid-cols-[1.6fr_.8fr]">
 
           {/* Left */}
 

@@ -108,6 +108,9 @@ function LandingPage() {
   const fullPlaceholder = "you@conference.org";
 
   const [email, setEmail] = useState("");
+  // Honeypot - see SourceRequestPage.jsx for the same pattern. A real visitor
+  // never sees or fills this in, but naive bots that autofill every input do.
+  const [company, setCompany] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -165,6 +168,15 @@ function LandingPage() {
     event.preventDefault()
 
     if (submitted) return
+
+    // Silently pretend to succeed rather than short-circuiting visibly -
+    // same as api/source/request.js's server-side honeypot handling, so a
+    // bot gets no signal it was caught.
+    if (company) {
+      setSubmitted(true)
+      setEmail('')
+      return
+    }
 
     if (isSubmitting) {
       setJoinSpamCount((count) => count + 1)
@@ -358,10 +370,10 @@ function LandingPage() {
                   Timer/Queue used on the actual /session route, just seeded with
                   demo data and `linked=false` so the header buttons don't route a
                   visitor off the marketing page. Outside .app-shell here, so
-                  --timer-remaining, --danger (Timer's overtime state), and the
-                  base text-white it normally inherits from that class are all
-                  supplied directly. */}
-              <div className="h-[860px] p-4 text-white sm:p-6" style={{ '--timer-remaining': '#b7774d', '--danger': '#ef4444' }}>
+                  --timer-remaining, --danger (Timer's overtime state), --motion-accent
+                  (the Motion nav button's dot), and the base text-white it normally
+                  inherits from that class are all supplied directly. */}
+              <div className="h-[860px] p-4 text-white sm:p-6" style={{ '--timer-remaining': '#b7774d', '--danger': '#ef4444', '--motion-accent': '#fbbf24' }}>
                 <SessionBoard
                   committeeLabel="DISEC"
                   initialSpeaker={HERO_SPEAKER}
@@ -505,6 +517,22 @@ function LandingPage() {
             <h2 className="mx-auto mt-6 max-w-4xl text-5xl font-medium leading-[.95] tracking-[-0.06em] sm:text-7xl lg:text-8xl">Bring the room<br />back into <span className="accent-text">focus.</span></h2>
             <p className="mx-auto mt-7 max-w-lg text-base leading-relaxed text-black/50">Join chairs and conference organizers to build a cleaner, smoother, more focused MUN experience.</p>
             <form className="mx-auto mt-9 flex max-w-md flex-col gap-2 sm:flex-row" onSubmit={handleWaitlistSubmit}>
+              <div
+                className="absolute -left-[9999px] h-0 w-0 overflow-hidden"
+                aria-hidden="true"
+              >
+                <label htmlFor="company">Company</label>
+                <input
+                  id="company"
+                  name="company"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                />
+              </div>
+
               <label className="sr-only" htmlFor="email">Email address</label>
               <input
                 id="email"

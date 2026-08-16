@@ -1,14 +1,9 @@
 import { checkRateLimit, RateLimitError } from "../source/_lib/rateLimit.js";
+import { getClientIp } from "../source/_lib/clientIp.js";
 import { postFeedbackNotification } from "./_lib/postFeedbackNotification.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_MESSAGE_LENGTH = 2000;
-
-function clientIp(req) {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string" && forwarded.length) return forwarded.split(",")[0].trim();
-  return req.socket?.remoteAddress ?? "unknown";
-}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -36,7 +31,7 @@ export default async function handler(req, res) {
   try {
     // Keyed separately from api/source/request.js's rate limit so the two features don't share
     // one IP-keyed budget.
-    await checkRateLimit(`feedback:${clientIp(req)}`);
+    await checkRateLimit(`feedback:${getClientIp(req)}`);
   } catch (error) {
     if (error instanceof RateLimitError) {
       res.status(429).json({ error: "rate_limited" });

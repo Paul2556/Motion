@@ -1,25 +1,22 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import AuthService from "../services/AuthService";
-import { isAuthorizedUser } from "../services/ownerAccess";
+import { usePagePermission } from "../services/permissions";
 import Logo from "./Logo";
 
-// Gates its children to the owner/contributor allowlist (see ownerAccess.js) - used to lock
-// down app.motionmun.com while it's in private early access. Same convenience-only gate as
+// Gates its children to the "app" permission (owners always have it; see
+// permissions.js/contributorPermissions) - used to lock down app.motionmun.com
+// while it's in private early access. Same convenience-only gate as
 // DebugPage/ReferPage, just shown as a sign-in screen instead of a redirect, since there's no
 // other page on this subdomain to redirect an unauthorized visitor to.
 export default function OwnerGate({ children }) {
-  const [user, setUser] = useState(() => AuthService.getCurrentUser());
-  const [authReady, setAuthReady] = useState(() => AuthService.isReady());
+  const { allowed, ready } = usePagePermission("app");
   const [signInError, setSignInError] = useState(null);
 
-  useEffect(() => AuthService.subscribe((nextUser) => {
-    setUser(nextUser);
-    setAuthReady(AuthService.isReady());
-  }), []);
+  if (!ready) return null;
 
-  if (!authReady) return null;
+  if (allowed) return children;
 
-  if (isAuthorizedUser(user)) return children;
+  const user = AuthService.getCurrentUser();
 
   async function handleSignIn() {
     setSignInError(null);
