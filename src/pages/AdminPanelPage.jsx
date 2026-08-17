@@ -87,7 +87,7 @@ export default function AdminPanelPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await callAdmin("users/list", { method: "GET" });
+      const data = await callAdmin("users", { method: "GET" });
       setUsers(data.users);
     } catch (err) {
       setError(err.message);
@@ -103,7 +103,7 @@ export default function AdminPanelPage() {
   // reloads, which run from event handlers, not an effect.
   useEffect(() => {
     if (!isAuthorized) return;
-    callAdmin("users/list", { method: "GET" })
+    callAdmin("users", { method: "GET" })
       .then((data) => setUsers(data.users))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -113,7 +113,7 @@ export default function AdminPanelPage() {
     setPermissionsLoading(true);
     setPermissionsError(null);
     try {
-      const data = await callAdmin("permissions/list", { method: "GET" });
+      const data = await callAdmin("permissions", { method: "GET" });
       setContributors(data.contributors);
     } catch (err) {
       setPermissionsError(err.message);
@@ -125,7 +125,7 @@ export default function AdminPanelPage() {
   // Same inline-fetch-on-mount pattern as the users list above.
   useEffect(() => {
     if (!isAuthorized) return;
-    callAdmin("permissions/list", { method: "GET" })
+    callAdmin("permissions", { method: "GET" })
       .then((data) => setContributors(data.contributors))
       .catch((err) => setPermissionsError(err.message))
       .finally(() => setPermissionsLoading(false));
@@ -141,9 +141,9 @@ export default function AdminPanelPage() {
       // debug-only by default - the owner can widen access afterward from
       // the list below (see SEC-008 in .claude/issues.md for why this
       // default matters).
-      await callAdmin("permissions/set", {
+      await callAdmin("permissions", {
         method: "POST",
-        body: JSON.stringify({ email: newContributorEmail.trim(), debug: true, refer: false, app: false }),
+        body: JSON.stringify({ action: "set", email: newContributorEmail.trim(), debug: true, refer: false, app: false }),
       });
       setNewContributorEmail("");
       await loadPermissions();
@@ -157,9 +157,9 @@ export default function AdminPanelPage() {
   async function handleTogglePermission(contributor, key) {
     setPermissionsError(null);
     try {
-      await callAdmin("permissions/set", {
+      await callAdmin("permissions", {
         method: "POST",
-        body: JSON.stringify({ email: contributor.email, [key]: !contributor[key] }),
+        body: JSON.stringify({ action: "set", email: contributor.email, [key]: !contributor[key] }),
       });
       await loadPermissions();
     } catch (err) {
@@ -170,7 +170,7 @@ export default function AdminPanelPage() {
   async function handleRemoveContributor(uid) {
     setPermissionsError(null);
     try {
-      await callAdmin("permissions/remove", { method: "POST", body: JSON.stringify({ uid }) });
+      await callAdmin("permissions", { method: "POST", body: JSON.stringify({ action: "remove", uid }) });
       setConfirmRemoveUid(null);
       await loadPermissions();
     } catch (err) {
@@ -181,9 +181,9 @@ export default function AdminPanelPage() {
   async function toggleDisabled(target) {
     setError(null);
     try {
-      await callAdmin("users/update", {
+      await callAdmin("users", {
         method: "POST",
-        body: JSON.stringify({ uid: target.uid, disabled: !target.disabled }),
+        body: JSON.stringify({ action: "update", uid: target.uid, disabled: !target.disabled }),
       });
       await loadUsers();
     } catch (err) {
@@ -194,7 +194,7 @@ export default function AdminPanelPage() {
   async function handleDelete(uid) {
     setError(null);
     try {
-      await callAdmin("users/delete", { method: "POST", body: JSON.stringify({ uid }) });
+      await callAdmin("users", { method: "POST", body: JSON.stringify({ action: "delete", uid }) });
       setConfirmDeleteUid(null);
       await loadUsers();
     } catch (err) {
@@ -209,9 +209,9 @@ export default function AdminPanelPage() {
     setCreating(true);
     setError(null);
     try {
-      await callAdmin("users/create", {
+      await callAdmin("users", {
         method: "POST",
-        body: JSON.stringify({ email: newEmail.trim(), password: newPassword }),
+        body: JSON.stringify({ action: "create", email: newEmail.trim(), password: newPassword }),
       });
       setNewEmail("");
       setNewPassword("");

@@ -692,14 +692,14 @@ function ImportDemo() {
       onDragLeave={() => setIsDragging(false)}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => { e.preventDefault(); setIsDragging(false); setLoaded(true) }}
-      className={`w-full max-w-xs border bg-white p-3 shadow-[0_14px_40px_rgba(0,0,0,.06)] transition ${isDragging ? 'border-black/40' : 'border-black/15'}`}
+      className={`w-full max-w-sm border bg-white p-4 shadow-[0_14px_40px_rgba(0,0,0,.06)] transition ${isDragging ? 'border-black/40' : 'border-black/15'}`}
     >
       <div className="flex items-center gap-2 border-b border-black/10 pb-3">
         <FileSpreadsheet size={17} />
         <span className="text-xs font-medium">delegates.xlsx</span>
         <span className="ml-auto text-[9px] text-black/35">{loaded ? `${delegates.length} rows` : 'Drop file'}</span>
       </div>
-      <div className="space-y-2 pt-3">
+      <div className="space-y-2.5 pt-4">
         {loaded ? delegates.map((x, i) => (
           <div className="flex items-center gap-2 text-[10px]" key={x}>
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[8px] text-white">{i + 1}</span>
@@ -707,7 +707,7 @@ function ImportDemo() {
             <span className="ml-auto text-black/30">Voting</span>
           </div>
         )) : (
-          <button onClick={() => setLoaded(true)} className="flex w-full items-center justify-center gap-2 border border-dashed border-black/20 py-6 text-xs text-black/40 transition hover:border-black/40 hover:text-black/60">
+          <button onClick={() => setLoaded(true)} className="flex w-full items-center justify-center gap-2 border border-dashed border-black/20 py-11 text-xs text-black/40 transition hover:border-black/40 hover:text-black/60">
             <Plus size={14} /> Load sample roster
           </button>
         )}
@@ -748,10 +748,10 @@ function QueueDemo() {
 function TimerDemo() {
   return (
     <div
-      className="product-demo flex h-[280px] w-full max-w-xs items-center justify-center overflow-hidden border border-black/15 bg-[#0d0d0d] p-6 shadow-[0_14px_40px_rgba(0,0,0,.10)]"
+      className="product-demo flex h-[340px] w-full max-w-sm items-center justify-center overflow-hidden border border-black/15 bg-[#0d0d0d] p-6 shadow-[0_14px_40px_rgba(0,0,0,.10)]"
       style={{ '--timer-remaining': '#b7774d', '--danger': '#ef4444' }}
     >
-      <div className="origin-center scale-50">
+      <div className="origin-center scale-[0.65]">
         <Timer initialTime={90} />
       </div>
     </div>
