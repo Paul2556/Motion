@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Check, Keyboard } from "lucide-react";
-import Logo from "../components/Logo";
+import { useNavigate } from "react-router-dom";
+import { Check } from "lucide-react";
+import AppTopBar from "../components/AppTopBar";
 import Flag from "../components/Flag";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
@@ -172,30 +172,10 @@ export default function RollCallPage() {
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
       <div className="mx-auto max-w-3xl">
 
-        <header className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/home" className="flex items-center gap-3">
-              <Logo compact light />
-            </Link>
-            <span className="text-xs uppercase tracking-[0.18em] text-white/50">Roll Call</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setLegendOpen(true)}
-              aria-label="Keyboard shortcuts"
-              className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
-            >
-              <Keyboard size={14} />
-            </button>
-            <Link
-              to="/motion"
-              className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
-            >
-              Continue <ArrowRight size={14} />
-            </Link>
-          </div>
-        </header>
+        <AppTopBar
+          committeeLabel={committee?.committee ?? committee?.id}
+          onShowShortcuts={() => setLegendOpen(true)}
+        />
 
         <div className="mb-6 flex items-center gap-6 border border-white/10 bg-[#111111] p-6">
           <div>

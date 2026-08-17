@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Keyboard } from "lucide-react";
-import Logo from "../components/Logo";
+import { useNavigate } from "react-router-dom";
+import AppTopBar from "../components/AppTopBar";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
 import VotingPanel from "../components/VotingPanel";
@@ -226,18 +225,10 @@ export default function MotionPage() {
   return (
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-8 flex items-center justify-between gap-3">
-          <Link to="/home" className="flex items-center gap-3">
-            <Logo light />
-          </Link>
-          <button
-            onClick={() => setLegendOpen(true)}
-            aria-label="Keyboard shortcuts"
-            className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
-          >
-            <Keyboard size={14} />
-          </button>
-        </header>
+        <AppTopBar
+          committeeLabel={committee?.committee ?? committee?.id}
+          onShowShortcuts={() => setLegendOpen(true)}
+        />
 
         <div className={votingMotion ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]" : "flex justify-center"}>
           <div className={`border border-white/10 bg-[#121212] p-6 ${votingMotion ? "" : "w-full max-w-2xl"}`}>

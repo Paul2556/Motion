@@ -1,22 +1,13 @@
 import { useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Keyboard } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Timer from "./Timer";
 import Queue from "./Queue";
 import Flag from "./Flag";
-import Logo from "./Logo";
+import AppTopBar from "./AppTopBar";
 import ShortcutLegend from "./ShortcutLegend";
 import ConferenceService from "../services/ConferenceService";
 import { ROTATION_SEQUENCES, positionAt } from "../utils/rotation";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
-
-function NavItem({ to, linked, className, children }) {
-  return linked ? (
-    <Link to={to} className={className}>{children}</Link>
-  ) : (
-    <span className={className}>{children}</span>
-  );
-}
 
 // The real session dais - speech/timer/queue - shared by the actual /session
 // route (SessionPage.jsx, inside .app-shell) and the landing page's live hero
@@ -155,47 +146,11 @@ export default function SessionBoard({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="mb-6 flex flex-col gap-4 rounded-none border border-white/10 bg-[#0f0f0f] p-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-        <div className="flex items-center gap-3">
-          <NavItem to="/home" linked={linked} className="flex items-center gap-3">
-            <Logo compact light />
-          </NavItem>
-          <span className="text-xs uppercase tracking-[0.18em] text-white/50">{committeeLabel}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <NavItem
-            to="/rollcall"
-            linked={linked}
-            className="inline-flex items-center gap-2 rounded-none border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-white/60 transition hover:border-white/20 hover:bg-white/10"
-          >
-            Roll Call
-          </NavItem>
-          <NavItem
-            to="/motion"
-            linked={linked}
-            className="inline-flex items-center gap-2 rounded-none border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-white/60 transition hover:border-white/20 hover:bg-white/10"
-          >
-            <span className="h-2.5 w-2.5 rounded-full bg-[var(--motion-accent)]" />
-            Motion
-          </NavItem>
-          <NavItem
-            to="/vote"
-            linked={linked}
-            className="inline-flex items-center gap-2 rounded-none border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-white/60 transition hover:border-white/20 hover:bg-white/10"
-          >
-            Vote
-          </NavItem>
-          {linked && (
-            <button
-              onClick={() => setLegendOpen(true)}
-              aria-label="Keyboard shortcuts"
-              className="inline-flex items-center gap-2 rounded-none border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-white/60 transition hover:border-white/20 hover:bg-white/10"
-            >
-              <Keyboard size={14} />
-            </button>
-          )}
-        </div>
-      </header>
+      <AppTopBar
+        committeeLabel={committeeLabel}
+        linked={linked}
+        onShowShortcuts={() => setLegendOpen(true)}
+      />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_440px] 2xl:grid-cols-[minmax(0,1fr)_480px]">
         <div className="flex h-full min-h-0 flex-col gap-6 overflow-y-auto rounded-none border border-white/10 bg-[#121212] p-5 sm:p-6 lg:p-8 shadow-[0_25px_80px_rgba(0,0,0,.35)]">
