@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Keyboard, RotateCcw } from "lucide-react";
-import Logo from "../components/Logo";
+import { RotateCcw } from "lucide-react";
+import AppTopBar from "../components/AppTopBar";
 import VotingPanel from "../components/VotingPanel";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
@@ -88,18 +87,10 @@ export default function GeneralVotingPage() {
   return (
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
       <div className="mx-auto max-w-2xl">
-        <header className="mb-8 flex items-center justify-between gap-3">
-          <Link to="/home" className="flex items-center gap-3">
-            <Logo light />
-          </Link>
-          <button
-            onClick={() => setLegendOpen(true)}
-            aria-label="Keyboard shortcuts"
-            className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
-          >
-            <Keyboard size={14} />
-          </button>
-        </header>
+        <AppTopBar
+          committeeLabel={committee?.committee ?? committee?.id}
+          onShowShortcuts={() => setLegendOpen(true)}
+        />
 
         <div className="border border-white/10 bg-[#121212] p-6">
           <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">What's being voted on?</p>
