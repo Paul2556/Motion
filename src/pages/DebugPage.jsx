@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ConferenceService from "../services/ConferenceService";
 import AllocationParser from "../services/AllocationParser";
 import { usePagePermission } from "../services/permissions";
 import MotionInput from "../components/MotionInput";
 import MotionLog from "../components/MotionLog";
 import Flag from "../components/Flag";
-import Logo from "../components/Logo";
+import DebugTopBar from "../components/DebugTopBar";
 
 // Dev-only tooling, not for casual visitors - gated to the "debug" permission
 // (owners always have it; contributors get it via the Admin Panel's
@@ -121,9 +121,7 @@ export default function DebugPage() {
 
       <div className="mx-auto max-w-7xl">
 
-        <Link to="/" className="mb-2 inline-flex items-center gap-3">
-          <Logo compact light />
-        </Link>
+        <DebugTopBar />
 
         <h1 className="text-4xl font-semibold">
           Motion Debug

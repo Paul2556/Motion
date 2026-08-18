@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { RefreshCw, Trash2, UserPlus } from "lucide-react";
-import Logo from "../components/Logo";
+import DebugTopBar from "../components/DebugTopBar";
 import AuthService from "../services/AuthService";
 import { isOwner } from "../services/ownerAccess";
 import { getFirebaseAuth } from "../firebase";
@@ -229,9 +229,7 @@ export default function AdminPanelPage() {
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
       <div className="mx-auto max-w-4xl">
         <div className="flex items-center justify-between gap-3">
-          <Link to="/" className="flex items-center gap-3">
-            <Logo compact light />
-          </Link>
+          <DebugTopBar />
           <button
             onClick={tab === "users" ? loadUsers : loadPermissions}
             aria-label="Refresh"
