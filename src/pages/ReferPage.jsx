@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Check, Copy } from "lucide-react";
-import Logo from "../components/Logo";
+import DebugTopBar from "../components/DebugTopBar";
 import { usePagePermission } from "../services/permissions";
 
 // Gated on the "refer" permission (see permissions.js/contributorPermissions) -
@@ -72,9 +72,7 @@ export default function ReferPage() {
   return (
     <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
       <div className="mx-auto max-w-2xl">
-        <Link to="/" className="mb-2 inline-flex items-center gap-3">
-          <Logo compact light />
-        </Link>
+        <DebugTopBar />
 
         <h1 className="text-4xl font-semibold">Referral Links</h1>
         <p className="mt-2 text-white/40">
