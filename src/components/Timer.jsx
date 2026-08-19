@@ -15,18 +15,24 @@ function formatTime(seconds) {
 const MAX_MINUTES = 999;
 const MAX_SECONDS = 59;
 
-// Digits only, capped to 3 characters - "999" (MAX_MINUTES) is itself the
-// largest 3-digit number, so the length cap alone is the value cap too.
+// Digits only, capped to 3 characters then clamped to MAX_MINUTES. Empty
+// reads as "0" rather than blank (a cleared field should still look like a
+// number while editing, not a gap), and round-tripping through Number/String
+// strips any leading zeros - without that, clearing back to "0" and then
+// typing fresh digits would prepend onto it ("0" + "3" -> "03", then "0" ->
+// "030") instead of cleanly replacing it.
 function sanitizeMinutesInput(value) {
-  return value.replace(/\D/g, "").slice(0, 3);
+  const digits = value.replace(/\D/g, "").slice(0, 3);
+  if (digits === "") return "0";
+  return String(Math.min(MAX_MINUTES, Number(digits)));
 }
 
-// Digits only, capped to 2 characters, then clamped to MAX_SECONDS - unlike
-// minutes, "99" is representable in 2 digits but not a valid seconds value,
-// so this needs an explicit numeric clamp on top of the length cap.
+// Same shape as sanitizeMinutesInput, capped to 2 characters then clamped to
+// MAX_SECONDS - "99" is representable in 2 digits but not a valid seconds
+// value, so this needs the numeric clamp on top of the length cap.
 function sanitizeSecondsInput(value) {
   const digits = value.replace(/\D/g, "").slice(0, 2);
-  if (digits === "") return digits;
+  if (digits === "") return "0";
   return String(Math.min(MAX_SECONDS, Number(digits)));
 }
 
@@ -149,7 +155,7 @@ const Timer = forwardRef(function Timer({
   function startEditing() {
     const clamped = Math.max(seconds, 0);
     setRunning(false);
-    setEditMinutes(String(Math.min(MAX_MINUTES, Math.floor(clamped / 60))));
+    setEditMinutes(String(Math.min(MAX_MINUTES, Math.floor(clamped / 60))).padStart(2, "0"));
     setEditSeconds(String(clamped % 60).padStart(2, "0"));
     setEditing(true);
   }
