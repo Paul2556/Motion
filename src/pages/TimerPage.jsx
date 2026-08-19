@@ -13,7 +13,7 @@ const PRESET_SECONDS = [60, 75, 90, 120];
 // list) without any of that other bookkeeping.
 export default function TimerPage() {
   const committee = ConferenceService.getActiveCommittee();
-  const [duration, setDuration] = useState(null);
+  const [duration, setDuration] = useState(180);
   const [customValue, setCustomValue] = useState("");
 
   function submitCustom() {
@@ -32,7 +32,7 @@ export default function TimerPage() {
         {duration == null ? (
           <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
             <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">Timer</p>
-            <p className="mt-2 text-sm text-[var(--app-text-muted)]">Choose a duration to start.</p>
+            <p className="mt-2 text-sm text-[var(--app-text-muted)]">Choose a new duration.</p>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               {PRESET_SECONDS.map((seconds) => (
@@ -77,8 +77,12 @@ export default function TimerPage() {
             </div>
 
             <div className="mt-8 flex justify-center">
-              <Timer key={duration} initialTime={duration} />
+              <Timer key={duration} initialTime={duration} onDoubleClick={() => setDuration(null)} />
             </div>
+
+            <p className="mt-6 text-center text-[11px] text-[var(--app-text-faint)]">
+              Double-click the timer to pick a different duration
+            </p>
           </div>
         )}
       </div>
