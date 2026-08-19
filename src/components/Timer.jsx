@@ -16,6 +16,7 @@ const Timer = forwardRef(function Timer({
   initialTime = 72,
   onComplete = () => {},
   onNext = () => {},
+  onDoubleClick,
 }, ref) {
   const [seconds, setSeconds] = useState(initialTime);
   const [maxTime, setMaxTime] = useState(initialTime);
@@ -105,10 +106,6 @@ const Timer = forwardRef(function Timer({
     setSeconds((prev) => {
       const next = Math.max(0, prev + amount);
 
-      if (next > maxTime) {
-        setMaxTime(next);
-      }
-
       if (next > 0) {
         setOvertime(false);
       }
@@ -117,6 +114,9 @@ const Timer = forwardRef(function Timer({
     });
   };
 
+  // Double-clicking the ring resets by default (SessionBoard's per-speaker
+  // timer) - `onDoubleClick` lets a caller override that with something else
+  // entirely (TimerPage swaps in "pick a new duration" instead).
   const reset = () => {
     setRunning(false);
     setSeconds(initialTime);
@@ -145,7 +145,7 @@ const Timer = forwardRef(function Timer({
   return (
     <div className="flex flex-col items-center gap-12">
       <div
-        onDoubleClick={reset}
+        onDoubleClick={onDoubleClick ?? reset}
         className="relative flex h-56 w-56 select-none items-center justify-center sm:h-72 sm:w-72 lg:h-80 lg:w-80"
       >
         <svg
@@ -198,7 +198,7 @@ const Timer = forwardRef(function Timer({
             onClick={() => addTime(-15)}
             className="w-full rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-6 py-4 text-sm uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)] sm:w-auto"
             >
-            -15s total
+            -15s
             </button>
         )}
 
@@ -222,7 +222,7 @@ const Timer = forwardRef(function Timer({
             onClick={() => addTime(15)}
             className="w-full rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-6 py-4 text-sm uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)] sm:w-auto"
             >
-            +15s total
+            +15s
             </button>
         )}
         </div>
