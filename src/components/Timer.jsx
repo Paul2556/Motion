@@ -257,7 +257,7 @@ const Timer = forwardRef(function Timer({
                 onChange={(event) => setEditMinutes(sanitizeMinutesInput(event.target.value))}
                 onFocus={(event) => event.target.select()}
                 onKeyDown={handleEditKeyDown}
-                className="w-[2.1em] bg-transparent text-right outline-none"
+                className="w-[2em] bg-transparent text-center outline-none"
               />
               <span>:</span>
               <input
@@ -267,7 +267,7 @@ const Timer = forwardRef(function Timer({
                 onChange={(event) => setEditSeconds(sanitizeSecondsInput(event.target.value))}
                 onFocus={(event) => event.target.select()}
                 onKeyDown={handleEditKeyDown}
-                className="w-[1.4em] bg-transparent text-left outline-none"
+                className="w-[2em] bg-transparent text-center outline-none"
               />
             </div>
           ) : (
