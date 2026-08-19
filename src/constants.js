@@ -35,13 +35,6 @@ export const MOTIONS = [
   { text: "Explanation of the Vote", alias: ["Explanation of Vote", "Explain the Vote"] },
 ];
 
-// ThaiMUN RoP Rule 26(c): 5 minutes to read a just-introduced resolution,
-// then a 4 minute speech from each of its two main submitters - both are
-// distinct from the generic per-speaker default, so MotionPage's "Resolution
-// tools" panel sets these explicitly rather than relying on it.
-export const RESOLUTION_READING_MINUTES = 5;
-export const MAIN_SUBMITTER_MINUTES = 4;
-
 // Official ISO 3166-1 alpha-3 codes `code` are also keys the flag SVGs in src/assets/flags (see components/Flag.jsx).
 // Almost all `code`s are ISO 3166-1 alpha-3, except constituent-nation entries
 // some MUN sheets list separately (currently just "Scotland"), which use
