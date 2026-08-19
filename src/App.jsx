@@ -8,6 +8,7 @@ import SessionPage from "./pages/SessionPage";
 import RollCallPage from "./pages/RollCallPage";
 import MotionPage from "./pages/MotionPage";
 import GeneralVotingPage from "./pages/GeneralVotingPage";
+import TimerPage from "./pages/TimerPage";
 import SettingsPage from "./pages/SettingsPage";
 import CloudSessionsPage from "./pages/CloudSessionsPage";
 import StatsPage from "./pages/StatsPage";
@@ -67,6 +68,7 @@ function AppRoutes({ includeFeedback = false } = {}) {
       <Route path="/rollcall" element={<RollCallPage />} />
       <Route path="/motion" element={<MotionPage />} />
       <Route path="/vote" element={<GeneralVotingPage />} />
+      <Route path="/timer" element={<TimerPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cloud" element={<CloudSessionsPage />} />
       <Route path="/stats" element={<StatsPage />} />
@@ -134,6 +136,7 @@ function AllRoutes() {
       <Route path="/rollcall" element={<RollCallPage />} />
       <Route path="/motion" element={<MotionPage />} />
       <Route path="/vote" element={<GeneralVotingPage />} />
+      <Route path="/timer" element={<TimerPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/cloud" element={<CloudSessionsPage />} />
       <Route path="/stats" element={<StatsPage />} />

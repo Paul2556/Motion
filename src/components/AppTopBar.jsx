@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { to: "/rollcall", label: "Roll Call" },
   { to: "/motion", label: "Motion", dot: true },
   { to: "/vote", label: "Vote" },
+  { to: "/timer", label: "Timer" },
 ];
 
 // Shared top bar for the committee-work pages (Session, Roll Call, Motion,

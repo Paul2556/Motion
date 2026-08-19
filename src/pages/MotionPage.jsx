@@ -11,7 +11,6 @@ import { formatMotionSummary } from "../utils/motionSummary";
 import { buildInitialGroups, adjustVoteGroups, toggleAbstainGroups } from "../utils/voteGroups";
 import ConferenceService from "../services/ConferenceService";
 import { getMotions, canonicalLabel } from "../motionPresets";
-import { RESOLUTION_READING_MINUTES, MAIN_SUBMITTER_MINUTES } from "../constants";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
 function voteStorageKey(committeeId) {
@@ -117,20 +116,6 @@ export default function MotionPage() {
   // active motion mid-vote.
   function continueToSession() {
     ConferenceService.setActiveMotion(votingMotion);
-    navigate("/session");
-  }
-
-  // Ad hoc utility, not tied to a logged/voted motion - same reasoning as
-  // /vote's standalone tool. Reuses the exact plain-object shape a parsed
-  // motion already has (see MotionInput.jsx's meta), so /session's existing
-  // badge/timer wiring picks these up with no changes of its own.
-  function startResolutionReading() {
-    ConferenceService.setActiveMotion({ motion: "Resolution Reading Time", totalTime: RESOLUTION_READING_MINUTES });
-    navigate("/session");
-  }
-
-  function startMainSubmitterSpeech() {
-    ConferenceService.setActiveMotion({ motion: "Main Submitter Speech", speakingTime: MAIN_SUBMITTER_MINUTES });
     navigate("/session");
   }
 
@@ -277,29 +262,6 @@ export default function MotionPage() {
               onContinue={continueToSession}
             />
           )}
-        </div>
-
-        <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
-          <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">Resolution tools</p>
-          <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-            Quick timers for a just-introduced resolution - each jumps straight to the session
-            timer with the right duration and label already set.
-          </p>
-
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              onClick={startResolutionReading}
-              className="border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
-            >
-              Start Resolution Reading Time ({RESOLUTION_READING_MINUTES} min)
-            </button>
-            <button
-              onClick={startMainSubmitterSpeech}
-              className="border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
-            >
-              Start Main Submitter Speech ({MAIN_SUBMITTER_MINUTES} min)
-            </button>
-          </div>
         </div>
 
         <SpeakingTimeSelector onSelect={startSpeakingTime} />
