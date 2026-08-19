@@ -12,16 +12,37 @@ function formatTime(seconds) {
   return seconds < 0 ? `-${formatted}` : formatted;
 }
 
+// Accepts "M:SS"/"MM:SS" or a bare number of seconds - whatever a chair
+// naturally types. Returns null for anything unparseable so the caller can
+// just no-op instead of committing garbage.
+function parseTimeInput(value) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.includes(":")) {
+    const [minutePart, secondPart] = trimmed.split(":");
+    const minutes = Number(minutePart);
+    const secs = Number(secondPart);
+    if (!Number.isFinite(minutes) || !Number.isFinite(secs)) return null;
+    return Math.max(0, Math.round(minutes * 60 + secs));
+  }
+
+  const asSeconds = Number(trimmed);
+  return Number.isFinite(asSeconds) ? Math.max(0, Math.round(asSeconds)) : null;
+}
+
 const Timer = forwardRef(function Timer({
   initialTime = 72,
   onComplete = () => {},
   onNext = () => {},
-  onDoubleClick,
+  editable = false,
 }, ref) {
   const [seconds, setSeconds] = useState(initialTime);
   const [maxTime, setMaxTime] = useState(initialTime);
   const [running, setRunning] = useState(false);
   const [overtime, setOvertime] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
 
   // `onComplete` defaults to a fresh `() => {}` on every render (a new
   // default-parameter closure each call), and callers can pass their own
@@ -115,14 +136,31 @@ const Timer = forwardRef(function Timer({
   };
 
   // Double-clicking the ring resets by default (SessionBoard's per-speaker
-  // timer) - `onDoubleClick` lets a caller override that with something else
-  // entirely (TimerPage swaps in "pick a new duration" instead).
+  // timer) - `editable` swaps that for typing a new time directly in place
+  // (TimerPage) instead.
   const reset = () => {
     setRunning(false);
     setSeconds(initialTime);
     setMaxTime(initialTime);
     setOvertime(false);
   };
+
+  function startEditing() {
+    setRunning(false);
+    setEditValue(formatTime(Math.max(seconds, 0)));
+    setEditing(true);
+  }
+
+  function commitEdit() {
+    const parsed = parseTimeInput(editValue);
+    setEditing(false);
+    if (parsed == null) return;
+
+    setRunning(false);
+    setSeconds(parsed);
+    setMaxTime(parsed);
+    setOvertime(false);
+  }
 
   const nextSpeaker = () => {
     const elapsed = maxTime - seconds;
@@ -145,7 +183,7 @@ const Timer = forwardRef(function Timer({
   return (
     <div className="flex flex-col items-center gap-12">
       <div
-        onDoubleClick={onDoubleClick ?? reset}
+        onDoubleClick={editable ? startEditing : reset}
         className="relative flex h-56 w-56 select-none items-center justify-center sm:h-72 sm:w-72 lg:h-80 lg:w-80"
       >
         <svg
@@ -178,16 +216,33 @@ const Timer = forwardRef(function Timer({
         </svg>
 
         <div className="relative text-center">
-          <div
-            className={`text-[3.25rem] font-light tracking-[-0.06em] sm:text-[4.25rem] lg:text-[5.5rem] ${
-              overtime ? "text-[var(--danger)]" : "text-[var(--app-text)]"
-            }`}
-          >
-            {formatTime(seconds)}
-          </div>
+          {editing ? (
+            <input
+              type="text"
+              inputMode="numeric"
+              autoFocus
+              value={editValue}
+              onChange={(event) => setEditValue(event.target.value)}
+              onFocus={(event) => event.target.select()}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") commitEdit();
+                if (event.key === "Escape") setEditing(false);
+              }}
+              onBlur={commitEdit}
+              className="w-44 bg-transparent text-center text-[3.25rem] font-light tracking-[-0.06em] text-[var(--app-text)] outline-none sm:text-[4.25rem] lg:text-[5.5rem]"
+            />
+          ) : (
+            <div
+              className={`text-[3.25rem] font-light tracking-[-0.06em] sm:text-[4.25rem] lg:text-[5.5rem] ${
+                overtime ? "text-[var(--danger)]" : "text-[var(--app-text)]"
+              }`}
+            >
+              {formatTime(seconds)}
+            </div>
+          )}
 
           <div className="mt-2 text-[10px] uppercase tracking-[0.25em] text-[var(--app-text-faint)]">
-            {overtime ? "Overtime" : "Remaining"}
+            {editing ? "Type a time" : overtime ? "Overtime" : "Remaining"}
           </div>
         </div>
       </div>
