@@ -12,23 +12,22 @@ function formatTime(seconds) {
   return seconds < 0 ? `-${formatted}` : formatted;
 }
 
-// Accepts "M:SS"/"MM:SS" or a bare number of seconds - whatever a chair
-// naturally types. Returns null for anything unparseable so the caller can
-// just no-op instead of committing garbage.
-function parseTimeInput(value) {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
+const MAX_MINUTES = 999;
+const MAX_SECONDS = 59;
 
-  if (trimmed.includes(":")) {
-    const [minutePart, secondPart] = trimmed.split(":");
-    const minutes = Number(minutePart);
-    const secs = Number(secondPart);
-    if (!Number.isFinite(minutes) || !Number.isFinite(secs)) return null;
-    return Math.max(0, Math.round(minutes * 60 + secs));
-  }
+// Digits only, capped to 3 characters - "999" (MAX_MINUTES) is itself the
+// largest 3-digit number, so the length cap alone is the value cap too.
+function sanitizeMinutesInput(value) {
+  return value.replace(/\D/g, "").slice(0, 3);
+}
 
-  const asSeconds = Number(trimmed);
-  return Number.isFinite(asSeconds) ? Math.max(0, Math.round(asSeconds)) : null;
+// Digits only, capped to 2 characters, then clamped to MAX_SECONDS - unlike
+// minutes, "99" is representable in 2 digits but not a valid seconds value,
+// so this needs an explicit numeric clamp on top of the length cap.
+function sanitizeSecondsInput(value) {
+  const digits = value.replace(/\D/g, "").slice(0, 2);
+  if (digits === "") return digits;
+  return String(Math.min(MAX_SECONDS, Number(digits)));
 }
 
 const Timer = forwardRef(function Timer({
@@ -42,7 +41,9 @@ const Timer = forwardRef(function Timer({
   const [running, setRunning] = useState(false);
   const [overtime, setOvertime] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState("");
+  const [editMinutes, setEditMinutes] = useState("");
+  const [editSeconds, setEditSeconds] = useState("");
+  const editContainerRef = useRef(null);
 
   // `onComplete` defaults to a fresh `() => {}` on every render (a new
   // default-parameter closure each call), and callers can pass their own
@@ -146,20 +147,40 @@ const Timer = forwardRef(function Timer({
   };
 
   function startEditing() {
+    const clamped = Math.max(seconds, 0);
     setRunning(false);
-    setEditValue(formatTime(Math.max(seconds, 0)));
+    setEditMinutes(String(Math.min(MAX_MINUTES, Math.floor(clamped / 60))));
+    setEditSeconds(String(clamped % 60).padStart(2, "0"));
     setEditing(true);
   }
 
   function commitEdit() {
-    const parsed = parseTimeInput(editValue);
     setEditing(false);
-    if (parsed == null) return;
+
+    const minutes = editMinutes === "" ? 0 : Number(editMinutes);
+    const secs = editSeconds === "" ? 0 : Number(editSeconds);
+    const total = minutes * 60 + secs;
+    if (total <= 0) return;
 
     setRunning(false);
-    setSeconds(parsed);
-    setMaxTime(parsed);
+    setSeconds(total);
+    setMaxTime(total);
     setOvertime(false);
+  }
+
+  // Only commits once focus leaves both fields entirely (not when tabbing
+  // from minutes to seconds) - checked via relatedTarget rather than a
+  // per-field blur, which would commit a half-typed value the instant the
+  // minutes field loses focus to the seconds field right next to it.
+  function handleEditBlur(event) {
+    if (!editContainerRef.current?.contains(event.relatedTarget)) {
+      commitEdit();
+    }
+  }
+
+  function handleEditKeyDown(event) {
+    if (event.key === "Enter") commitEdit();
+    if (event.key === "Escape") setEditing(false);
   }
 
   const nextSpeaker = () => {
@@ -217,20 +238,32 @@ const Timer = forwardRef(function Timer({
 
         <div className="relative text-center">
           {editing ? (
-            <input
-              type="text"
-              inputMode="numeric"
-              autoFocus
-              value={editValue}
-              onChange={(event) => setEditValue(event.target.value)}
-              onFocus={(event) => event.target.select()}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") commitEdit();
-                if (event.key === "Escape") setEditing(false);
-              }}
-              onBlur={commitEdit}
-              className="w-44 bg-transparent text-center text-[3.25rem] font-light tracking-[-0.06em] text-[var(--app-text)] outline-none sm:text-[4.25rem] lg:text-[5.5rem]"
-            />
+            <div
+              ref={editContainerRef}
+              onBlur={handleEditBlur}
+              className="flex items-baseline justify-center text-[3.25rem] font-light tracking-[-0.06em] text-[var(--app-text)] sm:text-[4.25rem] lg:text-[5.5rem]"
+            >
+              <input
+                type="text"
+                inputMode="numeric"
+                autoFocus
+                value={editMinutes}
+                onChange={(event) => setEditMinutes(sanitizeMinutesInput(event.target.value))}
+                onFocus={(event) => event.target.select()}
+                onKeyDown={handleEditKeyDown}
+                className="w-[2.1em] bg-transparent text-right outline-none"
+              />
+              <span>:</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={editSeconds}
+                onChange={(event) => setEditSeconds(sanitizeSecondsInput(event.target.value))}
+                onFocus={(event) => event.target.select()}
+                onKeyDown={handleEditKeyDown}
+                className="w-[1.4em] bg-transparent text-left outline-none"
+              />
+            </div>
           ) : (
             <div
               className={`text-[3.25rem] font-light tracking-[-0.06em] sm:text-[4.25rem] lg:text-[5.5rem] ${
