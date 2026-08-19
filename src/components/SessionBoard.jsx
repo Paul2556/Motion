@@ -6,7 +6,6 @@ import Flag from "./Flag";
 import AppTopBar from "./AppTopBar";
 import ShortcutLegend from "./ShortcutLegend";
 import ConferenceService from "../services/ConferenceService";
-import { ROTATION_SEQUENCES, positionAt } from "../utils/rotation";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
 // The real session dais - speech/timer/queue - shared by the actual /session
@@ -29,11 +28,6 @@ export default function SessionBoard({
   const [history, setHistory] = useState([]);
   const [selectedQueueIndex, setSelectedQueueIndex] = useState(-1);
   const [legendOpen, setLegendOpen] = useState(false);
-  // Resolution-debate speaker rotation (Against/For, or Against/To/For) -
-  // stored per-committee on ConferenceService (see its "resolution debate
-  // speaker rotation" section), mirrored here the same way queue/speaker
-  // state already is elsewhere in this file.
-  const [rotation, setRotationState] = useState(() => ConferenceService.getRotation());
 
   const navigate = useNavigate();
   const timerRef = useRef(null);
@@ -71,26 +65,6 @@ export default function SessionBoard({
       hadPreviousSpeaker: Boolean(currentSpeaker),
     };
     timerRef.current?.triggerNext();
-  }
-
-  // Manual, independent of recognizeNext - the queue is shared by every
-  // speech type (caucuses included), not just resolution debate, so
-  // advancing it automatically on every recognized speaker would be wrong
-  // outside that specific phase. Chair operates this widget only when it's
-  // actually relevant, same "chair discretion" framing as the RoP itself.
-  function chooseRotationType(type) {
-    ConferenceService.setRotationType(type);
-    setRotationState(ConferenceService.getRotation());
-  }
-
-  function advanceRotation() {
-    ConferenceService.advanceRotation();
-    setRotationState(ConferenceService.getRotation());
-  }
-
-  function resetRotation() {
-    ConferenceService.resetRotation();
-    setRotationState(ConferenceService.getRotation());
   }
 
   function removeSelected() {
@@ -164,44 +138,6 @@ export default function SessionBoard({
             </div>
             <span className="rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-[var(--app-text-secondary)]">{activeMotion}</span>
           </div>
-
-          {linked && (
-            <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3">
-              <div className="flex items-center gap-1">
-                {Object.keys(ROTATION_SEQUENCES).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => chooseRotationType(type)}
-                    className={`border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.14em] transition ${
-                      rotation.type === type
-                        ? "border-[var(--app-border-active)] bg-[var(--app-chip-active)] text-[var(--app-text)]"
-                        : "border-[var(--app-border)] bg-transparent text-[var(--app-text-muted)] hover:border-[var(--app-border-hover)]"
-                    }`}
-                  >
-                    {ROTATION_SEQUENCES[type].join(" → ")}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
-                  Next: <span className="text-[var(--app-text)]">{positionAt(rotation.type, rotation.index)}</span>
-                </span>
-                <button
-                  onClick={advanceRotation}
-                  className="border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
-                >
-                  Advance
-                </button>
-                <button
-                  onClick={resetRotation}
-                  className="border border-[var(--app-border)] bg-transparent px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[var(--app-text-muted)] transition hover:text-[var(--app-text-secondary)]"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
-          )}
 
           <div className="flex flex-1 flex-col items-center justify-center gap-12">
             <Timer
