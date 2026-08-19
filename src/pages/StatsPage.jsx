@@ -14,9 +14,9 @@ function formatDuration(totalSeconds) {
 
 function StatCard({ label, value }) {
   return (
-    <div className="border border-white/10 bg-[#111111] p-6">
+    <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
       <p className="text-2xl font-semibold">{value}</p>
-      <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-white/40">{label}</p>
+      <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-[var(--app-text-muted)]">{label}</p>
     </div>
   );
 }
@@ -35,19 +35,19 @@ export default function StatsPage() {
   const hasAnySpeeches = maxSpeakingTime > 0;
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/home" className="flex items-center gap-3">
               <Logo compact light />
             </Link>
-            <span className="text-xs uppercase tracking-[0.18em] text-white/50">Stats</span>
+            <span className="text-xs uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Stats</span>
           </div>
 
           <Link
             to="/home"
-            className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+            className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
           >
             <ArrowLeft size={14} /> Back
           </Link>
@@ -63,33 +63,33 @@ export default function StatsPage() {
           <StatCard label="Avg Speaking Time" value={formatDuration(stats.averageSpeakingTime)} />
         </div>
 
-        <div className="mt-6 border border-white/10 bg-[#111111] p-6">
-          <p className="text-xs uppercase tracking-[0.22em] text-white/40">Speaking Time</p>
+        <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Speaking Time</p>
 
           {hasAnySpeeches ? (
             <div className="mt-5 space-y-3">
               {ranked.map((delegate) => (
                 <div key={delegate.id} className="flex items-center gap-3">
-                  <div className="flex w-40 shrink-0 items-center gap-2 truncate text-sm text-white/80">
+                  <div className="flex w-40 shrink-0 items-center gap-2 truncate text-sm text-[var(--app-text-secondary)]">
                     <Flag countryCode={delegate.countryCode} className="text-base" />
                     <span className="truncate">{delegate.countryDisplay || delegate.country}</span>
                   </div>
 
-                  <div className="h-2 flex-1 bg-white/5">
+                  <div className="h-2 flex-1 bg-[var(--app-chip)]">
                     <div
                       className="h-2 bg-[rgba(var(--motion-accent-rgb),0.8)]"
                       style={{ width: `${(delegate.speakingTime / maxSpeakingTime) * 100}%` }}
                     />
                   </div>
 
-                  <span className="w-12 shrink-0 text-right text-sm text-white/50">
+                  <span className="w-12 shrink-0 text-right text-sm text-[var(--app-text-muted)]">
                     {formatDuration(delegate.speakingTime)}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-white/45">No speeches recorded yet.</p>
+            <p className="mt-3 text-sm text-[var(--app-text-muted)]">No speeches recorded yet.</p>
           )}
         </div>
       </div>

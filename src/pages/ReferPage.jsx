@@ -70,35 +70,35 @@ export default function ReferPage() {
   ];
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
       <div className="mx-auto max-w-2xl">
         <DebugTopBar />
 
         <h1 className="text-4xl font-semibold">Referral Links</h1>
-        <p className="mt-2 text-white/40">
+        <p className="mt-2 text-[var(--app-text-muted)]">
           Tags a link for the waitlist form's attribution capture. Leave a field blank to omit it.
         </p>
 
-        <div className="mt-8 border border-white/10 bg-[#111111] p-6">
+        <div className="mt-8 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             {FIELDS.map((field) => (
               <label key={field.label} className="block">
-                <span className="text-[11px] uppercase tracking-[0.16em] text-white/40">{field.label}</span>
+                <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">{field.label}</span>
                 <input
                   value={field.value}
                   onChange={(event) => field.onChange(event.target.value)}
                   placeholder={field.placeholder}
-                  className="mt-1.5 w-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-white/30"
+                  className="mt-1.5 w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]"
                 />
               </label>
             ))}
           </div>
 
-          <div className="mt-6 flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2.5">
-            <code className="flex-1 truncate text-xs text-white/70">{generatedUrl}</code>
+          <div className="mt-6 flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2.5">
+            <code className="flex-1 truncate text-xs text-[var(--app-text-secondary)]">{generatedUrl}</code>
             <button
               onClick={copyLink}
-              className="flex shrink-0 items-center gap-1.5 border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] uppercase tracking-[0.14em] text-white/60 transition hover:bg-white/10"
+              className="flex shrink-0 items-center gap-1.5 border border-[var(--app-border)] bg-[var(--app-chip)] px-2.5 py-1.5 text-[11px] uppercase tracking-[0.14em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
             >
               {copied ? <Check size={12} /> : <Copy size={12} />}
               {copied ? "Copied" : "Copy"}

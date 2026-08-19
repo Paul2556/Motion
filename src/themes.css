@@ -53,6 +53,35 @@
   /* Destructive/danger red (delete buttons, error banners), same pre-inversion technique. */
   --danger: #ef4444;
   --danger-rgb: 239, 68, 68;
+
+  /* Base surface/border/text tokens - added for the Brown theme (see below),
+     which can't be produced by inverting Black the way White is, so it needs
+     real values of its own. These defaults are today's exact literal colors
+     (previously hardcoded per-component as Tailwind arbitrary values, e.g.
+     `bg-[#0d0d0d]`, `border-white/10`) rather than new values, so Black
+     stays pixel-identical. White needs no overrides here at all: `invert(1)`
+     flips whatever these render as, same as it always has. */
+  --app-bg: #0d0d0d;
+  --app-panel: #111111;
+  --app-input: #181818;
+  --app-hover: #1b1b1b;
+  --app-overlay: rgba(0, 0, 0, 0.7);
+  --app-border: rgba(255, 255, 255, 0.1);
+  --app-border-hover: rgba(255, 255, 255, 0.2);
+  --app-border-focus: rgba(255, 255, 255, 0.3);
+  --app-border-active: rgba(255, 255, 255, 0.4);
+  --app-border-faint: rgba(255, 255, 255, 0.05);
+  --app-text: #ffffff;
+  --app-text-secondary: rgba(255, 255, 255, 0.75);
+  --app-text-muted: rgba(255, 255, 255, 0.45);
+  --app-text-faint: rgba(255, 255, 255, 0.3);
+  --app-chip: rgba(255, 255, 255, 0.05);
+  --app-chip-active: rgba(255, 255, 255, 0.1);
+  --app-chip-active-hover: rgba(255, 255, 255, 0.2);
+  --app-toggle-on: rgba(255, 255, 255, 0.3);
+  --app-cta-bg: #ffffff;
+  --app-cta-hover: rgba(255, 255, 255, 0.9);
+  --app-cta-text: #000000;
 }
 
 html[data-app-theme="light"] .app-shell {
@@ -70,6 +99,40 @@ html[data-app-theme="light"] .app-shell {
   --motion-accent-rgb: 4, 64, 219;
   --danger: #10bbbb;
   --danger-rgb: 16, 187, 187;
+}
+
+/* Brown - a real re-theme (no invert filter), since a warm brown can't be
+   produced by inverting Black. Only the surface/border/text tokens and the
+   brand accent get new values here; the rest of the accent family (vote
+   colors, motion-accent, danger, etc.) keeps Black's values - those are
+   already saturated, high-contrast hues chosen against a near-black
+   background, and read fine against this dark brown too. */
+html[data-app-theme="brown"] .app-shell {
+  --app-bg: #17110a;
+  --app-panel: #221a12;
+  --app-input: #2c2015;
+  --app-hover: #332415;
+  --app-overlay: rgba(15, 10, 5, 0.75);
+  --app-border: rgba(214, 180, 150, 0.14);
+  --app-border-hover: rgba(214, 180, 150, 0.24);
+  --app-border-focus: rgba(214, 180, 150, 0.34);
+  --app-border-active: rgba(214, 180, 150, 0.44);
+  --app-border-faint: rgba(214, 180, 150, 0.07);
+  --app-text: #f3e9dc;
+  --app-text-secondary: rgba(243, 233, 220, 0.78);
+  --app-text-muted: rgba(243, 233, 220, 0.48);
+  --app-text-faint: rgba(243, 233, 220, 0.32);
+  --app-chip: rgba(214, 180, 150, 0.07);
+  --app-chip-active: rgba(214, 180, 150, 0.14);
+  --app-chip-active-hover: rgba(214, 180, 150, 0.24);
+  --app-toggle-on: rgba(201, 148, 106, 0.4);
+  --app-cta-bg: #9a5b3a;
+  --app-cta-hover: #b56f47;
+  --app-cta-text: #f3e9dc;
+  /* The real brand brown, direct - today it only appears in dark contexts
+     via White's invert(1) flipping Black's blue accent (#65a4c5) into
+     #9a5b3a. Brown doesn't invert, so it can just use the real value. */
+  --accent: #9a5b3a;
 }
 
 /* [data-motion-exempt] carves out the reduced-motion toggle's own knob:

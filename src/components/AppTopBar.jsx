@@ -33,7 +33,7 @@ export default function AppTopBar({ committeeLabel, linked = true, onShowShortcu
           <Logo compact light />
         </NavItem>
         {committeeLabel && (
-          <span className="text-xs uppercase tracking-[0.18em] text-white/50">{committeeLabel}</span>
+          <span className="text-xs uppercase tracking-[0.18em] text-[var(--app-text-muted)]">{committeeLabel}</span>
         )}
       </div>
 
@@ -47,8 +47,8 @@ export default function AppTopBar({ committeeLabel, linked = true, onShowShortcu
               linked={linked}
               className={`inline-flex items-center gap-2 whitespace-nowrap rounded-none border px-3 py-2 text-[11px] uppercase tracking-[0.2em] transition ${
                 active
-                  ? "border-white/40 bg-white/10 text-white"
-                  : "border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:bg-white/10"
+                  ? "border-[var(--app-border-active)] bg-[var(--app-chip-active)] text-[var(--app-text)]"
+                  : "border-[var(--app-border)] bg-[var(--app-chip)] text-[var(--app-text-secondary)] hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)]"
               }`}
             >
               {dot && <span className="h-2.5 w-2.5 rounded-full bg-[var(--motion-accent)]" />}
@@ -61,7 +61,7 @@ export default function AppTopBar({ committeeLabel, linked = true, onShowShortcu
           <button
             onClick={onShowShortcuts}
             aria-label="Keyboard shortcuts"
-            className="inline-flex items-center gap-2 rounded-none border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-white/60 transition hover:border-white/20 hover:bg-white/10"
+            className="inline-flex items-center gap-2 rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-[var(--app-text-secondary)] transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)]"
           >
             <Keyboard size={14} />
           </button>

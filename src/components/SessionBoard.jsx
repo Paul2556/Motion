@@ -153,20 +153,20 @@ export default function SessionBoard({
       />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_440px] 2xl:grid-cols-[minmax(0,1fr)_480px]">
-        <div className="flex h-full min-h-0 flex-col gap-6 overflow-y-auto rounded-none border border-white/10 bg-[#121212] p-5 sm:p-6 lg:p-8 shadow-[0_25px_80px_rgba(0,0,0,.35)]">
+        <div className="flex h-full min-h-0 flex-col gap-6 overflow-y-auto rounded-none border border-[var(--app-border)] bg-[var(--app-panel)] p-5 sm:p-6 lg:p-8 shadow-[0_25px_80px_rgba(0,0,0,.35)]">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">Active speech</p>
-              <h1 className="mt-3 flex items-center gap-3 text-2xl sm:text-xl sm:text-4xl font-semibold tracking-[-0.03em] text-white">
+              <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">Active speech</p>
+              <h1 className="mt-3 flex items-center gap-3 text-2xl sm:text-xl sm:text-4xl font-semibold tracking-[-0.03em] text-[var(--app-text)]">
                 <Flag countryCode={currentSpeaker?.countryCode} className="text-xl sm:text-2xl" />
                 {currentSpeaker?.country ?? "No speaker selected"}
               </h1>
             </div>
-            <span className="rounded-none border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-white/60">{activeMotion}</span>
+            <span className="rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-[var(--app-text-secondary)]">{activeMotion}</span>
           </div>
 
           {linked && (
-            <div className="flex flex-wrap items-center justify-between gap-3 border border-white/10 bg-white/5 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3">
               <div className="flex items-center gap-1">
                 {Object.keys(ROTATION_SEQUENCES).map((type) => (
                   <button
@@ -174,8 +174,8 @@ export default function SessionBoard({
                     onClick={() => chooseRotationType(type)}
                     className={`border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.14em] transition ${
                       rotation.type === type
-                        ? "border-white/40 bg-white/10 text-white"
-                        : "border-white/10 bg-transparent text-white/50 hover:border-white/20"
+                        ? "border-[var(--app-border-active)] bg-[var(--app-chip-active)] text-[var(--app-text)]"
+                        : "border-[var(--app-border)] bg-transparent text-[var(--app-text-muted)] hover:border-[var(--app-border-hover)]"
                     }`}
                   >
                     {ROTATION_SEQUENCES[type].join(" → ")}
@@ -184,18 +184,18 @@ export default function SessionBoard({
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-[11px] uppercase tracking-[0.16em] text-white/50">
-                  Next: <span className="text-white">{positionAt(rotation.type, rotation.index)}</span>
+                <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
+                  Next: <span className="text-[var(--app-text)]">{positionAt(rotation.type, rotation.index)}</span>
                 </span>
                 <button
                   onClick={advanceRotation}
-                  className="border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/70 transition hover:bg-white/10"
+                  className="border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
                 >
                   Advance
                 </button>
                 <button
                   onClick={resetRotation}
-                  className="border border-white/10 bg-transparent px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/40 transition hover:text-white/60"
+                  className="border border-[var(--app-border)] bg-transparent px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[var(--app-text-muted)] transition hover:text-[var(--app-text-secondary)]"
                 >
                   Reset
                 </button>
@@ -212,23 +212,23 @@ export default function SessionBoard({
           </div>
 
           <div className="mt-auto grid grid-cols-3 gap-5 sm:gap-4">
-            <div className="rounded-none border border-white/10 bg-white/5 px-6 py-4 xl:py-5 text-center">
+            <div className="rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-6 py-4 xl:py-5 text-center">
               <p className="text-2xl sm:text-xl sm:text-4xl font-semibold">
                 {estimatedMinutes} min
               </p>
-              <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-white/40">Estimated</p>
+              <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Estimated</p>
             </div>
-            <div className="rounded-none border border-white/10 bg-white/5 px-6 py-4 xl:py-5 text-center">
+            <div className="rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-6 py-4 xl:py-5 text-center">
               <p className="text-2xl sm:text-xl sm:text-4xl font-semibold">
                 {history.length}
               </p>
-              <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-white/40">Spoken</p>
+              <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Spoken</p>
             </div>
-            <div className="rounded-none border border-white/10 bg-white/5 px-6 py-4 xl:py-5 text-center">
+            <div className="rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-6 py-4 xl:py-5 text-center">
               <p className="text-2xl sm:text-xl sm:text-4xl font-semibold">
                 {queue.length}
               </p>
-              <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-white/40">Queued</p>
+              <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Queued</p>
             </div>
           </div>
         </div>

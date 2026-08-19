@@ -47,10 +47,10 @@ export default function SourceRequestPage() {
   }
 
   const inputClass =
-    "w-full rounded-none border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-white/30";
+    "w-full rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]";
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
       <div className="mx-auto max-w-2xl px-6 py-12 sm:px-8 sm:py-16">
         <header className="mb-10 flex items-center justify-between">
           <Link to="/" className="inline-flex items-center gap-3">
@@ -58,24 +58,24 @@ export default function SourceRequestPage() {
           </Link>
         </header>
 
-        <p className="text-[11px] uppercase tracking-[0.26em] text-white/40">Source access</p>
+        <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">Source access</p>
         <h1 className="mt-3 text-2xl font-medium tracking-[-0.02em] sm:text-3xl">
           Requesting source access
         </h1>
 
         {/* Verbatim copy - do not alter, the wording is legally deliberate. */}
-        <p className="mt-4 text-sm leading-relaxed text-white/60">
+        <p className="mt-4 text-sm leading-relaxed text-[var(--app-text-secondary)]">
           Motion's source is available on request. Tell me your name and what you'd like to use
           it for, and I'll add you. In practice, nearly all reasonable requests are granted —
           usually quickly if it's during my downtime (usually 12 am - 7 pm).
         </p>
-        <p className="mt-4 text-sm leading-relaxed text-white/60">
+        <p className="mt-4 text-sm leading-relaxed text-[var(--app-text-secondary)]">
           Access is granted case-by-case at the sole discretion of the copyright holder. Nothing
           on this page constitutes an offer, a promise, or an obligation to grant access to any
           person, and access may be declined or revoked for any reason or no reason.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5 border border-white/10 bg-[#121212] p-6 sm:p-8">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5 border border-[var(--app-border)] bg-[var(--app-panel)] p-6 sm:p-8">
           {/* Honeypot - visually hidden via clipping (not display:none, not
               an off-screen negative offset - that can widen the page's
               scrollable area), unreachable by keyboard/screen-reader
@@ -98,7 +98,7 @@ export default function SourceRequestPage() {
           </div>
 
           <div>
-            <label htmlFor="name" className="mb-2 block text-[11px] uppercase tracking-[0.16em] text-white/40">
+            <label htmlFor="name" className="mb-2 block text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
               Name
             </label>
             <input
@@ -112,7 +112,7 @@ export default function SourceRequestPage() {
           </div>
 
           <div>
-            <label htmlFor="email" className="mb-2 block text-[11px] uppercase tracking-[0.16em] text-white/40">
+            <label htmlFor="email" className="mb-2 block text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
               Email
             </label>
             <input
@@ -126,7 +126,7 @@ export default function SourceRequestPage() {
           </div>
 
           <div>
-            <label htmlFor="purpose" className="mb-2 block text-[11px] uppercase tracking-[0.16em] text-white/40">
+            <label htmlFor="purpose" className="mb-2 block text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
               Intended use
             </label>
             <textarea
@@ -140,8 +140,8 @@ export default function SourceRequestPage() {
             />
           </div>
 
-          <label className="flex items-start gap-3 text-sm text-white/60">
-            <span className="relative mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center border border-white/20 bg-white/5">
+          <label className="flex items-start gap-3 text-sm text-[var(--app-text-secondary)]">
+            <span className="relative mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center border border-[var(--app-border-hover)] bg-[var(--app-chip)]">
               <input
                 type="checkbox"
                 required
@@ -149,11 +149,11 @@ export default function SourceRequestPage() {
                 onChange={(event) => setConsent(event.target.checked)}
                 className="peer absolute inset-0 h-full w-full cursor-pointer appearance-none"
               />
-              <Check size={14} strokeWidth={3} className="pointer-events-none hidden text-white peer-checked:block" />
+              <Check size={14} strokeWidth={3} className="pointer-events-none hidden text-[var(--app-text)] peer-checked:block" />
             </span>
             <span>
               I have read the{" "}
-              <Link to="/licensing" className="underline underline-offset-2 hover:text-white">
+              <Link to="/licensing" className="underline underline-offset-2 hover:text-[var(--app-text)]">
                 Motion Attribution License
               </Link>{" "}
               and understand that source code may not be redistributed.
@@ -162,13 +162,13 @@ export default function SourceRequestPage() {
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-none border border-white/10 bg-white px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-black transition hover:bg-white/90 sm:w-auto"
+            className="flex w-full items-center justify-center gap-2 rounded-none border border-[var(--app-border)] bg-[var(--app-cta-bg)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--app-cta-text)] transition hover:bg-[var(--app-cta-hover)] sm:w-auto"
           >
             {submitted ? "Request received ✓" : isSubmitting ? "Sending..." : "Send request"}
           </button>
 
           {submitted && (
-            <p className="text-sm text-white/60">Request received — you'll hear back by email.</p>
+            <p className="text-sm text-[var(--app-text-secondary)]">Request received — you'll hear back by email.</p>
           )}
           {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
         </form>

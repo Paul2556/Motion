@@ -117,7 +117,7 @@ export default function DebugPage() {
   if (!authReady || !isAuthorized) return null;
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
 
       <div className="mx-auto max-w-7xl">
 
@@ -127,7 +127,7 @@ export default function DebugPage() {
           Motion Debug
         </h1>
 
-        <p className="mt-2 text-white/40">
+        <p className="mt-2 text-[var(--app-text-muted)]">
           ConferenceService Debugger
         </p>
 
@@ -135,7 +135,7 @@ export default function DebugPage() {
 
           {/* Conference */}
 
-          <div className="border border-white/10 bg-[#111111] p-6">
+          <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
 
             <h2 className="text-xl font-semibold">
               Conference
@@ -147,12 +147,12 @@ export default function DebugPage() {
                 type="file"
                 accept=".xlsx"
                 onChange={loadConference}
-                className="block w-full border border-white/10 bg-[#181818] p-3"
+                className="block w-full border border-[var(--app-border)] bg-[var(--app-input)] p-3"
               />
 
               <div>
 
-                <p className="text-white/50">
+                <p className="text-[var(--app-text-muted)]">
                   Loaded
                 </p>
 
@@ -166,7 +166,7 @@ export default function DebugPage() {
 
               <div>
 
-                <p className="text-white/50">
+                <p className="text-[var(--app-text-muted)]">
                   Conference Name
                 </p>
 
@@ -178,7 +178,7 @@ export default function DebugPage() {
 
               <div>
 
-                <p className="text-white/50">
+                <p className="text-[var(--app-text-muted)]">
                   Committees
                 </p>
 
@@ -194,7 +194,7 @@ export default function DebugPage() {
 
           {/* Committee */}
 
-          <div className="border border-white/10 bg-[#111111] p-6">
+          <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
 
             <h2 className="text-xl font-semibold">
               Committee
@@ -207,7 +207,7 @@ export default function DebugPage() {
                 onChange={(e) =>
                   selectCommittee(e.target.value)
                 }
-                className="w-full border border-white/10 bg-[#181818] p-3"
+                className="w-full border border-[var(--app-border)] bg-[var(--app-input)] p-3"
               >
                 {committees.map((committee) => (
                   <option
@@ -225,7 +225,7 @@ export default function DebugPage() {
 
               <div>
 
-                <p className="text-white/50">
+                <p className="text-[var(--app-text-muted)]">
                   Active Committee
                 </p>
 
@@ -237,7 +237,7 @@ export default function DebugPage() {
 
               <div>
 
-                <p className="text-white/50">
+                <p className="text-[var(--app-text-muted)]">
                   Delegates
                 </p>
 
@@ -252,7 +252,7 @@ export default function DebugPage() {
           </div>
                     {/* Delegates */}
 
-          <div className="border border-white/10 bg-[#111111] p-6 lg:col-span-2">
+          <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6 lg:col-span-2">
 
             <div className="flex items-center justify-between">
 
@@ -260,33 +260,33 @@ export default function DebugPage() {
                 Delegates
               </h2>
 
-              <span className="text-sm text-white/40">
+              <span className="text-sm text-[var(--app-text-muted)]">
                 {delegates.length} loaded
               </span>
 
             </div>
 
-            <div className="mt-6 max-h-[400px] overflow-y-auto border border-white/10">
+            <div className="mt-6 max-h-[400px] overflow-y-auto border border-[var(--app-border)]">
 
               <table className="w-full border-collapse">
 
-                <thead className="sticky top-0 bg-[#181818]">
+                <thead className="sticky top-0 bg-[var(--app-input)]">
 
                   <tr>
 
-                    <th className="border-b border-white/10 p-3 text-left">
+                    <th className="border-b border-[var(--app-border)] p-3 text-left">
                       #
                     </th>
 
-                    <th className="border-b border-white/10 p-3 text-left">
+                    <th className="border-b border-[var(--app-border)] p-3 text-left">
                       Delegation
                     </th>
 
-                    <th className="border-b border-white/10 p-3 text-left">
+                    <th className="border-b border-[var(--app-border)] p-3 text-left">
                       Delegate
                     </th>
 
-                    <th className="border-b border-white/10 p-3 text-left">
+                    <th className="border-b border-[var(--app-border)] p-3 text-left">
                       Present
                     </th>
 
@@ -300,7 +300,7 @@ export default function DebugPage() {
 
                     <tr
                       key={delegate.id}
-                      className="border-b border-white/5 hover:bg-white/5"
+                      className="border-b border-[var(--app-border-faint)] hover:bg-[var(--app-chip)]"
                     >
 
                       <td className="p-3">
@@ -336,7 +336,7 @@ export default function DebugPage() {
 
           {/* Statistics */}
 
-          <div className="border border-white/10 bg-[#111111] p-6">
+          <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
 
             <h2 className="text-xl font-semibold">
               Statistics
@@ -376,7 +376,7 @@ export default function DebugPage() {
 
           {/* Tools */}
 
-          <div className="border border-white/10 bg-[#111111] p-6">
+          <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
 
             <h2 className="text-xl font-semibold">
               Tools
@@ -386,7 +386,7 @@ export default function DebugPage() {
 
               <button
                 onClick={dumpJSON}
-                className="border border-white/10 px-5 py-3 hover:bg-white/10"
+                className="border border-[var(--app-border)] px-5 py-3 hover:bg-[var(--app-chip-active)]"
               >
                 Console Log
               </button>
@@ -401,7 +401,7 @@ export default function DebugPage() {
                     )
                   )
                 }
-                className="border border-white/10 px-5 py-3 hover:bg-white/10"
+                className="border border-[var(--app-border)] px-5 py-3 hover:bg-[var(--app-chip-active)]"
               >
                 Dump JSON
               </button>
@@ -416,7 +416,7 @@ export default function DebugPage() {
                     )
                   )
                 }
-                className="border border-white/10 px-5 py-3 hover:bg-white/10"
+                className="border border-[var(--app-border)] px-5 py-3 hover:bg-[var(--app-chip-active)]"
               >
                 Copy JSON
               </button>
@@ -434,13 +434,13 @@ export default function DebugPage() {
           
           {/* Allocation Parser */}
 
-          <div className="border border-white/10 bg-[#111111] p-6 lg:col-span-2">
+          <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6 lg:col-span-2">
 
             <h2 className="text-xl font-semibold">
               Allocation Parser
             </h2>
 
-            <p className="mt-2 text-sm text-white/40">
+            <p className="mt-2 text-sm text-[var(--app-text-muted)]">
               Raw output of AllocationParser, shown alongside ConferenceService's
               own parse above for comparison.
             </p>
@@ -451,7 +451,7 @@ export default function DebugPage() {
 
                 <div
                   key={committee.id}
-                  className="border border-white/10 p-4"
+                  className="border border-[var(--app-border)] p-4"
                 >
 
                   <h3 className="font-semibold">
@@ -459,11 +459,11 @@ export default function DebugPage() {
                     {committee.title ? ` — ${committee.title}` : ""}
                   </h3>
 
-                  <p className="mt-1 text-sm text-white/50">
+                  <p className="mt-1 text-sm text-[var(--app-text-muted)]">
                     {committee.topic || "(no topic)"}
                   </p>
 
-                  <p className="mt-2 text-sm text-white/50">
+                  <p className="mt-2 text-sm text-[var(--app-text-muted)]">
                     {committee.chairs.length} chairs ·{" "}
                     {committee.delegates.length} delegates ·{" "}
                     {committee.pages.length} pages
@@ -476,12 +476,12 @@ export default function DebugPage() {
                       <thead>
 
                         <tr>
-                          <th className="border border-white/10 px-2 py-1 text-left">Role</th>
-                          <th className="border border-white/10 px-2 py-1 text-left">Delegation</th>
-                          <th className="border border-white/10 px-2 py-1 text-left">Code</th>
-                          <th className="border border-white/10 px-2 py-1 text-left">Name</th>
-                          <th className="border border-white/10 px-2 py-1 text-left">School</th>
-                          <th className="border border-white/10 px-2 py-1 text-left">Stance</th>
+                          <th className="border border-[var(--app-border)] px-2 py-1 text-left">Role</th>
+                          <th className="border border-[var(--app-border)] px-2 py-1 text-left">Delegation</th>
+                          <th className="border border-[var(--app-border)] px-2 py-1 text-left">Code</th>
+                          <th className="border border-[var(--app-border)] px-2 py-1 text-left">Name</th>
+                          <th className="border border-[var(--app-border)] px-2 py-1 text-left">School</th>
+                          <th className="border border-[var(--app-border)] px-2 py-1 text-left">Stance</th>
                         </tr>
 
                       </thead>
@@ -491,17 +491,17 @@ export default function DebugPage() {
                         {[...committee.chairs, ...committee.delegates, ...committee.pages].map((person, index) => (
 
                           <tr key={index}>
-                            <td className="border border-white/10 px-2 py-1">{person.role || ""}</td>
-                            <td className="border border-white/10 px-2 py-1">
+                            <td className="border border-[var(--app-border)] px-2 py-1">{person.role || ""}</td>
+                            <td className="border border-[var(--app-border)] px-2 py-1">
                               <span className="inline-flex items-center gap-2">
                                 <Flag countryCode={person.countryCode} />
                                 {person.countryDisplay || ""}
                               </span>
                             </td>
-                            <td className="border border-white/10 px-2 py-1">{person.countryCode || ""}</td>
-                            <td className="border border-white/10 px-2 py-1">{person.name || ""}</td>
-                            <td className="border border-white/10 px-2 py-1">{person.school || ""}</td>
-                            <td className="border border-white/10 px-2 py-1">{person.stance || ""}</td>
+                            <td className="border border-[var(--app-border)] px-2 py-1">{person.countryCode || ""}</td>
+                            <td className="border border-[var(--app-border)] px-2 py-1">{person.name || ""}</td>
+                            <td className="border border-[var(--app-border)] px-2 py-1">{person.school || ""}</td>
+                            <td className="border border-[var(--app-border)] px-2 py-1">{person.stance || ""}</td>
                           </tr>
 
                         ))}
@@ -522,20 +522,20 @@ export default function DebugPage() {
 
           {/* Motion Input */}
 
-          <div className="border border-white/10 bg-[#111111] p-6 lg:col-span-2">
+          <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6 lg:col-span-2">
 
             <h2 className="text-xl font-semibold">
               Motion Input
             </h2>
 
-            <p className="mt-2 text-sm text-white/40">
+            <p className="mt-2 text-sm text-[var(--app-text-muted)]">
               Type a motion below to see MOTIONS/delegation highlighting live, and drag the
               slider to adjust how many typos a fuzzy match will tolerate. Delegation matching
               is scoped to the loaded committee's {delegates.length} delegations.
             </p>
 
             <div className="mt-6">
-              <div className="flex items-center justify-between text-sm text-white/50">
+              <div className="flex items-center justify-between text-sm text-[var(--app-text-muted)]">
                 <label htmlFor="fuzzy-level">Fuzzy match level</label>
                 <span>{Math.round(fuzzyLevel * 100)}%{fuzzyLevel === 0 ? " (off)" : ""}</span>
               </div>
@@ -572,13 +572,13 @@ export default function DebugPage() {
 
           {/* Live JSON */}
 
-          <div className="border border-white/10 bg-[#111111] p-6 lg:col-span-2">
+          <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6 lg:col-span-2">
 
             <h2 className="text-xl font-semibold">
               Conference Object
             </h2>
 
-            <pre className="mt-4 max-h-[400px] overflow-auto border border-white/10 bg-[#181818] p-3 text-xs">
+            <pre className="mt-4 max-h-[400px] overflow-auto border border-[var(--app-border)] bg-[var(--app-input)] p-3 text-xs">
               {JSON.stringify(conference, null, 2)}
             </pre>
 

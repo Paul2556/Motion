@@ -225,14 +225,14 @@ export default function AdminPanelPage() {
   if (!authReady || !isAuthorized) return null;
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
       <div className="mx-auto max-w-4xl">
         <div className="flex items-center justify-between gap-3">
           <DebugTopBar />
           <button
             onClick={tab === "users" ? loadUsers : loadPermissions}
             aria-label="Refresh"
-            className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+            className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
           >
             <RefreshCw size={14} className={(tab === "users" ? loading : permissionsLoading) ? "animate-spin" : ""} />
             Refresh
@@ -240,19 +240,19 @@ export default function AdminPanelPage() {
         </div>
 
         <h1 className="mt-6 text-3xl font-semibold">Admin Panel</h1>
-        <p className="mt-2 text-white/40">
+        <p className="mt-2 text-[var(--app-text-muted)]">
           {tab === "users"
             ? "Firebase Auth accounts - list, disable/enable, delete."
             : "Contributor page access - Debug/Refer/App are granted individually; admin access always stays owner-only."}
         </p>
 
-        <div className="mt-6 flex gap-2 border-b border-white/10">
+        <div className="mt-6 flex gap-2 border-b border-[var(--app-border)]">
           {[["users", "Users"], ["permissions", "Permissions"]].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
               className={`px-4 py-2.5 text-xs uppercase tracking-[0.16em] transition ${
-                tab === key ? "border-b-2 border-white text-white" : "text-white/40 hover:text-white/70"
+                tab === key ? "border-b-2 border-[var(--app-text)] text-[var(--app-text)]" : "text-[var(--app-text-muted)] hover:text-[var(--app-text-secondary)]"
               }`}
             >
               {label}
@@ -274,29 +274,29 @@ export default function AdminPanelPage() {
 
         {tab === "users" ? (
         <>
-        <form onSubmit={handleCreate} className="mt-6 flex flex-wrap items-end gap-3 border border-white/10 bg-[#111111] p-6">
+        <form onSubmit={handleCreate} className="mt-6 flex flex-wrap items-end gap-3 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <label className="flex-1 min-w-[180px]">
-            <span className="text-[11px] uppercase tracking-[0.16em] text-white/40">Email</span>
+            <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Email</span>
             <input
               type="email"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              className="mt-1.5 w-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-white/30"
+              className="mt-1.5 w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]"
             />
           </label>
           <label className="flex-1 min-w-[180px]">
-            <span className="text-[11px] uppercase tracking-[0.16em] text-white/40">Password</span>
+            <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Password</span>
             <input
               type="text"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="mt-1.5 w-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-white/30"
+              className="mt-1.5 w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]"
             />
           </label>
           <button
             type="submit"
             disabled={creating}
-            className="flex items-center gap-2 border border-white/10 bg-white/10 px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-white transition hover:bg-white/20 disabled:opacity-50"
+            className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip-active)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text)] transition hover:bg-[var(--app-chip-active-hover)] disabled:opacity-50"
           >
             <UserPlus size={14} /> Add user
           </button>
@@ -304,13 +304,13 @@ export default function AdminPanelPage() {
 
         <div className="mt-6 space-y-2">
           {users.map((u) => (
-            <div key={u.uid} className="border border-white/10 bg-white/5 px-4 py-3">
+            <div key={u.uid} className="border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-sm text-white/80">{u.email ?? u.uid}</p>
+                    <p className="truncate text-sm text-[var(--app-text-secondary)]">{u.email ?? u.uid}</p>
                     {u.isQuickLogin && (
-                      <span className="shrink-0 border border-white/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-white/40">
+                      <span className="shrink-0 border border-[var(--app-border)] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--app-text-muted)]">
                         Quick login
                       </span>
                     )}
@@ -320,7 +320,7 @@ export default function AdminPanelPage() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-white/30">
+                  <p className="mt-1 text-xs text-[var(--app-text-faint)]">
                     Created {formatDate(u.creationTime)} · Last sign-in {formatDate(u.lastSignInTime)}
                   </p>
                 </div>
@@ -328,7 +328,7 @@ export default function AdminPanelPage() {
                 <div className="flex shrink-0 items-center gap-2">
                   <button
                     onClick={() => toggleDisabled(u)}
-                    className="border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-white/60 transition hover:bg-white/10"
+                    className="border border-[var(--app-border)] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
                   >
                     {u.disabled ? "Enable" : "Disable"}
                   </button>
@@ -343,7 +343,7 @@ export default function AdminPanelPage() {
                       </button>
                       <button
                         onClick={() => setConfirmDeleteUid(null)}
-                        className="text-xs uppercase tracking-[0.14em] text-white/40 hover:text-white/60"
+                        className="text-xs uppercase tracking-[0.14em] text-[var(--app-text-muted)] hover:text-[var(--app-text-secondary)]"
                       >
                         Cancel
                       </button>
@@ -363,7 +363,7 @@ export default function AdminPanelPage() {
           ))}
 
           {!loading && users.length === 0 && (
-            <div className="border border-dashed border-white/10 py-10 text-center text-sm text-white/30">
+            <div className="border border-dashed border-[var(--app-border)] py-10 text-center text-sm text-[var(--app-text-faint)]">
               No users found.
             </div>
           )}
@@ -371,21 +371,21 @@ export default function AdminPanelPage() {
         </>
         ) : (
         <>
-        <form onSubmit={handleAddContributor} className="mt-6 flex flex-wrap items-end gap-3 border border-white/10 bg-[#111111] p-6">
+        <form onSubmit={handleAddContributor} className="mt-6 flex flex-wrap items-end gap-3 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <label className="flex-1 min-w-[220px]">
-            <span className="text-[11px] uppercase tracking-[0.16em] text-white/40">Email</span>
+            <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Email</span>
             <input
               type="email"
               value={newContributorEmail}
               onChange={(e) => setNewContributorEmail(e.target.value)}
               placeholder="They must have signed in at least once"
-              className="mt-1.5 w-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-white/30 placeholder:text-white/20"
+              className="mt-1.5 w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)] placeholder:text-[var(--app-text-faint)]"
             />
           </label>
           <button
             type="submit"
             disabled={addingContributor}
-            className="flex items-center gap-2 border border-white/10 bg-white/10 px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-white transition hover:bg-white/20 disabled:opacity-50"
+            className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip-active)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text)] transition hover:bg-[var(--app-chip-active-hover)] disabled:opacity-50"
           >
             <UserPlus size={14} /> Add contributor (Debug only)
           </button>
@@ -393,13 +393,13 @@ export default function AdminPanelPage() {
 
         <div className="mt-6 space-y-2">
           {contributors.map((c) => (
-            <div key={c.uid} className="border border-white/10 bg-white/5 px-4 py-3">
+            <div key={c.uid} className="border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="min-w-0 truncate text-sm text-white/80">{c.email ?? c.uid}</p>
+                <p className="min-w-0 truncate text-sm text-[var(--app-text-secondary)]">{c.email ?? c.uid}</p>
 
                 <div className="flex shrink-0 items-center gap-4">
                   {PERMISSION_KEYS.map((key) => (
-                    <label key={key} className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-white/60">
+                    <label key={key} className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-[var(--app-text-secondary)]">
                       <input
                         type="checkbox"
                         checked={Boolean(c[key])}
@@ -420,7 +420,7 @@ export default function AdminPanelPage() {
                       </button>
                       <button
                         onClick={() => setConfirmRemoveUid(null)}
-                        className="text-xs uppercase tracking-[0.14em] text-white/40 hover:text-white/60"
+                        className="text-xs uppercase tracking-[0.14em] text-[var(--app-text-muted)] hover:text-[var(--app-text-secondary)]"
                       >
                         Cancel
                       </button>
@@ -440,7 +440,7 @@ export default function AdminPanelPage() {
           ))}
 
           {!permissionsLoading && contributors.length === 0 && (
-            <div className="border border-dashed border-white/10 py-10 text-center text-sm text-white/30">
+            <div className="border border-dashed border-[var(--app-border)] py-10 text-center text-sm text-[var(--app-text-faint)]">
               No contributors yet.
             </div>
           )}

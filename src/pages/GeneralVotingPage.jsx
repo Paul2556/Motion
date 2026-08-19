@@ -85,26 +85,26 @@ export default function GeneralVotingPage() {
   if (!committee) return <NoCommitteeModal />;
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
       <div className="mx-auto max-w-2xl">
         <AppTopBar
           committeeLabel={committee?.committee ?? committee?.id}
           onShowShortcuts={() => setLegendOpen(true)}
         />
 
-        <div className="border border-white/10 bg-[#121212] p-6">
-          <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">What's being voted on?</p>
+        <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+          <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">What's being voted on?</p>
           <input
             type="text"
             value={label}
             onChange={(event) => setLabel(event.target.value)}
             placeholder="Optional - for your own reference"
-            className="mt-4 w-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-white/30"
+            className="mt-4 w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]"
           />
 
           <button
             onClick={resetTally}
-            className="mt-4 flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+            className="mt-4 flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
           >
             <RotateCcw size={12} /> Reset tally
           </button>

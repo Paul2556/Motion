@@ -69,7 +69,7 @@ export default function SessionPage() {
     : [];
 
   return (
-    <div className="app-shell h-screen overflow-hidden bg-[#0d0d0d] text-white">
+    <div className="app-shell h-screen overflow-hidden bg-[var(--app-bg)] text-[var(--app-text)]">
       <div className="flex h-full flex-col px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
         <SessionBoard
           committeeLabel={committee?.committee ?? committee?.id ?? "No committee loaded"}

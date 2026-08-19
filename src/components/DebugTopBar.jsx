@@ -55,8 +55,8 @@ export default function DebugTopBar() {
             to={to}
             className={`inline-flex items-center whitespace-nowrap rounded-none border px-3 py-2 text-[11px] uppercase tracking-[0.2em] transition ${
               active
-                ? "border-white/40 bg-white/10 text-white"
-                : "border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:bg-white/10"
+                ? "border-[var(--app-border-active)] bg-[var(--app-chip-active)] text-[var(--app-text)]"
+                : "border-[var(--app-border)] bg-[var(--app-chip)] text-[var(--app-text-secondary)] hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)]"
             }`}
           >
             {label}

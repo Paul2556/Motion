@@ -28,21 +28,21 @@ export default function OwnerGate({ children }) {
   }
 
   return (
-    <div className="app-shell flex min-h-screen items-center justify-center bg-[#0d0d0d] p-6 text-white">
-      <div className="w-full max-w-sm border border-white/10 bg-[#111111] p-8 text-center">
+    <div className="app-shell flex min-h-screen items-center justify-center bg-[var(--app-bg)] p-6 text-[var(--app-text)]">
+      <div className="w-full max-w-sm border border-[var(--app-border)] bg-[var(--app-panel)] p-8 text-center">
         <div className="flex justify-center">
           <Logo light />
         </div>
 
         <h1 className="mt-6 text-lg font-medium">Early Access</h1>
 
-        <p className="mt-2 text-sm leading-relaxed text-white/45">
+        <p className="mt-2 text-sm leading-relaxed text-[var(--app-text-muted)]">
           Motion is in private early access. Sign in with an authorized account to continue.
         </p>
 
         <button
           onClick={handleSignIn}
-          className="mt-6 w-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm transition hover:border-white/20 hover:bg-white/10"
+          className="mt-6 w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-2.5 text-sm transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)]"
         >
           Sign in with Google
         </button>
@@ -52,7 +52,7 @@ export default function OwnerGate({ children }) {
         )}
 
         {user && (
-          <p className="mt-4 text-xs text-white/30">
+          <p className="mt-4 text-xs text-[var(--app-text-faint)]">
             Signed in as {user.email} — not authorized.
           </p>
         )}
