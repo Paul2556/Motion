@@ -129,10 +129,10 @@ const Queue = forwardRef(function Queue({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-none border border-white/10 bg-[#121212] p-5 sm:p-6 lg:p-8 shadow-[0_25px_80px_rgba(0,0,0,.25)]">
+    <div className="flex h-full min-h-0 flex-col rounded-none border border-[var(--app-border)] bg-[var(--app-panel)] p-5 sm:p-6 lg:p-8 shadow-[0_25px_80px_rgba(0,0,0,.25)]">
 
       <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">
+        <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">
           Up Next
         </p>
       </div>
@@ -163,11 +163,11 @@ const Queue = forwardRef(function Queue({
               }
             }}
             placeholder="Country..."
-            className="w-full rounded-none border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-white/30"
+            className="w-full rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]"
           />
 
           {inputFocused && filtered.length > 0 && (
-            <div className="absolute inset-x-0 top-full z-10 mt-1 max-h-56 overflow-y-auto border border-white/10 bg-[#181818] shadow-[0_12px_30px_rgba(0,0,0,.35)]">
+            <div className="absolute inset-x-0 top-full z-10 mt-1 max-h-56 overflow-y-auto border border-[var(--app-border)] bg-[var(--app-input)] shadow-[0_12px_30px_rgba(0,0,0,.35)]">
               {filtered.map((s, index) => (
                 <button
                   key={s.code ?? s.name}
@@ -175,7 +175,7 @@ const Queue = forwardRef(function Queue({
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => addSpeaker(s)}
                   className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition ${
-                    index === activeIndex ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"
+                    index === activeIndex ? "bg-[var(--app-chip-active)] text-[var(--app-text)]" : "text-[var(--app-text-secondary)] hover:bg-[var(--app-chip)]"
                   }`}
                 >
                   <Flag countryCode={s.code} />
@@ -188,7 +188,7 @@ const Queue = forwardRef(function Queue({
 
         <button
           onClick={submitTyped}
-          className="rounded-none border border-white/10 bg-white/5 px-4 transition hover:bg-white/10"
+          className="rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-4 transition hover:bg-[var(--app-chip-active)]"
         >
           <Plus size={18} />
         </button>
@@ -197,7 +197,7 @@ const Queue = forwardRef(function Queue({
       <div className="mt-6 min-h-0 flex-1 overflow-y-auto space-y-3 pr-1">
 
         {queue.length === 0 && (
-          <div className="border border-dashed border-white/10 py-10 text-center text-sm text-white/30">
+          <div className="border border-dashed border-[var(--app-border)] py-10 text-center text-sm text-[var(--app-text-faint)]">
             No speakers queued.
           </div>
         )}
@@ -206,18 +206,18 @@ const Queue = forwardRef(function Queue({
           <div
             key={speaker.id}
             onClick={() => onSelectIndex?.(index)}
-            className={`group border px-5 py-4 transition hover:bg-white/10 ${
-              index === selectedIndex ? "border-white/40 bg-white/10" : "border-white/10 bg-white/5"
+            className={`group border px-5 py-4 transition hover:bg-[var(--app-chip-active)] ${
+              index === selectedIndex ? "border-[var(--app-border-active)] bg-[var(--app-chip-active)]" : "border-[var(--app-border)] bg-[var(--app-chip)]"
             }`}
           >
             <div className="flex items-center justify-between">
 
               <div className="flex items-center gap-4">
-                <span className="font-mono text-xs text-white/40">
+                <span className="font-mono text-xs text-[var(--app-text-muted)]">
                   {String(index + 1).padStart(2, "0")}
                 </span>
 
-                <span className="inline-flex items-center gap-2 text-white">
+                <span className="inline-flex items-center gap-2 text-[var(--app-text)]">
                   <Flag countryCode={speaker.countryCode} />
                   {speaker.country}
                 </span>
@@ -228,7 +228,7 @@ const Queue = forwardRef(function Queue({
                 <button
                   onClick={() => moveToTop(index)}
                   aria-label="Move to top"
-                  className="border border-white/10 p-2 hover:bg-white/10"
+                  className="border border-[var(--app-border)] p-2 hover:bg-[var(--app-chip-active)]"
                 >
                   <ChevronsUp size={14} />
                 </button>
@@ -236,7 +236,7 @@ const Queue = forwardRef(function Queue({
                 <button
                   onClick={() => moveUp(index)}
                   aria-label="Move up"
-                  className="border border-white/10 p-2 hover:bg-white/10"
+                  className="border border-[var(--app-border)] p-2 hover:bg-[var(--app-chip-active)]"
                 >
                   <ChevronUp size={14} />
                 </button>
@@ -244,7 +244,7 @@ const Queue = forwardRef(function Queue({
                 <button
                   onClick={() => moveDown(index)}
                   aria-label="Move down"
-                  className="border border-white/10 p-2 hover:bg-white/10"
+                  className="border border-[var(--app-border)] p-2 hover:bg-[var(--app-chip-active)]"
                 >
                   <ChevronDown size={14} />
                 </button>
@@ -252,7 +252,7 @@ const Queue = forwardRef(function Queue({
                 <button
                   onClick={() => moveToBottom(index)}
                   aria-label="Move to bottom"
-                  className="border border-white/10 p-2 hover:bg-white/10"
+                  className="border border-[var(--app-border)] p-2 hover:bg-[var(--app-chip-active)]"
                 >
                   <ChevronsDown size={14} />
                 </button>

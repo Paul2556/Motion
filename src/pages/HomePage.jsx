@@ -27,12 +27,12 @@ function MenuCard({
   to,
   onClick,
 }) {
-  const className = "group flex w-full items-center justify-between border border-white/10 bg-[#151515] p-6 text-left transition hover:border-white/20 hover:bg-[#1b1b1b]";
+  const className = "group flex w-full items-center justify-between border border-[var(--app-border)] bg-[var(--app-panel)] p-6 text-left transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-hover)]";
 
   const content = (
     <>
       <div className="flex items-center gap-5">
-        <div className="border border-white/10 bg-white/5 p-4">
+        <div className="border border-[var(--app-border)] bg-[var(--app-chip)] p-4">
           {icon}
         </div>
 
@@ -41,7 +41,7 @@ function MenuCard({
             {title}
           </h2>
 
-          <p className="mt-1 text-sm text-white/40">
+          <p className="mt-1 text-sm text-[var(--app-text-muted)]">
             {subtitle}
           </p>
         </div>
@@ -49,7 +49,7 @@ function MenuCard({
 
       <ChevronRight
         size={22}
-        className="text-white/20 transition group-hover:translate-x-1"
+        className="text-[var(--app-text-faint)] transition group-hover:translate-x-1"
       />
     </>
   );
@@ -140,7 +140,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
 
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col">
 
@@ -153,11 +153,11 @@ export default function HomePage() {
           <Link to="/home"><Logo light/></Link>
 
           <div className="flex items-center gap-3">
-            <span className="border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/50">
+            <span className="border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--app-text-muted)]">
               {user ? (user.email ?? "Signed In") : "Signed Out"}
             </span>
 
-            <span className="border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.2em] text-white/50">
+            <span className="border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[var(--app-text-muted)]">
               Alpha
             </span>
           </div>
@@ -209,9 +209,9 @@ export default function HomePage() {
 
             {/* Conference Status */}
 
-            <div className="flex-1 border border-white/10 bg-[#111111] p-6">
+            <div className="flex-1 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
 
-              <p className="text-xs uppercase tracking-[0.22em] text-white/40">
+              <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">
                 Conference Status
               </p>
 
@@ -225,7 +225,7 @@ export default function HomePage() {
                   onChange={(event) => handleFile(event.target.files?.[0])}
                 />
 
-                <div className="flex h-16 w-16 items-center justify-center border border-white/15 text-white">
+                <div className="flex h-16 w-16 items-center justify-center border border-[var(--app-border)] text-[var(--app-text)]">
                   <CommitteeIcon title={activeCommitteeTitle} size={24} fallback={<FileX size={24} />} />
                 </div>
 
@@ -237,7 +237,7 @@ export default function HomePage() {
                     : "No Conference Loaded"}
                 </h2>
 
-                <p className="mt-3 leading-relaxed text-white/45">
+                <p className="mt-3 leading-relaxed text-[var(--app-text-muted)]">
                   {error
                     ? error
                     : loadedConference?.name
@@ -255,18 +255,18 @@ export default function HomePage() {
 
               <Link
                 to="/settings"
-                className="group border border-white/10 bg-[#111111] p-6 transition hover:border-white/20 hover:bg-[#1b1b1b]"
+                className="group border border-[var(--app-border)] bg-[var(--app-panel)] p-6 transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-hover)]"
               >
                 <Settings
                   size={28}
-                  className="text-white/70"
+                  className="text-[var(--app-text-secondary)]"
                 />
 
                 <h3 className="mt-6 text-lg font-medium">
                   Settings
                 </h3>
 
-                <p className="mt-2 text-sm text-white/40">
+                <p className="mt-2 text-sm text-[var(--app-text-muted)]">
                   Preferences and application options.
                 </p>
 
@@ -274,18 +274,18 @@ export default function HomePage() {
 
               <Link
                 to="/stats"
-                className="group border border-white/10 bg-[#111111] p-6 transition hover:border-white/20 hover:bg-[#1b1b1b]"
+                className="group border border-[var(--app-border)] bg-[var(--app-panel)] p-6 transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-hover)]"
               >
                 <BarChart3
                   size={28}
-                  className="text-white/70"
+                  className="text-[var(--app-text-secondary)]"
                 />
 
                 <h3 className="mt-6 text-lg font-medium">
                   Reports
                 </h3>
 
-                <p className="mt-2 text-sm text-white/40">
+                <p className="mt-2 text-sm text-[var(--app-text-muted)]">
                   Session analytics and exports.
                 </p>
 
@@ -297,14 +297,14 @@ export default function HomePage() {
 
         </div>
 
-        <footer className="mt-8 flex items-center justify-between border-t border-white/10 pt-6 text-sm text-white/35">
+        <footer className="mt-8 flex items-center justify-between border-t border-[var(--app-border)] pt-6 text-sm text-[var(--app-text-faint)]">
 
           <span>
             Motion Alpha
           </span>
 
           {isDemoHost && (
-            <Link to="/feedback" className="transition hover:text-white/60">
+            <Link to="/feedback" className="transition hover:text-[var(--app-text-secondary)]">
               Send Feedback
             </Link>
           )}
@@ -318,14 +318,14 @@ export default function HomePage() {
       </div>
 
       {showDemoPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-md border border-white/10 bg-[#111111] p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--app-overlay)] p-6">
+          <div className="w-full max-w-md border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
 
             <div className="flex items-center gap-3">
-              <Sparkles size={20} className="text-white/50" />
+              <Sparkles size={20} className="text-[var(--app-text-muted)]" />
               <div>
                 <h2 className="text-lg font-medium">Choose a demo conference</h2>
-                <p className="text-xs text-white/40">Bundled sample data, no upload needed.</p>
+                <p className="text-xs text-[var(--app-text-muted)]">Bundled sample data, no upload needed.</p>
               </div>
             </div>
 
@@ -334,10 +334,10 @@ export default function HomePage() {
                 <button
                   key={demo.id}
                   onClick={() => loadDemoConference(demo)}
-                  className="flex w-full items-center justify-between border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-white/20 hover:bg-white/10"
+                  className="flex w-full items-center justify-between border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3 text-left transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)]"
                 >
                   <span className="font-medium">{demo.name}</span>
-                  <span className="shrink-0 whitespace-nowrap pl-4 text-xs text-white/40">
+                  <span className="shrink-0 whitespace-nowrap pl-4 text-xs text-[var(--app-text-muted)]">
                     {demo.committees.reduce((sum, committee) => sum + committee.delegates.length, 0)} delegates
                   </span>
                 </button>
@@ -346,7 +346,7 @@ export default function HomePage() {
 
             <button
               onClick={() => setShowDemoPicker(false)}
-              className="mt-4 w-full border border-white/10 px-4 py-2.5 text-sm text-white/50 transition hover:bg-white/5"
+              className="mt-4 w-full border border-[var(--app-border)] px-4 py-2.5 text-sm text-[var(--app-text-muted)] transition hover:bg-[var(--app-chip)]"
             >
               Cancel
             </button>
@@ -356,14 +356,14 @@ export default function HomePage() {
       )}
 
       {pendingConference && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-md border border-white/10 bg-[#111111] p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--app-overlay)] p-6">
+          <div className="w-full max-w-md border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
 
             <div className="flex items-center gap-3">
-              <FileSpreadsheet size={20} className="text-white/50" />
+              <FileSpreadsheet size={20} className="text-[var(--app-text-muted)]" />
               <div>
                 <h2 className="text-lg font-medium">Which committee are you chairing?</h2>
-                <p className="text-xs text-white/40">{pendingConference.name}</p>
+                <p className="text-xs text-[var(--app-text-muted)]">{pendingConference.name}</p>
               </div>
             </div>
 
@@ -372,17 +372,17 @@ export default function HomePage() {
                 <button
                   key={committee.id}
                   onClick={() => selectCommittee(committee.id)}
-                  className="flex w-full items-center justify-between border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-white/20 hover:bg-white/10"
+                  className="flex w-full items-center justify-between border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3 text-left transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)]"
                 >
                   <span className="font-medium">{committee.committee}</span>
-                  <span className="shrink-0 whitespace-nowrap pl-4 text-xs text-white/40">{committee.delegates.length} delegates</span>
+                  <span className="shrink-0 whitespace-nowrap pl-4 text-xs text-[var(--app-text-muted)]">{committee.delegates.length} delegates</span>
                 </button>
               ))}
             </div>
 
             <button
               onClick={() => setPendingConference(null)}
-              className="mt-4 w-full border border-white/10 px-4 py-2.5 text-sm text-white/50 transition hover:bg-white/5"
+              className="mt-4 w-full border border-[var(--app-border)] px-4 py-2.5 text-sm text-[var(--app-text-muted)] transition hover:bg-[var(--app-chip)]"
             >
               Cancel
             </button>

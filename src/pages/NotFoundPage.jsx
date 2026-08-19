@@ -14,21 +14,21 @@ function isProductSubdomain(hostname) {
 
 function AppShellNotFound() {
   return (
-    <div className="app-shell flex min-h-screen items-center justify-center bg-[#0d0d0d] p-6 text-white">
-      <div className="w-full max-w-sm border border-white/10 bg-[#111111] p-8 text-center">
+    <div className="app-shell flex min-h-screen items-center justify-center bg-[var(--app-bg)] p-6 text-[var(--app-text)]">
+      <div className="w-full max-w-sm border border-[var(--app-border)] bg-[var(--app-panel)] p-8 text-center">
         <div className="flex justify-center">
           <Logo light />
         </div>
 
         <h1 className="mt-6 text-lg font-medium">404 — Page not found</h1>
 
-        <p className="mt-2 text-sm leading-relaxed text-white/45">
+        <p className="mt-2 text-sm leading-relaxed text-[var(--app-text-muted)]">
           That page doesn't exist.
         </p>
 
         <Link
           to="/"
-          className="mt-6 block w-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm transition hover:border-white/20 hover:bg-white/10"
+          className="mt-6 block w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-2.5 text-sm transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)]"
         >
           Back to home
         </Link>

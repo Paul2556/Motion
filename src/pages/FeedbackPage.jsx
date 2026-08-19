@@ -39,10 +39,10 @@ export default function FeedbackPage() {
   }
 
   const inputClass =
-    "w-full rounded-none border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-white/30";
+    "w-full rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]";
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
       <div className="mx-auto max-w-2xl px-6 py-12 sm:px-8 sm:py-16">
         <header className="mb-10 flex items-center justify-between">
           <Link to="/home" className="inline-flex items-center gap-3">
@@ -50,16 +50,16 @@ export default function FeedbackPage() {
           </Link>
         </header>
 
-        <p className="text-[11px] uppercase tracking-[0.26em] text-white/40">Feedback</p>
+        <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">Feedback</p>
         <h1 className="mt-3 text-2xl font-medium tracking-[-0.02em] sm:text-3xl">
           Send feedback
         </h1>
 
-        <p className="mt-4 text-sm leading-relaxed text-white/60">
+        <p className="mt-4 text-sm leading-relaxed text-[var(--app-text-secondary)]">
           Bugs, rough edges, feature requests. Whatever you've got. We'll try our best to react to them as fast and effectively as we can.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5 border border-white/10 bg-[#121212] p-6 sm:p-8">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5 border border-[var(--app-border)] bg-[var(--app-panel)] p-6 sm:p-8">
           {/* Honeypot - see SourceRequestPage.jsx for the same pattern. */}
           <div
             className="absolute h-px w-px overflow-hidden whitespace-nowrap border-0 p-0"
@@ -79,7 +79,7 @@ export default function FeedbackPage() {
           </div>
 
           <div>
-            <label htmlFor="message" className="mb-2 block text-[11px] uppercase tracking-[0.16em] text-white/40">
+            <label htmlFor="message" className="mb-2 block text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
               Feedback
             </label>
             <textarea
@@ -94,7 +94,7 @@ export default function FeedbackPage() {
           </div>
 
           <div>
-            <label htmlFor="email" className="mb-2 block text-[11px] uppercase tracking-[0.16em] text-white/40">
+            <label htmlFor="email" className="mb-2 block text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
               Email (optional, if you'd like a reply)
             </label>
             <input
@@ -108,13 +108,13 @@ export default function FeedbackPage() {
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-none border border-white/10 bg-white px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-black transition hover:bg-white/90 sm:w-auto"
+            className="flex w-full items-center justify-center gap-2 rounded-none border border-[var(--app-border)] bg-[var(--app-cta-bg)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--app-cta-text)] transition hover:bg-[var(--app-cta-hover)] sm:w-auto"
           >
             {submitted ? "Feedback sent ✓" : isSubmitting ? "Sending..." : "Send feedback"}
           </button>
 
           {submitted && (
-            <p className="text-sm text-white/60">Thanks — feedback received.</p>
+            <p className="text-sm text-[var(--app-text-secondary)]">Thanks — feedback received.</p>
           )}
           {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
         </form>

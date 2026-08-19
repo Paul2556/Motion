@@ -8,12 +8,12 @@ import AuthService from "../services/AuthService";
 import CloudSessionService, { stableDelegateKey, dayNumberForSession } from "../services/CloudSessionService";
 import ConferenceService from "../services/ConferenceService";
 
-const PILL = "border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10";
-const PILL_ACTIVE = "border border-white/40 bg-white/10 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white transition";
-const ROW = "flex w-full items-center justify-between border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-white/20 hover:bg-white/10";
-const PANEL = "border border-white/10 bg-[#111111] p-6";
-const LABEL = "text-xs uppercase tracking-[0.22em] text-white/40";
-const INPUT = "mt-3 w-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none";
+const PILL = "border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]";
+const PILL_ACTIVE = "border border-[var(--app-border-active)] bg-[var(--app-chip-active)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text)] transition";
+const ROW = "flex w-full items-center justify-between border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3 text-left transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)]";
+const PANEL = "border border-[var(--app-border)] bg-[var(--app-panel)] p-6";
+const LABEL = "text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]";
+const INPUT = "mt-3 w-full border border-[var(--app-border)] bg-[var(--app-input)] px-3 py-2 text-sm text-[var(--app-text)] placeholder:text-[var(--app-text-faint)] focus:border-[var(--app-border-focus)] focus:outline-none";
 
 const ATTENDANCE_STATES = ["present", "absent", "present_and_voting"];
 
@@ -168,7 +168,7 @@ export default function CloudSessionsPage() {
   const isSessionOwner = activeSession && user && activeSession.ownerId === user.uid;
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
       <div className="mx-auto max-w-3xl">
 
         <header className="mb-8 flex items-center justify-between">
@@ -176,7 +176,7 @@ export default function CloudSessionsPage() {
             <Link to="/home" className="flex items-center gap-3">
               <Logo compact light />
             </Link>
-            <span className="text-xs uppercase tracking-[0.18em] text-white/50">Cloud Sessions</span>
+            <span className="text-xs uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Cloud Sessions</span>
           </div>
 
           <Link to="/home" className={`flex items-center gap-2 ${PILL}`}>
@@ -193,7 +193,7 @@ export default function CloudSessionsPage() {
         {!AuthService.isConfigured() && (
           <div className={PANEL}>
             <p className={LABEL}>Cloud sessions unavailable</p>
-            <p className="mt-2 text-sm text-white/45">Firebase isn't configured for this deployment.</p>
+            <p className="mt-2 text-sm text-[var(--app-text-muted)]">Firebase isn't configured for this deployment.</p>
           </div>
         )}
 
@@ -226,7 +226,7 @@ export default function CloudSessionsPage() {
 
             {authTab === "qr" && (
               <div className="mt-5">
-                <p className="text-sm text-white/45">
+                <p className="text-sm text-[var(--app-text-muted)]">
                   Generates a throwaway quick-login account. Scanning the code signs the scanning
                   device in directly &mdash; treat the code like a password and don't share it publicly.
                 </p>
@@ -247,10 +247,10 @@ export default function CloudSessionsPage() {
           <>
             <div className={PANEL}>
               <p className={LABEL}>Your account</p>
-              <p className="mt-2 text-sm text-white/45">
+              <p className="mt-2 text-sm text-[var(--app-text-muted)]">
                 Share your UID with a session owner so they can add you as a collaborator.
               </p>
-              <p className="mt-3 break-all border border-white/10 bg-black/20 px-3 py-2 font-mono text-xs text-white/70">
+              <p className="mt-3 break-all border border-[var(--app-border)] bg-[var(--app-input)] px-3 py-2 font-mono text-xs text-[var(--app-text-secondary)]">
                 {user.uid}
               </p>
             </div>
@@ -264,11 +264,11 @@ export default function CloudSessionsPage() {
                   return (
                     <div
                       key={session.id}
-                      className={ROW + (activeSessionId === session.id ? " border-white/30 bg-white/10" : "")}
+                      className={ROW + (activeSessionId === session.id ? " border-[var(--app-border-focus)] bg-[var(--app-chip-active)]" : "")}
                     >
                       <button onClick={() => setActiveSessionId(session.id)} className="flex flex-1 items-center justify-between text-left">
                         <span className="font-medium">{session.title}</span>
-                        <span className="shrink-0 whitespace-nowrap pl-4 text-xs text-white/40">
+                        <span className="shrink-0 whitespace-nowrap pl-4 text-xs text-[var(--app-text-muted)]">
                           {session.committeeId}
                           {dayNumber ? ` · Day ${dayNumber}` : ""}
                         </span>
@@ -277,7 +277,7 @@ export default function CloudSessionsPage() {
                         <button
                           onClick={() => setPendingDeleteSessionId(session.id)}
                           aria-label={`Delete ${session.title}`}
-                          className="ml-4 shrink-0 text-white/30 outline-none transition hover:text-[var(--danger)] focus-visible:text-[var(--danger)]"
+                          className="ml-4 shrink-0 text-[var(--app-text-faint)] outline-none transition hover:text-[var(--danger)] focus-visible:text-[var(--danger)]"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -285,12 +285,12 @@ export default function CloudSessionsPage() {
                     </div>
                   );
                 })}
-                {sessions.length === 0 && <p className="text-sm text-white/40">No cloud sessions yet.</p>}
+                {sessions.length === 0 && <p className="text-sm text-[var(--app-text-muted)]">No cloud sessions yet.</p>}
               </div>
 
               <div className="mt-5 flex gap-3">
-                <input placeholder="Session title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none" />
-                <input placeholder="Committee ID" value={newCommitteeId} onChange={(e) => setNewCommitteeId(e.target.value)} className="w-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none" />
+                <input placeholder="Session title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-full border border-[var(--app-border)] bg-[var(--app-input)] px-3 py-2 text-sm text-[var(--app-text)] placeholder:text-[var(--app-text-faint)] focus:border-[var(--app-border-focus)] focus:outline-none" />
+                <input placeholder="Committee ID" value={newCommitteeId} onChange={(e) => setNewCommitteeId(e.target.value)} className="w-full border border-[var(--app-border)] bg-[var(--app-input)] px-3 py-2 text-sm text-[var(--app-text)] placeholder:text-[var(--app-text-faint)] focus:border-[var(--app-border-focus)] focus:outline-none" />
                 <button onClick={handleCreateSession} className={PILL}>Create</button>
               </div>
             </div>
@@ -298,21 +298,21 @@ export default function CloudSessionsPage() {
             {activeSessionId && isSessionOwner && (
               <div className={`mt-6 ${PANEL}`}>
                 <p className={LABEL}>Collaborators</p>
-                <p className="mt-2 text-sm text-white/45">
+                <p className="mt-2 text-sm text-[var(--app-text-muted)]">
                   Co-chairs get full read/write on this session's attendance, but can't delete the session itself.
                 </p>
 
                 <div className="mt-4 space-y-2">
                   {(activeSession.memberIds ?? []).filter((uid) => uid !== activeSession.ownerId).map((uid) => (
                     <div key={uid} className={ROW}>
-                      <span className="truncate font-mono text-xs text-white/70">{uid}</span>
+                      <span className="truncate font-mono text-xs text-[var(--app-text-secondary)]">{uid}</span>
                       <button onClick={() => handleRemoveCollaborator(uid)} className="shrink-0 pl-4 text-xs uppercase tracking-[0.16em] text-[var(--danger)] outline-none transition hover:brightness-125 focus-visible:brightness-125">
                         Remove
                       </button>
                     </div>
                   ))}
                   {(activeSession.memberIds ?? []).filter((uid) => uid !== activeSession.ownerId).length === 0 && (
-                    <p className="text-sm text-white/40">No collaborators yet.</p>
+                    <p className="text-sm text-[var(--app-text-muted)]">No collaborators yet.</p>
                   )}
                 </div>
 
@@ -321,7 +321,7 @@ export default function CloudSessionsPage() {
                     placeholder="Collaborator's Firebase UID"
                     value={newCollaboratorUid}
                     onChange={(e) => setNewCollaboratorUid(e.target.value)}
-                    className="w-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none"
+                    className="w-full border border-[var(--app-border)] bg-[var(--app-input)] px-3 py-2 text-sm text-[var(--app-text)] placeholder:text-[var(--app-text-faint)] focus:border-[var(--app-border-focus)] focus:outline-none"
                   />
                   <button onClick={handleAddCollaborator} className={PILL}>Add</button>
                 </div>
@@ -333,7 +333,7 @@ export default function CloudSessionsPage() {
                 <p className={LABEL}>Attendance</p>
 
                 {roster.length === 0 && (
-                  <p className="mt-3 text-sm text-white/40">
+                  <p className="mt-3 text-sm text-[var(--app-text-muted)]">
                     No committee roster loaded in this tab &mdash; upload a workbook on Home to see delegates here.
                   </p>
                 )}
@@ -345,7 +345,7 @@ export default function CloudSessionsPage() {
                     return (
                       <button key={key} onClick={() => handleCycleAttendance(key)} className={ROW}>
                         <span className="font-medium">{delegate.countryDisplay || delegate.country}</span>
-                        <span className="shrink-0 whitespace-nowrap pl-4 text-xs uppercase tracking-[0.16em] text-white/40">
+                        <span className="shrink-0 whitespace-nowrap pl-4 text-xs uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
                           {status.replace(/_/g, " ")}
                         </span>
                       </button>
@@ -360,14 +360,14 @@ export default function CloudSessionsPage() {
       </div>
 
       {pendingDeleteSessionId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-md border border-white/10 bg-[#111111] p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--app-overlay)] p-6">
+          <div className="w-full max-w-md border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
             <div className="flex items-center gap-3">
-              <Trash2 size={20} className="text-white/50" />
+              <Trash2 size={20} className="text-[var(--app-text-muted)]" />
               <h2 className="text-lg font-medium">Delete this session?</h2>
             </div>
 
-            <p className="mt-4 text-sm text-white/60">
+            <p className="mt-4 text-sm text-[var(--app-text-secondary)]">
               This permanently deletes the session and all of its attendance data. This can't be undone.
             </p>
 
@@ -375,14 +375,14 @@ export default function CloudSessionsPage() {
               <button
                 onClick={() => setPendingDeleteSessionId(null)}
                 disabled={isDeleting}
-                className="flex-1 border border-white/10 px-4 py-2.5 text-sm text-white/50 transition hover:bg-white/5 disabled:opacity-50"
+                className="flex-1 border border-[var(--app-border)] px-4 py-2.5 text-sm text-[var(--app-text-muted)] transition hover:bg-[var(--app-chip)] disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteSession}
                 disabled={isDeleting}
-                className="flex-1 border border-white/10 bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-white/90 disabled:opacity-50"
+                className="flex-1 border border-[var(--app-border)] bg-[var(--app-cta-bg)] px-4 py-2.5 text-sm font-medium text-[var(--app-cta-text)] transition hover:bg-[var(--app-cta-hover)] disabled:opacity-50"
               >
                 {isDeleting ? "Deleting..." : "Delete"}
               </button>

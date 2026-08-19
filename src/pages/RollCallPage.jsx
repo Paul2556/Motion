@@ -41,7 +41,7 @@ function shouldConfirmBulkChange(rosterSize, changesCount) {
 
 function SegmentedToggle({ value, onChange, indeterminate = false }) {
   return (
-    <div className="flex shrink-0 border border-white/10">
+    <div className="flex shrink-0 border border-[var(--app-border)]">
       {STATES.map((state, index) => {
         const active = !indeterminate && value === state.key;
         return (
@@ -49,8 +49,8 @@ function SegmentedToggle({ value, onChange, indeterminate = false }) {
             key={state.key}
             onClick={() => onChange(state.key)}
             className={`px-3 py-2 text-[11px] uppercase tracking-[0.12em] transition ${
-              index > 0 ? "border-l border-white/10" : ""
-            } ${active ? "bg-white text-black" : "bg-white/5 text-white/50 hover:bg-white/10"}`}
+              index > 0 ? "border-l border-[var(--app-border)]" : ""
+            } ${active ? "bg-[var(--app-cta-bg)] text-[var(--app-cta-text)]" : "bg-[var(--app-chip)] text-[var(--app-text-muted)] hover:bg-[var(--app-chip-active)]"}`}
           >
             {state.label}
           </button>
@@ -169,7 +169,7 @@ export default function RollCallPage() {
   const pendingLabel = pendingBulk && STATES.find((s) => s.key === pendingBulk.nextState)?.label;
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
       <div className="mx-auto max-w-3xl">
 
         <AppTopBar
@@ -177,32 +177,32 @@ export default function RollCallPage() {
           onShowShortcuts={() => setLegendOpen(true)}
         />
 
-        <div className="mb-6 flex items-center gap-6 border border-white/10 bg-[#111111] p-6">
+        <div className="mb-6 flex items-center gap-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-white/40">Present</p>
-            <p className="mt-1 text-2xl font-light">{presentCount} <span className="text-sm text-white/30">/ {rosterSize}</span></p>
+            <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Present</p>
+            <p className="mt-1 text-2xl font-light">{presentCount} <span className="text-sm text-[var(--app-text-faint)]">/ {rosterSize}</span></p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-white/40">Voting</p>
-            <p className="mt-1 text-2xl font-light">{votingCount} <span className="text-sm text-white/30">/ {rosterSize}</span></p>
+            <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Voting</p>
+            <p className="mt-1 text-2xl font-light">{votingCount} <span className="text-sm text-[var(--app-text-faint)]">/ {rosterSize}</span></p>
           </div>
         </div>
 
-        <div className="border border-white/10 bg-[#111111]">
+        <div className="border border-[var(--app-border)] bg-[var(--app-panel)]">
 
-          <div className="flex items-center justify-between border-b border-white/10 bg-white/5 px-5 py-4">
-            <span className="text-sm font-medium uppercase tracking-[0.1em] text-white/70">Everyone</span>
+          <div className="flex items-center justify-between border-b border-[var(--app-border)] bg-[var(--app-chip)] px-5 py-4">
+            <span className="text-sm font-medium uppercase tracking-[0.1em] text-[var(--app-text-secondary)]">Everyone</span>
             <SegmentedToggle value={everyoneState} indeterminate={!everyoneUniform} onChange={requestEveryone} />
           </div>
 
-          <div className="max-h-[60vh] overflow-y-auto divide-y divide-white/5">
+          <div className="max-h-[60vh] overflow-y-auto divide-y divide-[var(--app-border-faint)]">
             {delegates.map((delegate, index) => (
               <div
                 key={delegate.id}
                 ref={(el) => (rowRefs.current[index] = el)}
                 onClick={() => setSelectedIndex(index)}
                 className={`flex items-center justify-between px-5 py-4 transition ${
-                  index === clampedIndex ? "bg-white/5" : ""
+                  index === clampedIndex ? "bg-[var(--app-chip)]" : ""
                 }`}
               >
                 <span className="flex items-center gap-2.5 font-medium">
@@ -214,7 +214,7 @@ export default function RollCallPage() {
             ))}
 
             {delegates.length === 0 && (
-              <p className="px-5 py-8 text-center text-sm text-white/40">No delegates in this committee.</p>
+              <p className="px-5 py-8 text-center text-sm text-[var(--app-text-muted)]">No delegates in this committee.</p>
             )}
           </div>
         </div>
@@ -222,27 +222,27 @@ export default function RollCallPage() {
       </div>
 
       {pendingBulk && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-md border border-white/10 bg-[#111111] p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--app-overlay)] p-6">
+          <div className="w-full max-w-md border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
             <div className="flex items-center gap-3">
-              <Check size={20} className="text-white/50" />
+              <Check size={20} className="text-[var(--app-text-muted)]" />
               <h2 className="text-lg font-medium">Apply to everyone?</h2>
             </div>
 
-            <p className="mt-4 text-sm text-white/60">
-              This will change <strong className="text-white">{pendingBulk.changesCount}</strong> {pendingBulk.changesCount === 1 ? "delegate" : "delegates"} to <strong className="text-white">{pendingLabel}</strong>.
+            <p className="mt-4 text-sm text-[var(--app-text-secondary)]">
+              This will change <strong className="text-[var(--app-text)]">{pendingBulk.changesCount}</strong> {pendingBulk.changesCount === 1 ? "delegate" : "delegates"} to <strong className="text-[var(--app-text)]">{pendingLabel}</strong>.
             </p>
 
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setPendingBulk(null)}
-                className="flex-1 border border-white/10 px-4 py-2.5 text-sm text-white/50 transition hover:bg-white/5"
+                className="flex-1 border border-[var(--app-border)] px-4 py-2.5 text-sm text-[var(--app-text-muted)] transition hover:bg-[var(--app-chip)]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => applyEveryone(pendingBulk.nextState)}
-                className="flex-1 border border-white/10 bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-white/90"
+                className="flex-1 border border-[var(--app-border)] bg-[var(--app-cta-bg)] px-4 py-2.5 text-sm font-medium text-[var(--app-cta-text)] transition hover:bg-[var(--app-cta-hover)]"
               >
                 Confirm
               </button>

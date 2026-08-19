@@ -180,13 +180,13 @@ const Timer = forwardRef(function Timer({
         <div className="relative text-center">
           <div
             className={`text-[3.25rem] font-light tracking-[-0.06em] sm:text-[4.25rem] lg:text-[5.5rem] ${
-              overtime ? "text-[var(--danger)]" : "text-white"
+              overtime ? "text-[var(--danger)]" : "text-[var(--app-text)]"
             }`}
           >
             {formatTime(seconds)}
           </div>
 
-          <div className="mt-2 text-[10px] uppercase tracking-[0.25em] text-white/35">
+          <div className="mt-2 text-[10px] uppercase tracking-[0.25em] text-[var(--app-text-faint)]">
             {overtime ? "Overtime" : "Remaining"}
           </div>
         </div>
@@ -196,7 +196,7 @@ const Timer = forwardRef(function Timer({
         {!overtime && (
             <button
             onClick={() => addTime(-15)}
-            className="w-full rounded-none border border-white/10 bg-white/5 px-6 py-4 text-sm uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/10 sm:w-auto"
+            className="w-full rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-6 py-4 text-sm uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)] sm:w-auto"
             >
             -15s total
             </button>
@@ -204,7 +204,7 @@ const Timer = forwardRef(function Timer({
 
         <button
             onClick={() => setRunning((r) => !r)}
-            className="flex w-full items-center justify-center gap-2 rounded-none border border-white/10 bg-white px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-black transition hover:bg-white/90 sm:w-auto"
+            className="flex w-full items-center justify-center gap-2 rounded-none border border-[var(--app-border)] bg-[var(--app-cta-bg)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--app-cta-text)] transition hover:bg-[var(--app-cta-hover)] sm:w-auto"
         >
             {running ? <Pause size={16} /> : <Play size={16} />}
             {running ? "Pause" : "Start"}
@@ -213,14 +213,14 @@ const Timer = forwardRef(function Timer({
         {overtime ? (
             <button
             onClick={nextSpeaker}
-            className="w-full rounded-none border border-[var(--danger)] bg-[var(--danger)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:brightness-90 sm:w-auto"
+            className="w-full rounded-none border border-[var(--danger)] bg-[var(--danger)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--app-text)] transition hover:brightness-90 sm:w-auto"
             >
             Next
             </button>
         ) : (
             <button
             onClick={() => addTime(15)}
-            className="w-full rounded-none border border-white/10 bg-white/5 px-6 py-4 text-sm uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/10 sm:w-auto"
+            className="w-full rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-6 py-4 text-sm uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)] sm:w-auto"
             >
             +15s total
             </button>

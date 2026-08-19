@@ -757,12 +757,12 @@ const MotionInput = forwardRef(function MotionInput({ value, onChange, placehold
   return (
     <div className={className}>
       <div
-        className={`relative border border-white/10 bg-white/5 transition focus-within:border-white/30 ${invalid ? "motion-input-shake" : ""}`}
+        className={`relative border border-[var(--app-border)] bg-[var(--app-chip)] transition focus-within:border-[var(--app-border-focus)] ${invalid ? "motion-input-shake" : ""}`}
       >
         <div
           ref={backdropRef}
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words p-4 text-sm text-white"
+          className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words p-4 text-sm text-[var(--app-text)]"
         >
           {segments.map((segment, i) => (
             <span
@@ -788,7 +788,7 @@ const MotionInput = forwardRef(function MotionInput({ value, onChange, placehold
           onScroll={syncScroll}
           placeholder={placeholder}
           rows={rows}
-          className="relative w-full resize-none bg-transparent p-4 text-sm text-transparent caret-white outline-none placeholder:text-white/30"
+          className="relative w-full resize-none bg-transparent p-4 text-sm text-transparent caret-white outline-none placeholder:text-[var(--app-text-faint)]"
         />
       </div>
 
@@ -807,9 +807,9 @@ export default MotionInput;
 
 function MetaStat({ label, value }) {
   return (
-    <div className="border border-white/10 bg-white/5 px-3 py-2">
-      <p className="text-[10px] uppercase tracking-[0.16em] text-white/40">{label}</p>
-      <p className="mt-1 truncate text-sm text-white">{value ?? "—"}</p>
+    <div className="border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">{label}</p>
+      <p className="mt-1 truncate text-sm text-[var(--app-text)]">{value ?? "—"}</p>
     </div>
   );
 }

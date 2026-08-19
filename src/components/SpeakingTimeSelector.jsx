@@ -15,9 +15,9 @@ export default function SpeakingTimeSelector({ onSelect }) {
   }
 
   return (
-    <div className="mt-6 border border-white/10 bg-[#121212] p-6">
-      <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">Speaking time</p>
-      <p className="mt-2 text-sm text-white/45">
+    <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+      <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">Speaking time</p>
+      <p className="mt-2 text-sm text-[var(--app-text-muted)]">
         Choose how long each speaker gets, then continue to the speakers' list.
       </p>
 
@@ -26,7 +26,7 @@ export default function SpeakingTimeSelector({ onSelect }) {
           <button
             key={seconds}
             onClick={() => onSelect(seconds)}
-            className="border border-white/10 bg-white/5 px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-white/70 transition hover:bg-white/10"
+            className="border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
           >
             {seconds} Seconds
           </button>
@@ -42,11 +42,11 @@ export default function SpeakingTimeSelector({ onSelect }) {
               onChange={(e) => setCustomValue(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submitCustom()}
               placeholder="Seconds..."
-              className="w-28 border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white outline-none transition focus:border-white/30"
+              className="w-28 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2.5 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]"
             />
             <button
               onClick={submitCustom}
-              className="border border-white/10 bg-white px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-black transition hover:bg-white/90"
+              className="border border-[var(--app-border)] bg-[var(--app-cta-bg)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-cta-text)] transition hover:bg-[var(--app-cta-hover)]"
             >
               Start
             </button>
@@ -54,7 +54,7 @@ export default function SpeakingTimeSelector({ onSelect }) {
         ) : (
           <button
             onClick={() => setCustomOpen(true)}
-            className="border border-white/10 bg-white/5 px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-white/70 transition hover:bg-white/10"
+            className="border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
           >
             More
           </button>

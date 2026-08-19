@@ -269,8 +269,8 @@ export default function SeatChart({
     <div className="w-full">
       {(title || subtitle) && (
         <div className="mb-4">
-          {title && <h2 className="text-xl font-semibold text-white">{title}</h2>}
-          {subtitle && <p className="mt-1 text-sm text-white/45">{subtitle}</p>}
+          {title && <h2 className="text-xl font-semibold text-[var(--app-text)]">{title}</h2>}
+          {subtitle && <p className="mt-1 text-sm text-[var(--app-text-muted)]">{subtitle}</p>}
         </div>
       )}
 
@@ -313,13 +313,13 @@ export default function SeatChart({
         ))}
       </svg>
 
-      <div className="mt-6 border-t border-white/10 pt-4">
-        <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-white/40">
+      <div className="mt-6 border-t border-[var(--app-border)] pt-4">
+        <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-[var(--app-text-muted)]">
           <span>Vote</span>
           <span>Seats</span>
         </div>
 
-        <div className="mt-2 divide-y divide-white/5">
+        <div className="mt-2 divide-y divide-[var(--app-border-faint)]">
           {groups.map((group, index) => {
             const isSelected = selectedIndex === index;
 
@@ -328,7 +328,7 @@ export default function SeatChart({
                 key={group.name}
                 onClick={() => onSelect?.(index)}
                 className={`flex items-center justify-between py-2.5 px-2 -mx-2 transition ${
-                  isSelected ? "bg-white/5" : ""
+                  isSelected ? "bg-[var(--app-chip)]" : ""
                 } ${onSelect ? "cursor-pointer" : ""}`}
               >
                 <div className="flex items-center gap-2.5">
@@ -336,16 +336,16 @@ export default function SeatChart({
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: group.color }}
                   />
-                  <span className="text-sm text-white/80">{group.name}</span>
+                  <span className="text-sm text-[var(--app-text-secondary)]">{group.name}</span>
                   {onSelect && (
-                    <span className="rounded-none border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/40">
+                    <span className="rounded-none border border-[var(--app-border)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--app-text-muted)]">
                       {index + 1}
                     </span>
                   )}
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="w-10 text-right text-sm text-white/50">{group.seats}</span>
+                  <span className="w-10 text-right text-sm text-[var(--app-text-muted)]">{group.seats}</span>
 
                   {(onIncrement || onDecrement) && (
                     <div className="flex gap-1">
@@ -355,7 +355,7 @@ export default function SeatChart({
                           onDecrement?.(index);
                         }}
                         aria-label={`Decrease ${group.name} votes`}
-                        className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
+                        className="border border-[var(--app-border)] p-1 text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
                       >
                         <Minus size={12} />
                       </button>
@@ -366,7 +366,7 @@ export default function SeatChart({
                           onIncrement?.(index);
                         }}
                         aria-label={`Increase ${group.name} votes`}
-                        className="border border-white/10 p-1 text-white/70 transition hover:bg-white/10"
+                        className="border border-[var(--app-border)] p-1 text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
                       >
                         <Plus size={12} />
                       </button>

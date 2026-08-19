@@ -22,9 +22,9 @@ export default function ShortcutLegend({ scopeName, open, onClose }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--app-overlay)] p-6" onClick={onClose}>
       <div
-        className="w-full max-w-md border border-white/10 bg-[#111111] p-6"
+        className="w-full max-w-md border border-[var(--app-border)] bg-[var(--app-panel)] p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -32,7 +32,7 @@ export default function ShortcutLegend({ scopeName, open, onClose }) {
           <button
             onClick={onClose}
             aria-label="Close"
-            className="border border-white/10 p-1.5 text-white/50 transition hover:bg-white/10"
+            className="border border-[var(--app-border)] p-1.5 text-[var(--app-text-muted)] transition hover:bg-[var(--app-chip-active)]"
           >
             <X size={16} />
           </button>
@@ -41,12 +41,12 @@ export default function ShortcutLegend({ scopeName, open, onClose }) {
         <div className="mt-5 max-h-[60vh] space-y-5 overflow-y-auto">
           {sections.map(({ title, actions }) => actions.length > 0 && (
             <div key={title}>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-white/40">{title}</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--app-text-muted)]">{title}</p>
               <div className="mt-2 space-y-1.5">
                 {actions.map((action) => (
                   <div key={action.id} className="flex items-center justify-between gap-4 text-sm">
-                    <span className="text-white/70">{action.label}</span>
-                    <span className="shrink-0 border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-xs text-white/60">
+                    <span className="text-[var(--app-text-secondary)]">{action.label}</span>
+                    <span className="shrink-0 border border-[var(--app-border)] bg-[var(--app-chip)] px-2 py-0.5 font-mono text-xs text-[var(--app-text-secondary)]">
                       {keyIdToDisplay(resolveKey(action.id))}
                     </span>
                   </div>
@@ -56,7 +56,7 @@ export default function ShortcutLegend({ scopeName, open, onClose }) {
           ))}
         </div>
 
-        <p className="mt-5 text-xs text-white/35">
+        <p className="mt-5 text-xs text-[var(--app-text-faint)]">
           Remap any shortcut from Settings → Keyboard shortcuts.
         </p>
       </div>

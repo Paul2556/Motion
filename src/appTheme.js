@@ -11,7 +11,8 @@ const THEME_KEY = "app-theme";
 const REDUCED_MOTION_KEY = "app-reduced-motion";
 
 export function getAppTheme() {
-  return localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark";
+  const stored = localStorage.getItem(THEME_KEY);
+  return stored === "light" || stored === "brown" ? stored : "dark";
 }
 
 export function setAppTheme(theme) {

@@ -96,20 +96,20 @@ export default function MotionPresetManager() {
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-white/45">
+      <p className="text-xs text-[var(--app-text-muted)]">
         Order matters — when multiple motions are on the floor, the motion log always shows the
         one nearest the top of this list first. Use the arrows to re-rank a motion.
       </p>
 
       <div className="space-y-2">
         {motions.map((motion, index) => (
-          <div key={motion.id} className="flex items-center justify-between gap-4 border border-white/10 bg-white/5 px-3 py-2">
+          <div key={motion.id} className="flex items-center justify-between gap-4 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2">
             <div className="flex shrink-0 flex-col">
               <button
                 onClick={() => handleMove(motion.id, -1)}
                 disabled={index === 0}
                 aria-label={`Move ${motion.text} up`}
-                className="text-white/40 transition hover:text-white/70 disabled:opacity-20 disabled:hover:text-white/40"
+                className="text-[var(--app-text-muted)] transition hover:text-[var(--app-text-secondary)] disabled:opacity-20 disabled:hover:text-[var(--app-text-muted)]"
               >
                 <ChevronUp size={14} />
               </button>
@@ -117,15 +117,15 @@ export default function MotionPresetManager() {
                 onClick={() => handleMove(motion.id, 1)}
                 disabled={index === motions.length - 1}
                 aria-label={`Move ${motion.text} down`}
-                className="text-white/40 transition hover:text-white/70 disabled:opacity-20 disabled:hover:text-white/40"
+                className="text-[var(--app-text-muted)] transition hover:text-[var(--app-text-secondary)] disabled:opacity-20 disabled:hover:text-[var(--app-text-muted)]"
               >
                 <ChevronDown size={14} />
               </button>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm text-white/80">{canonicalLabel(motion)}</p>
+              <p className="truncate text-sm text-[var(--app-text-secondary)]">{canonicalLabel(motion)}</p>
               {motion.alias?.length > 0 && (
-                <p className="truncate text-xs text-white/40">{[motion.text, ...motion.alias].join(" · ")}</p>
+                <p className="truncate text-xs text-[var(--app-text-muted)]">{[motion.text, ...motion.alias].join(" · ")}</p>
               )}
             </div>
             <div className="flex shrink-0 items-center gap-3">
@@ -139,7 +139,7 @@ export default function MotionPresetManager() {
                   </button>
                   <button
                     onClick={() => setConfirmDeleteId(null)}
-                    className="text-xs uppercase tracking-[0.14em] text-white/40 hover:text-white/60"
+                    className="text-xs uppercase tracking-[0.14em] text-[var(--app-text-muted)] hover:text-[var(--app-text-secondary)]"
                   >
                     Cancel
                   </button>
@@ -149,14 +149,14 @@ export default function MotionPresetManager() {
                   <button
                     onClick={() => startEdit(motion)}
                     aria-label={`Edit ${motion.text}`}
-                    className="text-white/40 transition hover:text-white/70"
+                    className="text-[var(--app-text-muted)] transition hover:text-[var(--app-text-secondary)]"
                   >
                     <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => setConfirmDeleteId(motion.id)}
                     aria-label={`Delete ${motion.text}`}
-                    className="text-white/40 transition hover:text-[var(--danger)]"
+                    className="text-[var(--app-text-muted)] transition hover:text-[var(--danger)]"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -168,31 +168,31 @@ export default function MotionPresetManager() {
       </div>
 
       {formOpen && (
-        <div className="space-y-3 border border-white/10 bg-white/5 p-4">
+        <div className="space-y-3 border border-[var(--app-border)] bg-[var(--app-chip)] p-4">
           <div>
-            <label className="text-[10px] uppercase tracking-[0.16em] text-white/40">Name</label>
+            <label className="text-[10px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Name</label>
             <input
               type="text"
               value={form.text}
               onChange={(e) => setForm((f) => ({ ...f, text: e.target.value }))}
               placeholder="e.g. Open a Moderated Caucus"
-              className="mt-1 w-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-white/30"
+              className="mt-1 w-full border border-[var(--app-border)] bg-[var(--app-input)] px-3 py-2 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-border-focus)]"
             />
           </div>
 
           <div>
-            <label className="text-[10px] uppercase tracking-[0.16em] text-white/40">Aliases (comma-separated)</label>
+            <label className="text-[10px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Aliases (comma-separated)</label>
             <input
               type="text"
               value={form.aliasInput}
               onChange={(e) => setForm((f) => ({ ...f, aliasInput: e.target.value }))}
               placeholder="e.g. Moderated Caucus, Mod Caucus, Mod"
-              className="mt-1 w-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-white/30"
+              className="mt-1 w-full border border-[var(--app-border)] bg-[var(--app-input)] px-3 py-2 text-sm text-[var(--app-text)] outline-none focus:border-[var(--app-border-focus)]"
             />
           </div>
 
           <div>
-            <label className="text-[10px] uppercase tracking-[0.16em] text-white/40">Duration</label>
+            <label className="text-[10px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Duration</label>
             <div className="mt-1 grid grid-cols-3 gap-2">
               {DURATION_OPTIONS.map((opt) => (
                 <button
@@ -201,8 +201,8 @@ export default function MotionPresetManager() {
                   onClick={() => setForm((f) => ({ ...f, durationField: opt.value }))}
                   className={`border px-2 py-2 text-xs transition ${
                     form.durationField === opt.value
-                      ? "border-white/40 bg-white/10 text-white"
-                      : "border-white/10 bg-transparent text-white/50 hover:border-white/20"
+                      ? "border-[var(--app-border-active)] bg-[var(--app-chip-active)] text-[var(--app-text)]"
+                      : "border-[var(--app-border)] bg-transparent text-[var(--app-text-muted)] hover:border-[var(--app-border-hover)]"
                   }`}
                 >
                   {opt.label}
@@ -211,12 +211,12 @@ export default function MotionPresetManager() {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-white/70">
+          <label className="flex items-center gap-2 text-sm text-[var(--app-text-secondary)]">
             <input
               type="checkbox"
               checked={form.topic}
               onChange={(e) => setForm((f) => ({ ...f, topic: e.target.checked }))}
-              className="h-4 w-4 border-white/10 bg-black/20 accent-white"
+              className="h-4 w-4 border-[var(--app-border)] bg-[var(--app-input)] accent-white"
             />
             Requires a topic
           </label>
@@ -224,13 +224,13 @@ export default function MotionPresetManager() {
           <div className="flex gap-2 pt-1">
             <button
               onClick={submitForm}
-              className="border border-white/10 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.16em] text-white transition hover:bg-white/20"
+              className="border border-[var(--app-border)] bg-[var(--app-chip-active)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-[var(--app-text)] transition hover:bg-[var(--app-chip-active-hover)]"
             >
               Save
             </button>
             <button
               onClick={cancelForm}
-              className="border border-white/10 bg-transparent px-4 py-2 text-xs uppercase tracking-[0.16em] text-white/50 transition hover:bg-white/5"
+              className="border border-[var(--app-border)] bg-transparent px-4 py-2 text-xs uppercase tracking-[0.16em] text-[var(--app-text-muted)] transition hover:bg-[var(--app-chip)]"
             >
               Cancel
             </button>
@@ -241,25 +241,25 @@ export default function MotionPresetManager() {
       <div className="flex items-center justify-between gap-4">
         <button
           onClick={startAdd}
-          className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+          className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
         >
           <Plus size={14} /> Add motion
         </button>
 
         {confirmReset ? (
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-white/40">Reset all motions to defaults?</span>
+            <span className="text-[var(--app-text-muted)]">Reset all motions to defaults?</span>
             <button onClick={handleReset} className="uppercase tracking-[0.14em] text-[var(--danger)] hover:opacity-80">
               Confirm
             </button>
-            <button onClick={() => setConfirmReset(false)} className="uppercase tracking-[0.14em] text-white/40 hover:text-white/60">
+            <button onClick={() => setConfirmReset(false)} className="uppercase tracking-[0.14em] text-[var(--app-text-muted)] hover:text-[var(--app-text-secondary)]">
               Cancel
             </button>
           </div>
         ) : (
           <button
             onClick={() => setConfirmReset(true)}
-            className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-white/40 transition hover:text-white/60"
+            className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-muted)] transition hover:text-[var(--app-text-secondary)]"
           >
             <RotateCcw size={12} /> Reset to defaults
           </button>

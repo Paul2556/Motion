@@ -223,7 +223,7 @@ export default function MotionPage() {
   if (!committee) return <NoCommitteeModal />;
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
       <div className="mx-auto max-w-5xl">
         <AppTopBar
           committeeLabel={committee?.committee ?? committee?.id}
@@ -231,8 +231,8 @@ export default function MotionPage() {
         />
 
         <div className={votingMotion ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]" : "flex justify-center"}>
-          <div className={`border border-white/10 bg-[#121212] p-6 ${votingMotion ? "" : "w-full max-w-2xl"}`}>
-            <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">Motion text</p>
+          <div className={`border border-[var(--app-border)] bg-[var(--app-panel)] p-6 ${votingMotion ? "" : "w-full max-w-2xl"}`}>
+            <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">Motion text</p>
 
             <MotionInput
               ref={motionInputRef}
@@ -269,9 +269,9 @@ export default function MotionPage() {
           )}
         </div>
 
-        <div className="mt-6 border border-white/10 bg-[#121212] p-6">
-          <p className="text-[11px] uppercase tracking-[0.26em] text-white/50">Resolution tools</p>
-          <p className="mt-2 text-sm text-white/45">
+        <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+          <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">Resolution tools</p>
+          <p className="mt-2 text-sm text-[var(--app-text-muted)]">
             Quick timers for a just-introduced resolution - each jumps straight to the session
             timer with the right duration and label already set.
           </p>
@@ -279,13 +279,13 @@ export default function MotionPage() {
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               onClick={startResolutionReading}
-              className="border border-white/10 bg-white/5 px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-white/70 transition hover:bg-white/10"
+              className="border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
             >
               Start Resolution Reading Time ({RESOLUTION_READING_MINUTES} min)
             </button>
             <button
               onClick={startMainSubmitterSpeech}
-              className="border border-white/10 bg-white/5 px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-white/70 transition hover:bg-white/10"
+              className="border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
             >
               Start Main Submitter Speech ({MAIN_SUBMITTER_MINUTES} min)
             </button>
@@ -294,7 +294,7 @@ export default function MotionPage() {
 
         <SpeakingTimeSelector onSelect={startSpeakingTime} />
 
-        <p className="mt-8 text-center text-[11px] text-white/25">
+        <p className="mt-8 text-center text-[11px] text-[var(--app-text-faint)]">
           Source of motions are from the ThaiMUN RoP
         </p>
       </div>

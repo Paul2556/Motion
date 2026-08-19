@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Check, Moon, RotateCcw, Sun } from "lucide-react";
+import { ArrowLeft, Check, Coffee, Moon, RotateCcw, Sun } from "lucide-react";
 
 import Logo from "../components/Logo";
 import MotionPresetManager from "../components/MotionPresetManager";
@@ -71,7 +71,7 @@ function ShortcutRemapList() {
     <div className="space-y-5">
       {REMAPPABLE_SCOPES.map((scope) => (
         <div key={scope}>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-white/40">{SCOPE_TITLES[scope]}</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--app-text-muted)]">{SCOPE_TITLES[scope]}</p>
           <div className="mt-2 space-y-1.5">
             {SHORTCUT_SCOPES[scope].map((action) => {
               const isCapturing = capturingId === action.id;
@@ -79,7 +79,7 @@ function ShortcutRemapList() {
 
               return (
                 <div key={action.id} className="flex items-center justify-between gap-4 text-sm">
-                  <span className="text-white/70">{action.label}</span>
+                  <span className="text-[var(--app-text-secondary)]">{action.label}</span>
                   <div className="flex items-center gap-2">
                     {hasOverride && (
                       <button
@@ -88,7 +88,7 @@ function ShortcutRemapList() {
                           setTick((t) => t + 1);
                         }}
                         aria-label={`Reset ${action.label} to default`}
-                        className="text-white/30 transition hover:text-white/60"
+                        className="text-[var(--app-text-faint)] transition hover:text-[var(--app-text-secondary)]"
                       >
                         <RotateCcw size={12} />
                       </button>
@@ -100,8 +100,8 @@ function ShortcutRemapList() {
                       }}
                       className={`min-w-[6.5rem] border px-2 py-1 text-center font-mono text-xs transition ${
                         isCapturing
-                          ? "border-white/40 bg-white/10 text-white"
-                          : "border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:bg-white/10"
+                          ? "border-[var(--app-border-active)] bg-[var(--app-chip-active)] text-[var(--app-text)]"
+                          : "border-[var(--app-border)] bg-[var(--app-chip)] text-[var(--app-text-secondary)] hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)]"
                       }`}
                     >
                       {isCapturing ? "Press a key…" : keyIdToDisplay(resolveKey(action.id))}
@@ -115,7 +115,7 @@ function ShortcutRemapList() {
       ))}
 
       {capturingId && (
-        <p className="text-xs text-white/35">
+        <p className="text-xs text-[var(--app-text-faint)]">
           {collision ? `Already used by "${collision.label}" in this view - press a different key, or Esc to cancel.` : "Press any key to bind it, or Esc to cancel."}
         </p>
       )}
@@ -129,16 +129,16 @@ function ThemeOption({ label, icon, active, onClick }) {
       onClick={onClick}
       className={`flex flex-1 flex-col items-center gap-3 border p-6 transition ${
         active
-          ? "border-white/40 bg-white/10"
-          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+          ? "border-[var(--app-border-active)] bg-[var(--app-chip-active)]"
+          : "border-[var(--app-border)] bg-[var(--app-chip)] hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)]"
       }`}
     >
-      <div className="flex h-10 w-10 items-center justify-center border border-white/10 bg-black/20">
+      <div className="flex h-10 w-10 items-center justify-center border border-[var(--app-border)] bg-[var(--app-input)]">
         {icon}
       </div>
       <span className="text-sm font-medium">{label}</span>
       {active && (
-        <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.16em] text-white/50">
+        <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
           <Check size={12} /> Active
         </span>
       )}
@@ -165,7 +165,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="app-shell min-h-screen bg-[#0d0d0d] p-8 text-white">
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
       <div className="mx-auto max-w-3xl">
 
         <header className="mb-8 flex items-center justify-between">
@@ -173,20 +173,20 @@ export default function SettingsPage() {
             <Link to="/home" className="flex items-center gap-3">
               <Logo compact light />
             </Link>
-            <span className="text-xs uppercase tracking-[0.18em] text-white/50">Settings</span>
+            <span className="text-xs uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Settings</span>
           </div>
 
           <Link
             to="/home"
-            className="flex items-center gap-2 border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+            className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
           >
             <ArrowLeft size={14} /> Back
           </Link>
         </header>
 
-        <div className="border border-white/10 bg-[#111111] p-6">
-          <p className="text-xs uppercase tracking-[0.22em] text-white/40">Theme</p>
-          <p className="mt-2 text-sm text-white/45">Choose how Motion looks across the app.</p>
+        <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Theme</p>
+          <p className="mt-2 text-sm text-[var(--app-text-muted)]">Choose how Motion looks across the app.</p>
 
           <div className="mt-5 flex gap-4">
             <ThemeOption
@@ -201,14 +201,20 @@ export default function SettingsPage() {
               active={theme === "light"}
               onClick={() => chooseTheme("light")}
             />
+            <ThemeOption
+              label="Brown"
+              icon={<Coffee size={18} />}
+              active={theme === "brown"}
+              onClick={() => chooseTheme("brown")}
+            />
           </div>
         </div>
 
-        <div className="mt-6 border border-white/10 bg-[#111111] p-6">
+        <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-white/40">Reduced motion</p>
-              <p className="mt-2 text-sm text-white/45">Turn off transitions and animations across the app.</p>
+              <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Reduced motion</p>
+              <p className="mt-2 text-sm text-[var(--app-text-muted)]">Turn off transitions and animations across the app.</p>
             </div>
 
             <button
@@ -216,7 +222,7 @@ export default function SettingsPage() {
               role="switch"
               aria-checked={reducedMotion}
               className={`relative h-7 w-12 shrink-0 rounded-full border transition ${
-                reducedMotion ? "border-white/40 bg-white/30" : "border-white/10 bg-white/5"
+                reducedMotion ? "border-[var(--app-border-active)] bg-[var(--app-toggle-on)]" : "border-[var(--app-border)] bg-[var(--app-chip)]"
               }`}
             >
               <span
@@ -229,12 +235,12 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="mt-6 border border-white/10 bg-[#111111] p-6">
-          <p className="text-xs uppercase tracking-[0.22em] text-white/40">Account</p>
-          <p className="mt-2 text-sm text-white/45">
+        <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Account</p>
+          <p className="mt-2 text-sm text-[var(--app-text-muted)]">
             {user ? `Signed in as ${user.email ?? "cloud account"}` : "Not signed in."}
           </p>
-          <p className="mt-2 text-xs text-white/30">
+          <p className="mt-2 text-xs text-[var(--app-text-faint)]">
             Motion presets and keyboard shortcuts sync to your account when signed in - useful on
             a shared device, since signing in always loads your own settings.
           </p>
@@ -242,7 +248,7 @@ export default function SettingsPage() {
           <div className="mt-5 flex gap-3">
             <Link
               to="/cloud"
-              className="border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+              className="border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
             >
               {user ? "Manage Cloud Sessions" : "Sign In"}
             </Link>
@@ -250,7 +256,7 @@ export default function SettingsPage() {
             {user && (
               <button
                 onClick={() => AuthService.signOut()}
-                className="border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.18em] text-white/60 transition hover:bg-white/10"
+                className="border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
               >
                 Sign Out
               </button>
@@ -258,9 +264,9 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="mt-6 border border-white/10 bg-[#111111] p-6">
-          <p className="text-xs uppercase tracking-[0.22em] text-white/40">Keyboard shortcuts</p>
-          <p className="mt-2 text-sm text-white/45">
+        <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Keyboard shortcuts</p>
+          <p className="mt-2 text-sm text-[var(--app-text-muted)]">
             Click any key to rebind it. Shortcuts are scoped per view, so the same key can do
             different things in Speaker List, Motions, and Roll Call.
           </p>
@@ -270,9 +276,9 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="mt-6 border border-white/10 bg-[#111111] p-6">
-          <p className="text-xs uppercase tracking-[0.22em] text-white/40">Motion presets</p>
-          <p className="mt-2 text-sm text-white/45">
+        <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Motion presets</p>
+          <p className="mt-2 text-sm text-[var(--app-text-muted)]">
             Add, edit, or remove the motions recognized on the Motions page - including the
             built-in ones.
           </p>
