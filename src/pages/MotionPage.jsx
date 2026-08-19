@@ -149,8 +149,17 @@ export default function MotionPage() {
     setMotionLog((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function toggleSecond(index) {
-    setMotionLog((prev) => prev.map((entry, i) => (i === index ? { ...entry, seconded: !entry.seconded } : entry)));
+  // Clamped to [0, delegateCount] - can't log more seconds than there are
+  // delegates in the committee. secondCount undefined (a freshly-submitted
+  // entry) reads as 0, same as the old boolean `seconded` read as falsy.
+  function adjustSecond(index, delta) {
+    setMotionLog((prev) =>
+      prev.map((entry, i) =>
+        i === index
+          ? { ...entry, secondCount: Math.max(0, Math.min(delegateCount, (entry.secondCount ?? 0) + delta)) }
+          : entry
+      )
+    );
   }
 
   function performUndo() {
@@ -197,7 +206,7 @@ export default function MotionPage() {
     "motions",
     {
       "motions.newMotion": () => motionInputRef.current?.focus(),
-      "motions.second": () => selectedMotion && toggleSecond(clampedMotionIndex),
+      "motions.second": () => selectedMotion && adjustSecond(clampedMotionIndex, 1),
       "motions.openVote": () => selectedMotion && startVoting(selectedMotion),
       "motions.confirm": () => selectedMotion && startVoting(selectedMotion),
       "motions.moveUp": () => setSelectedMotionIndex((i) => Math.max(0, (i < 0 ? 0 : i) - 1)),
@@ -249,7 +258,8 @@ export default function MotionPage() {
               entries={motionLog}
               onDelete={deleteMotion}
               onVote={startVoting}
-              onToggleSecond={toggleSecond}
+              onAdjustSecond={adjustSecond}
+              maxSeconds={delegateCount}
               selectedIndex={clampedMotionIndex}
             />
           </div>
