@@ -695,34 +695,41 @@ function ImportDemo() {
     { country: 'Vietnam', code: 'VNM', name: 'L. Pham', school: 'Hillcrest' },
   ]
 
+  // Styled to match the real roster panel (RollCallPage.jsx's delegate list:
+  // dark app-panel/app-border tokens, divide-y rows, Flag + country), not a
+  // bespoke light mockup - the other demos on this page (Queue/Timer/Vote)
+  // embed the real dark components directly, so this should read the same
+  // even though there's no standalone extractable "delegate list" component
+  // to import the way those do.
   return (
     <div
       onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
       onDragLeave={() => setIsDragging(false)}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => { e.preventDefault(); setIsDragging(false); setLoaded(true) }}
-      className={`w-full max-w-sm border bg-white p-4 shadow-[0_14px_40px_rgba(0,0,0,.06)] transition ${isDragging ? 'border-black/40' : 'border-black/15'}`}
+      className={`product-demo w-full max-w-sm border bg-[var(--app-panel)] shadow-[0_14px_40px_rgba(0,0,0,.25)] transition ${isDragging ? 'border-[var(--app-border-active)]' : 'border-[var(--app-border)]'}`}
     >
-      <div className="flex items-center gap-2 border-b border-black/10 pb-3">
-        <FileSpreadsheet size={17} />
-        <span className="text-xs font-medium">delegates.xlsx</span>
-        <span className="ml-auto text-[9px] text-black/35">{loaded ? `${delegates.length} rows` : 'Drop file'}</span>
+      <div className="flex items-center gap-2 border-b border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3">
+        <FileSpreadsheet size={17} className="text-[var(--app-text-secondary)]" />
+        <span className="text-xs font-medium text-[var(--app-text)]">delegates.xlsx</span>
+        <span className="ml-auto text-[9px] text-[var(--app-text-faint)]">{loaded ? `${delegates.length} rows` : 'Drop file'}</span>
       </div>
-      <div className="space-y-2.5 pt-4">
-        {loaded ? delegates.map((d, i) => (
-          <div className="flex items-center gap-2 text-[10px]" key={d.code}>
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[8px] text-white">{i + 1}</span>
-            <Flag countryCode={d.code} className="text-[13px]" />
-            <span>{d.country}</span>
-            <span className="text-black/45">{d.name}</span>
-            <span className="ml-auto text-black/30">{d.school}</span>
-          </div>
-        )) : (
-          <button onClick={() => setLoaded(true)} className="flex w-full items-center justify-center gap-2 border border-dashed border-black/20 py-11 text-xs text-black/40 transition hover:border-black/40 hover:text-black/60">
-            <Plus size={14} /> Load sample roster
-          </button>
-        )}
-      </div>
+      {loaded ? (
+        <div className="divide-y divide-[var(--app-border-faint)]">
+          {delegates.map((d) => (
+            <div key={d.code} className="flex items-center gap-2.5 px-4 py-3 text-[11px]">
+              <Flag countryCode={d.code} className="text-base" />
+              <span className="font-medium text-[var(--app-text)]">{d.country}</span>
+              <span className="text-[var(--app-text-muted)]">{d.name}</span>
+              <span className="ml-auto text-[var(--app-text-faint)]">{d.school}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <button onClick={() => setLoaded(true)} className="flex w-full items-center justify-center gap-2 py-11 text-xs text-[var(--app-text-faint)] transition hover:text-[var(--app-text-muted)]">
+          <Plus size={14} /> Load sample roster
+        </button>
+      )}
     </div>
   )
 }
