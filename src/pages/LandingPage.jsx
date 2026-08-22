@@ -11,7 +11,6 @@ import {
   ListOrdered,
   Menu,
   Minus,
-  MonitorUp,
   Moon,
   Pause,
   Play,
@@ -69,7 +68,7 @@ const features = [
     icon: Vote,
     number: '04',
     title: 'Voting & majority calculations',
-    body: 'Track the room and calculate simple, two-thirds, and substantive majorities instantly.',
+    body: 'Track the room and calculate simple majority, two-thirds, and full house instantly.',
     visual: <VoteDemo />,
   },
   {
@@ -92,7 +91,7 @@ const steps = [
   ['01', 'Import committee', 'Upload the delegate roster and review voting status.'],
   ['02', 'Run debate', 'Control speakers, motions, and time from one view.'],
   ['03', 'Manage votes', 'Record decisions with the correct majority, instantly.'],
-  ['04', 'Present resolutions', 'Move adopted work to the room-facing display.'],
+  ['04', 'Review the session', 'See speaking time, participation, and who has yet to speak.'],
 ]
 
 const FAQ_ITEMS = [
@@ -476,7 +475,7 @@ function LandingPage() {
               {steps.map(([number, title, body], index) => (
                 <div key={title} className="group relative bg-[#101010] p-6 sm:p-8">
                   <div className="flex items-center justify-between"><span className="font-mono text-xs text-white/30">{number}</span>{index < 3 && <ArrowRight className="hidden text-white/20 lg:block" size={17} />}</div>
-                  <div className="step-icon mt-14 h-10 w-10 border border-white/20 p-2.5 transition-colors">{index === 0 ? <Import size={18} /> : index === 1 ? <Play size={18} /> : index === 2 ? <Vote size={18} /> : <MonitorUp size={18} />}</div>
+                  <div className="step-icon mt-14 h-10 w-10 border border-white/20 p-2.5 transition-colors">{index === 0 ? <Import size={18} /> : index === 1 ? <Play size={18} /> : index === 2 ? <Vote size={18} /> : <BarChart3 size={18} />}</div>
                   <h3 className="mt-6 text-lg font-medium">{title}</h3><p className="mt-3 text-sm leading-relaxed text-white/45">{body}</p>
                 </div>
               ))}

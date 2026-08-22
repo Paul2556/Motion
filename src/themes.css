@@ -4,6 +4,39 @@
 :root {
   --color-page-light: #f4f4f0;
   --color-surface-dark: #111111;
+
+  /* Base surface/border/text tokens - added for the Brown theme (see below),
+     which can't be produced by inverting Black the way White is, so it needs
+     real values of its own. These defaults are the exact literal colors that
+     used to be hardcoded per-component as Tailwind arbitrary values (e.g.
+     `bg-[#0d0d0d]`, `border-white/10`), so Black stays pixel-identical. White
+     needs no overrides: `invert(1)` flips whatever these render as.
+
+     Defined on :root, not `.app-shell`, because LandingPage's live demos
+     mount real app components (Queue, Timer, VotingPanel) *outside* the
+     .app-shell scope - scoping these there left every one of them with a
+     transparent background and invisible white text. */
+  --app-bg: #0d0d0d;
+  --app-panel: #111111;
+  --app-input: #181818;
+  --app-hover: #1b1b1b;
+  --app-overlay: rgba(0, 0, 0, 0.7);
+  --app-border: rgba(255, 255, 255, 0.1);
+  --app-border-hover: rgba(255, 255, 255, 0.2);
+  --app-border-focus: rgba(255, 255, 255, 0.3);
+  --app-border-active: rgba(255, 255, 255, 0.4);
+  --app-border-faint: rgba(255, 255, 255, 0.05);
+  --app-text: #ffffff;
+  --app-text-secondary: rgba(255, 255, 255, 0.75);
+  --app-text-muted: rgba(255, 255, 255, 0.45);
+  --app-text-faint: rgba(255, 255, 255, 0.3);
+  --app-chip: rgba(255, 255, 255, 0.05);
+  --app-chip-active: rgba(255, 255, 255, 0.1);
+  --app-chip-active-hover: rgba(255, 255, 255, 0.2);
+  --app-toggle-on: rgba(255, 255, 255, 0.3);
+  --app-cta-bg: #ffffff;
+  --app-cta-hover: rgba(255, 255, 255, 0.9);
+  --app-cta-text: #000000;
 }
 
 .theme-shell {
@@ -53,35 +86,6 @@
   /* Destructive/danger red (delete buttons, error banners), same pre-inversion technique. */
   --danger: #ef4444;
   --danger-rgb: 239, 68, 68;
-
-  /* Base surface/border/text tokens - added for the Brown theme (see below),
-     which can't be produced by inverting Black the way White is, so it needs
-     real values of its own. These defaults are today's exact literal colors
-     (previously hardcoded per-component as Tailwind arbitrary values, e.g.
-     `bg-[#0d0d0d]`, `border-white/10`) rather than new values, so Black
-     stays pixel-identical. White needs no overrides here at all: `invert(1)`
-     flips whatever these render as, same as it always has. */
-  --app-bg: #0d0d0d;
-  --app-panel: #111111;
-  --app-input: #181818;
-  --app-hover: #1b1b1b;
-  --app-overlay: rgba(0, 0, 0, 0.7);
-  --app-border: rgba(255, 255, 255, 0.1);
-  --app-border-hover: rgba(255, 255, 255, 0.2);
-  --app-border-focus: rgba(255, 255, 255, 0.3);
-  --app-border-active: rgba(255, 255, 255, 0.4);
-  --app-border-faint: rgba(255, 255, 255, 0.05);
-  --app-text: #ffffff;
-  --app-text-secondary: rgba(255, 255, 255, 0.75);
-  --app-text-muted: rgba(255, 255, 255, 0.45);
-  --app-text-faint: rgba(255, 255, 255, 0.3);
-  --app-chip: rgba(255, 255, 255, 0.05);
-  --app-chip-active: rgba(255, 255, 255, 0.1);
-  --app-chip-active-hover: rgba(255, 255, 255, 0.2);
-  --app-toggle-on: rgba(255, 255, 255, 0.3);
-  --app-cta-bg: #ffffff;
-  --app-cta-hover: rgba(255, 255, 255, 0.9);
-  --app-cta-text: #000000;
 }
 
 html[data-app-theme="light"] .app-shell {
