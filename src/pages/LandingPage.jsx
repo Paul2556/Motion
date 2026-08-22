@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import Flag from "../components/Flag"
 import Queue from "../components/Queue"
 import Timer from "../components/Timer"
 import SeatChart from "../components/SeatChart"
@@ -47,7 +48,7 @@ const features = [
     icon: Import,
     number: '01',
     title: 'Excel delegate import',
-    body: 'Bring your roster in once. Countries, names, and voting status arrive ready for committee.',
+    body: 'Upload the allocation sheet once. Countries, delegate names, and schools come through with flags matched.',
     visual: <ImportDemo />,
   },
   {
@@ -683,7 +684,16 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
 function ImportDemo() {
   const [loaded, setLoaded] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  const delegates = ['Argentina', 'Canada', 'Kenya', 'Vietnam']
+  // Mirrors what AllocationParser actually pulls out of a row - country (with
+  // its matched flag code), delegate name, school. Attendance/voting status is
+  // deliberately absent: ConferenceService defaults those to false and roll
+  // call sets them, so showing them here would misrepresent the import.
+  const delegates = [
+    { country: 'Argentina', code: 'ARG', name: 'A. Rivas', school: 'Northgate' },
+    { country: 'Canada', code: 'CAN', name: 'J. Mercier', school: 'Lakeview' },
+    { country: 'Kenya', code: 'KEN', name: 'W. Otieno', school: 'St. Mary' },
+    { country: 'Vietnam', code: 'VNM', name: 'L. Pham', school: 'Hillcrest' },
+  ]
 
   return (
     <div
@@ -699,11 +709,13 @@ function ImportDemo() {
         <span className="ml-auto text-[9px] text-black/35">{loaded ? `${delegates.length} rows` : 'Drop file'}</span>
       </div>
       <div className="space-y-2.5 pt-4">
-        {loaded ? delegates.map((x, i) => (
-          <div className="flex items-center gap-2 text-[10px]" key={x}>
+        {loaded ? delegates.map((d, i) => (
+          <div className="flex items-center gap-2 text-[10px]" key={d.code}>
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[8px] text-white">{i + 1}</span>
-            <span>{x}</span>
-            <span className="ml-auto text-black/30">Voting</span>
+            <Flag countryCode={d.code} className="text-[13px]" />
+            <span>{d.country}</span>
+            <span className="text-black/45">{d.name}</span>
+            <span className="ml-auto text-black/30">{d.school}</span>
           </div>
         )) : (
           <button onClick={() => setLoaded(true)} className="flex w-full items-center justify-center gap-2 border border-dashed border-black/20 py-11 text-xs text-black/40 transition hover:border-black/40 hover:text-black/60">
