@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import Flag from "../components/Flag"
+import DelegateRoster from "../components/DelegateRoster"
 import Queue from "../components/Queue"
 import Timer from "../components/Timer"
 import SeatChart from "../components/SeatChart"
@@ -684,23 +684,21 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
 function ImportDemo() {
   const [loaded, setLoaded] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  // Mirrors what AllocationParser actually pulls out of a row - country (with
-  // its matched flag code), delegate name, school. Attendance/voting status is
-  // deliberately absent: ConferenceService defaults those to false and roll
+  // Shaped like the real delegate record (ConferenceService.toDelegateRecord)
+  // so the actual DelegateRoster component - the same one RollCallPage uses -
+  // can render these directly instead of a hand-copied lookalike. Attendance
+  // (present/voting) is omitted on purpose: those default to false and roll
   // call sets them, so showing them here would misrepresent the import.
   const delegates = [
-    { country: 'Argentina', code: 'ARG', name: 'A. Rivas', school: 'Northgate' },
-    { country: 'Canada', code: 'CAN', name: 'J. Mercier', school: 'Lakeview' },
-    { country: 'Kenya', code: 'KEN', name: 'W. Otieno', school: 'St. Mary' },
-    { country: 'Vietnam', code: 'VNM', name: 'L. Pham', school: 'Hillcrest' },
+    { id: 'd1', country: 'Argentina', countryDisplay: 'Argentina', countryCode: 'ARG', delegate: 'A. Rivas', school: 'Northgate' },
+    { id: 'd2', country: 'Canada', countryDisplay: 'Canada', countryCode: 'CAN', delegate: 'J. Mercier', school: 'Lakeview' },
+    { id: 'd3', country: 'Kenya', countryDisplay: 'Kenya', countryCode: 'KEN', delegate: 'W. Otieno', school: 'St. Mary' },
+    { id: 'd4', country: 'Vietnam', countryDisplay: 'Vietnam', countryCode: 'VNM', delegate: 'L. Pham', school: 'Hillcrest' },
   ]
 
-  // Styled to match the real roster panel (RollCallPage.jsx's delegate list:
-  // dark app-panel/app-border tokens, divide-y rows, Flag + country), not a
-  // bespoke light mockup - the other demos on this page (Queue/Timer/Vote)
-  // embed the real dark components directly, so this should read the same
-  // even though there's no standalone extractable "delegate list" component
-  // to import the way those do.
+  // .product-demo (see other demos on this page) keeps this dark regardless
+  // of the landing page's own light/dark toggle, matching how the real app
+  // always looks - same reasoning as QueueDemo/TimerDemo/VoteDemo below.
   return (
     <div
       onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
@@ -715,16 +713,10 @@ function ImportDemo() {
         <span className="ml-auto text-[9px] text-[var(--app-text-faint)]">{loaded ? `${delegates.length} rows` : 'Drop file'}</span>
       </div>
       {loaded ? (
-        <div className="divide-y divide-[var(--app-border-faint)]">
-          {delegates.map((d) => (
-            <div key={d.code} className="flex items-center gap-2.5 px-4 py-3 text-[11px]">
-              <Flag countryCode={d.code} className="text-base" />
-              <span className="font-medium text-[var(--app-text)]">{d.country}</span>
-              <span className="text-[var(--app-text-muted)]">{d.name}</span>
-              <span className="ml-auto text-[var(--app-text-faint)]">{d.school}</span>
-            </div>
-          ))}
-        </div>
+        <DelegateRoster
+          delegates={delegates}
+          renderRight={(d) => <span className="text-xs text-[var(--app-text-faint)]">{d.delegate} · {d.school}</span>}
+        />
       ) : (
         <button onClick={() => setLoaded(true)} className="flex w-full items-center justify-center gap-2 py-11 text-xs text-[var(--app-text-faint)] transition hover:text-[var(--app-text-muted)]">
           <Plus size={14} /> Load sample roster

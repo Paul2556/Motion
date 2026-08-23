@@ -1,0 +1,41 @@
+import Flag from "./Flag";
+
+// Plain controlled list, no service coupling - same reusability shape as
+// Queue.jsx. Row content itself (Flag + country) is fixed since that's
+// always true of a delegate; whatever goes on the right (an attendance
+// toggle, a name/school detail, nothing) is caller-supplied via
+// `renderRight`, since that varies by context (RollCallPage's attendance
+// state vs. LandingPage's import demo aren't the same shape of "delegate").
+export default function DelegateRoster({
+  delegates,
+  selectedIndex = -1,
+  onSelectIndex,
+  rowRefs,
+  renderRight,
+  emptyMessage = "No delegates in this committee.",
+}) {
+  return (
+    <div className="max-h-[60vh] overflow-y-auto divide-y divide-[var(--app-border-faint)]">
+      {delegates.map((delegate, index) => (
+        <div
+          key={delegate.id}
+          ref={rowRefs ? (el) => (rowRefs.current[index] = el) : undefined}
+          onClick={onSelectIndex ? () => onSelectIndex(index) : undefined}
+          className={`flex items-center justify-between px-5 py-4 transition ${
+            index === selectedIndex ? "bg-[var(--app-chip)]" : ""
+          } ${onSelectIndex ? "cursor-pointer" : ""}`}
+        >
+          <span className="flex items-center gap-2.5 font-medium text-[var(--app-text)]">
+            <Flag countryCode={delegate.countryCode} className="text-lg" />
+            {delegate.countryDisplay || delegate.country}
+          </span>
+          {renderRight?.(delegate, index)}
+        </div>
+      ))}
+
+      {delegates.length === 0 && (
+        <p className="px-5 py-8 text-center text-sm text-[var(--app-text-muted)]">{emptyMessage}</p>
+      )}
+    </div>
+  );
+}
