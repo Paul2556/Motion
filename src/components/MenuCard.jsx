@@ -11,13 +11,17 @@ export default function MenuCard({
   icon,
   to,
   onClick,
+  // Off for a card that reveals something in place (LandingPage's demo)
+  // rather than actually navigating/opening a picker - the arrow is a
+  // "this goes somewhere" affordance, which doesn't apply there.
+  showArrow = true,
 }) {
   const className = "group flex w-full items-center justify-between border border-[var(--app-border)] bg-[var(--app-panel)] p-6 text-left transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-hover)]";
 
   const content = (
     <>
       <div className="flex items-center gap-5">
-        <div className="border border-[var(--app-border)] bg-[var(--app-chip)] p-4">
+        <div className="border border-[var(--app-border)] bg-[var(--app-chip)] p-4 text-[var(--app-text)]">
           {icon}
         </div>
 
@@ -32,10 +36,12 @@ export default function MenuCard({
         </div>
       </div>
 
-      <ChevronRight
-        size={22}
-        className="text-[var(--app-text-faint)] transition group-hover:translate-x-1"
-      />
+      {showArrow && (
+        <ChevronRight
+          size={22}
+          className="text-[var(--app-text-faint)] transition group-hover:translate-x-1"
+        />
+      )}
     </>
   );
 

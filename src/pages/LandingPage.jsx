@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import AllocationParser from "../services/AllocationParser"
 import DelegateRoster from "../components/DelegateRoster"
 import MenuCard from "../components/MenuCard"
 import Queue from "../components/Queue"
@@ -680,33 +681,87 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
   )
 }
 
-// Sample roster revealed on click - genuine ExcelJS parsing needs a real
-// file, which isn't a fair ask of a marketing-page visitor, so this
-// simulates the reveal instead of the parse. Otherwise the actual
-// HomePage.jsx flow: the real MenuCard ("New Conference" is a click-to-open
-// file picker in the real app - there's no drag-and-drop UI to replicate),
-// then the real DelegateRoster (the same one RollCallPage uses) once loaded.
+// Sample roster shown until a visitor picks a real .xlsx - at that point
+// this runs the actual AllocationParser (same parser HomePage.jsx uses),
+// not a simulated reveal, so what's on screen is a genuine parse of
+// whatever file they choose. Otherwise the real HomePage.jsx flow: the same
+// hidden file input + MenuCard ("New Conference" is a click-to-open file
+// picker in the real app - there's no drag-and-drop UI to replicate), then
+// the real DelegateRoster either way.
+const SAMPLE_DELEGATES = [
+  { id: 'd1', country: 'Argentina', countryDisplay: 'Argentina', countryCode: 'ARG', delegate: 'A. Rivas', school: 'Northgate' },
+  { id: 'd2', country: 'Canada', countryDisplay: 'Canada', countryCode: 'CAN', delegate: 'J. Mercier', school: 'Lakeview' },
+  { id: 'd3', country: 'Kenya', countryDisplay: 'Kenya', countryCode: 'KEN', delegate: 'W. Otieno', school: 'St. Mary' },
+  { id: 'd4', country: 'Vietnam', countryDisplay: 'Vietnam', countryCode: 'VNM', delegate: 'L. Pham', school: 'Hillcrest' },
+]
+
 function ImportDemo() {
   const [loaded, setLoaded] = useState(false)
-  // Shaped like the real delegate record (ConferenceService.toDelegateRecord)
-  // so DelegateRoster can render these directly instead of a hand-copied
-  // lookalike. Attendance (present/voting) is omitted on purpose: those
-  // default to false and roll call sets them, so showing them here would
-  // misrepresent the import.
-  const delegates = [
-    { id: 'd1', country: 'Argentina', countryDisplay: 'Argentina', countryCode: 'ARG', delegate: 'A. Rivas', school: 'Northgate' },
-    { id: 'd2', country: 'Canada', countryDisplay: 'Canada', countryCode: 'CAN', delegate: 'J. Mercier', school: 'Lakeview' },
-    { id: 'd3', country: 'Kenya', countryDisplay: 'Kenya', countryCode: 'KEN', delegate: 'W. Otieno', school: 'St. Mary' },
-    { id: 'd4', country: 'Vietnam', countryDisplay: 'Vietnam', countryCode: 'VNM', delegate: 'L. Pham', school: 'Hillcrest' },
-  ]
+  const [delegates, setDelegates] = useState(SAMPLE_DELEGATES)
+  const [source, setSource] = useState(null) // null (sample) | filename | "error"
+  const fileInputRef = useRef(null)
+
+  async function handleFile(file) {
+    if (!file) return
+    try {
+      const parsed = await new AllocationParser().load(file)
+      // First committee with an actual roster - a marketing demo has no
+      // "which committee are you chairing?" picker to fall back on, so it
+      // just shows whichever sheet the real parser found delegates in first.
+      const committee = parsed.committees.find((c) => c.delegates.length > 0)
+      if (!committee) throw new Error("no delegates found")
+
+      // Shaped like the real delegate record (ConferenceService.toDelegateRecord)
+      // so DelegateRoster can render these directly - country/countryDisplay/
+      // countryCode/school come straight off AllocationParser's own output.
+      setDelegates(committee.delegates.map((d, i) => ({
+        id: `${committee.id}-${i}`,
+        country: d.country ?? '',
+        countryDisplay: d.countryDisplay ?? d.country ?? '',
+        countryCode: d.countryCode ?? null,
+        delegate: d.name ?? '',
+        school: d.school ?? '',
+      })))
+      setSource(file.name)
+    } catch {
+      // Not a fair ask that every visitor has a real allocation sheet handy -
+      // falls back to the sample roster rather than a dead-end error card.
+      setDelegates(SAMPLE_DELEGATES)
+      setSource("error")
+    }
+    setLoaded(true)
+  }
 
   // .product-demo (see other demos on this page) keeps this dark regardless
   // of the landing page's own light/dark toggle, matching how the real app
   // always looks - same reasoning as QueueDemo/TimerDemo/VoteDemo below.
   return (
     <div className="product-demo w-full max-w-sm shadow-[0_14px_40px_rgba(0,0,0,.25)]">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx"
+        className="hidden"
+        // Cleared on click, not after reading it - a file input's onChange
+        // only fires when its value actually changes, so picking the exact
+        // same file twice in a row would silently do nothing the second
+        // time without this (a real bug, not just a demo shortcut: the
+        // same trap exists in HomePage.jsx's own handleFile input today).
+        onClick={(event) => { event.target.value = "" }}
+        onChange={(event) => handleFile(event.target.files?.[0])}
+      />
+
       {loaded ? (
         <div className="border border-[var(--app-border)] bg-[var(--app-panel)]">
+          {source && (
+            <div className="flex items-center gap-2 border-b border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3">
+              <FileSpreadsheet size={15} className="text-[var(--app-text-secondary)]" />
+              <span className="truncate text-xs font-medium text-[var(--app-text)]">
+                {source === "error" ? "Couldn't read that file - here's a sample" : source}
+              </span>
+              <span className="ml-auto shrink-0 text-[9px] text-[var(--app-text-faint)]">{delegates.length} rows</span>
+            </div>
+          )}
           <DelegateRoster
             delegates={delegates}
             renderRight={(d) => <span className="text-xs text-[var(--app-text-faint)]">{d.delegate} · {d.school}</span>}
@@ -717,7 +772,8 @@ function ImportDemo() {
           title="New Conference"
           subtitle="Load a conference workbook to get started."
           icon={<FolderOpen size={24} />}
-          onClick={() => setLoaded(true)}
+          onClick={() => fileInputRef.current?.click()}
+          showArrow={false}
         />
       )}
     </div>
