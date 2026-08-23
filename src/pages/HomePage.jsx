@@ -3,7 +3,6 @@ import {
   FolderOpen,
   Settings,
   BarChart3,
-  ChevronRight,
   FileX,
   FileSpreadsheet,
   Cloud,
@@ -14,62 +13,12 @@ import { Link, useNavigate } from "react-router-dom";
 
 import Logo from "../components/Logo";
 import CommitteeIcon from "../components/CommitteeIcon";
+import MenuCard from "../components/MenuCard";
 import ConferenceService from "../services/ConferenceService";
 import AuthService from "../services/AuthService";
 import demoConferences from "../data/demoConferences";
 
 const isDemoHost = window.location.hostname === "demo.motionmun.com";
-
-function MenuCard({
-  title,
-  subtitle,
-  icon,
-  to,
-  onClick,
-}) {
-  const className = "group flex w-full items-center justify-between border border-[var(--app-border)] bg-[var(--app-panel)] p-6 text-left transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-hover)]";
-
-  const content = (
-    <>
-      <div className="flex items-center gap-5">
-        <div className="border border-[var(--app-border)] bg-[var(--app-chip)] p-4">
-          {icon}
-        </div>
-
-        <div>
-          <h2 className="text-lg font-medium">
-            {title}
-          </h2>
-
-          <p className="mt-1 text-sm text-[var(--app-text-muted)]">
-            {subtitle}
-          </p>
-        </div>
-      </div>
-
-      <ChevronRight
-        size={22}
-        className="text-[var(--app-text-faint)] transition group-hover:translate-x-1"
-      />
-    </>
-  );
-
-  // onClick-driven cards (e.g. "New Conference" opening the file picker)
-  // render as a plain button instead of a Link - there's no route to go to.
-  if (onClick) {
-    return (
-      <button onClick={onClick} className={className}>
-        {content}
-      </button>
-    );
-  }
-
-  return (
-    <Link to={to} className={className}>
-      {content}
-    </Link>
-  );
-}
 
 export default function HomePage() {
   const navigate = useNavigate();

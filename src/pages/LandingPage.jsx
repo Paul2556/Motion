@@ -6,6 +6,7 @@ import {
   Clock3,
   FileSpreadsheet,
   FileText,
+  FolderOpen,
   Import,
   LayoutTemplate,
   ListOrdered,
@@ -23,6 +24,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 
 import DelegateRoster from "../components/DelegateRoster"
+import MenuCard from "../components/MenuCard"
 import Queue from "../components/Queue"
 import Timer from "../components/Timer"
 import SeatChart from "../components/SeatChart"
@@ -678,17 +680,19 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
   )
 }
 
-// Sample roster revealed on click, styled like the real HomePage drop zone -
-// genuine ExcelJS parsing needs a real file, which isn't a fair ask of a
-// marketing-page visitor, so this simulates the reveal instead of the parse.
+// Sample roster revealed on click - genuine ExcelJS parsing needs a real
+// file, which isn't a fair ask of a marketing-page visitor, so this
+// simulates the reveal instead of the parse. Otherwise the actual
+// HomePage.jsx flow: the real MenuCard ("New Conference" is a click-to-open
+// file picker in the real app - there's no drag-and-drop UI to replicate),
+// then the real DelegateRoster (the same one RollCallPage uses) once loaded.
 function ImportDemo() {
   const [loaded, setLoaded] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
   // Shaped like the real delegate record (ConferenceService.toDelegateRecord)
-  // so the actual DelegateRoster component - the same one RollCallPage uses -
-  // can render these directly instead of a hand-copied lookalike. Attendance
-  // (present/voting) is omitted on purpose: those default to false and roll
-  // call sets them, so showing them here would misrepresent the import.
+  // so DelegateRoster can render these directly instead of a hand-copied
+  // lookalike. Attendance (present/voting) is omitted on purpose: those
+  // default to false and roll call sets them, so showing them here would
+  // misrepresent the import.
   const delegates = [
     { id: 'd1', country: 'Argentina', countryDisplay: 'Argentina', countryCode: 'ARG', delegate: 'A. Rivas', school: 'Northgate' },
     { id: 'd2', country: 'Canada', countryDisplay: 'Canada', countryCode: 'CAN', delegate: 'J. Mercier', school: 'Lakeview' },
@@ -700,27 +704,21 @@ function ImportDemo() {
   // of the landing page's own light/dark toggle, matching how the real app
   // always looks - same reasoning as QueueDemo/TimerDemo/VoteDemo below.
   return (
-    <div
-      onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
-      onDragLeave={() => setIsDragging(false)}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => { e.preventDefault(); setIsDragging(false); setLoaded(true) }}
-      className={`product-demo w-full max-w-sm border bg-[var(--app-panel)] shadow-[0_14px_40px_rgba(0,0,0,.25)] transition ${isDragging ? 'border-[var(--app-border-active)]' : 'border-[var(--app-border)]'}`}
-    >
-      <div className="flex items-center gap-2 border-b border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3">
-        <FileSpreadsheet size={17} className="text-[var(--app-text-secondary)]" />
-        <span className="text-xs font-medium text-[var(--app-text)]">delegates.xlsx</span>
-        <span className="ml-auto text-[9px] text-[var(--app-text-faint)]">{loaded ? `${delegates.length} rows` : 'Drop file'}</span>
-      </div>
+    <div className="product-demo w-full max-w-sm shadow-[0_14px_40px_rgba(0,0,0,.25)]">
       {loaded ? (
-        <DelegateRoster
-          delegates={delegates}
-          renderRight={(d) => <span className="text-xs text-[var(--app-text-faint)]">{d.delegate} · {d.school}</span>}
-        />
+        <div className="border border-[var(--app-border)] bg-[var(--app-panel)]">
+          <DelegateRoster
+            delegates={delegates}
+            renderRight={(d) => <span className="text-xs text-[var(--app-text-faint)]">{d.delegate} · {d.school}</span>}
+          />
+        </div>
       ) : (
-        <button onClick={() => setLoaded(true)} className="flex w-full items-center justify-center gap-2 py-11 text-xs text-[var(--app-text-faint)] transition hover:text-[var(--app-text-muted)]">
-          <Plus size={14} /> Load sample roster
-        </button>
+        <MenuCard
+          title="New Conference"
+          subtitle="Load a conference workbook to get started."
+          icon={<FolderOpen size={24} />}
+          onClick={() => setLoaded(true)}
+        />
       )}
     </div>
   )
