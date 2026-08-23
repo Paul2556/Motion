@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import AppTopBar from "../components/AppTopBar";
-import Flag from "../components/Flag";
+import DelegateRoster from "../components/DelegateRoster";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
 import ConferenceService from "../services/ConferenceService";
@@ -195,28 +195,15 @@ export default function RollCallPage() {
             <SegmentedToggle value={everyoneState} indeterminate={!everyoneUniform} onChange={requestEveryone} />
           </div>
 
-          <div className="max-h-[60vh] overflow-y-auto divide-y divide-[var(--app-border-faint)]">
-            {delegates.map((delegate, index) => (
-              <div
-                key={delegate.id}
-                ref={(el) => (rowRefs.current[index] = el)}
-                onClick={() => setSelectedIndex(index)}
-                className={`flex items-center justify-between px-5 py-4 transition ${
-                  index === clampedIndex ? "bg-[var(--app-chip)]" : ""
-                }`}
-              >
-                <span className="flex items-center gap-2.5 font-medium">
-                  <Flag countryCode={delegate.countryCode} className="text-lg" />
-                  {delegate.countryDisplay || delegate.country}
-                </span>
-                <SegmentedToggle value={getDelegateState(delegate)} onChange={(state) => applyToDelegate(delegate.id, state)} />
-              </div>
-            ))}
-
-            {delegates.length === 0 && (
-              <p className="px-5 py-8 text-center text-sm text-[var(--app-text-muted)]">No delegates in this committee.</p>
+          <DelegateRoster
+            delegates={delegates}
+            selectedIndex={clampedIndex}
+            onSelectIndex={setSelectedIndex}
+            rowRefs={rowRefs}
+            renderRight={(delegate) => (
+              <SegmentedToggle value={getDelegateState(delegate)} onChange={(state) => applyToDelegate(delegate.id, state)} />
             )}
-          </div>
+          />
         </div>
 
       </div>
