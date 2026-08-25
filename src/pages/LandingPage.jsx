@@ -381,7 +381,7 @@ function LandingPage() {
                   committeeLabel="DISEC"
                   initialSpeaker={HERO_SPEAKER}
                   initialQueue={HERO_QUEUE}
-                  activeMotion="Moderated Caucus — 72s / speaker"
+                  activeMotion="Moderated Caucus: 72s / speaker"
                   suggestions={HERO_SUGGESTIONS}
                   linked={false}
                 />
@@ -410,51 +410,8 @@ function LandingPage() {
             <div className="grid gap-12 lg:grid-cols-[0.6fr_1.4fr] lg:gap-24">
               <div><p className="section-label">The problem</p><h2 className="section-title mt-5">Run the committee.<br /><span className="text-black/25">Not spreadsheets.</span></h2></div>
               <div>
-                <p className="max-w-2xl text-xl leading-relaxed text-black/60 sm:text-2xl">A chair’s attention belongs in the room—not scattered across tabs, files, and formulas.</p>
-                <div className="mt-10 grid grid-cols-2 border-l border-t border-black/10 sm:grid-cols-4">
-                  <Tool icon={FileText} label="Word" detail="Speakers" />
-                  <Tool icon={Clock3} label="Timer" detail="Caucuses" />
-                  <Tool icon={FileText} label="PDFs" detail="Resolutions" />
-                  <Tool icon={FileSpreadsheet} label="Sheets" detail="Delegates" />
-                </div>
-                {/* Desktop */}
-                <div className="mt-5 mb-1 hidden justify-center overflow-hidden sm:flex">
-                  <svg
-                    className="block w-full max-w-full"
-                    viewBox="0 10 600 95"
-                    fill="none"
-                  >
-                    {/* Vertical lines */}
-                    <path d="M75 10V45" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M225 10V45" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M375 10V45" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M525 10V45" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
-
-                    {/* Merge */}
-                    <path d="M75 45L180 75" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M225 45L240 75" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M375 45L360 75" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M525 45L420 75" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
-
-                    {/* Center */}
-                    <path d="M180 75H420" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M300 75V110" stroke="rgba(0,0,0,.16)" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </div>
-
-                {/* Mobile */}
-                <div className="my-8 flex flex-col items-center gap-3 sm:hidden">
-
-                  <ArrowDown
-                    size={20}
-                    strokeWidth={1.6}
-                    className="text-black/30"
-                  />
-                </div>
-                <div className="flex items-center justify-between border border-black bg-black p-5 text-white sm:p-7">
-                  <Logo light />
-                  <span className="text-sm text-white/60">One platform.</span>
-                </div>
+                <p className="max-w-2xl text-xl leading-relaxed text-black/60 sm:text-2xl">A chair’s attention belongs in the room, not scattered across tabs, files, and formulas.</p>
+                <ToolReveal />
               </div>
             </div>
           </div>
@@ -464,7 +421,7 @@ function LandingPage() {
           <div className="page-container">
             <div className="flex flex-col justify-between gap-7 md:flex-row md:items-end">
               <div><p className="section-label">Core features</p><h2 className="section-title mt-5">Everything on the dais.<br />Nothing in the way.</h2></div>
-              <p className="max-w-sm text-sm leading-relaxed text-black/50">Six focused tools replace the patchwork—without changing the procedure chairs and delegates already know.</p>
+              <p className="max-w-sm text-sm leading-relaxed text-black/50">Six focused tools replace the patchwork, without changing the procedure chairs and delegates already know.</p>
             </div>
             <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden border border-black/10 bg-black/10 md:grid-cols-2 lg:mt-20 ">
               {features.map((feature, index) => <FeatureCard key={feature.title} index={index} {...feature} />)}
@@ -483,23 +440,6 @@ function LandingPage() {
                   <h3 className="mt-6 text-lg font-medium">{title}</h3><p className="mt-3 text-sm leading-relaxed text-white/45">{body}</p>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section-pad border-b border-black/10 bg-white">
-          <div className="page-container">
-            <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-12">
-              <div className="relative aspect-square max-w-xl overflow-hidden bg-[#ededE8] p-8 sm:p-12">
-                <div className="absolute inset-0 vision-lines opacity-50" />
-                <div className="relative flex h-full flex-col justify-between">
-                  <div className="flex flex-1 items-center justify-center scale-[7.5] sm:scale-[8.25]">
-                    <Logo compact/>
-                  </div>
-                  <span className="text-[10px] uppercase tracking-[0.18em] text-black/35">Motion / 2026</span>
-                </div>
-              </div>
-              <div><p className="section-label">Our vision</p><blockquote className="mt-6 text-4xl font-medium leading-[1.05] tracking-[-0.045em] sm:text-6xl"><span className="accent-text">“</span>Built by delegates.<br />Designed for chairs.<span className="accent-text">“</span></blockquote><p className="mt-8 max-w-lg text-lg leading-relaxed text-black/55">Motion removes the operational friction around debate while preserving what makes Model United Nations matter: procedure, diplomacy, and the people in the room.</p><div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.15em]"><span className="accent-bg h-px w-10" /> From motion to resolution.</div></div>
             </div>
           </div>
         </section>
@@ -616,6 +556,48 @@ function LandingPage() {
 
 function Tool({ icon: Icon, label, detail }) { return <div className="border-b border-r border-black/10 bg-[#f8f8f5] p-4 sm:p-5"><Icon size={18} strokeWidth={1.5} /><p className="mt-8 text-sm font-medium">{label}</p><p className="mt-1 text-xs text-black/35">{detail}</p></div> }
 
+const PROBLEM_TOOLS = [
+  { icon: FileText, label: 'Word', detail: 'Speakers' },
+  { icon: Clock3, label: 'Timer', detail: 'Caucuses' },
+  { icon: FileText, label: 'PDFs', detail: 'Resolutions' },
+  { icon: FileSpreadsheet, label: 'Sheets', detail: 'Delegates' },
+]
+
+// The tiles start collapsed under the button (see .tool-push in index.css) so
+// clicking it visibly "pushes" them out to their grid positions, rather than
+// the section just sitting static on load like a diagram.
+function ToolReveal() {
+  const [revealed, setRevealed] = useState(false)
+
+  return (
+    <div className="mt-10">
+      <button
+        type="button"
+        onClick={() => setRevealed(true)}
+        aria-expanded={revealed}
+        className="flex w-full items-center justify-between border border-black bg-black p-5 text-left text-white transition-colors hover:bg-black/85 sm:p-7"
+      >
+        <Logo light />
+        <span className="flex flex-col items-end gap-1">
+          <span className="text-sm text-white/60">One platform.</span>
+          {!revealed && <span className="text-[9px] uppercase tracking-[0.16em] text-white/40">Click to see what it replaces</span>}
+        </span>
+      </button>
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${revealed ? 'grid-rows-[1fr] mt-5' : 'grid-rows-[0fr]'}`}>
+        <div className="overflow-hidden">
+          <div className="grid grid-cols-2 border-l border-t border-black/10 sm:grid-cols-4">
+            {PROBLEM_TOOLS.map((tool, index) => (
+              <div key={tool.label} className={`tool-push ${revealed ? 'is-visible' : ''}`} style={{ transitionDelay: `${index * 80}ms` }}>
+                <Tool icon={tool.icon} label={tool.label} detail={tool.detail} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function FaqItem({ question, answer }) {
   const [open, setOpen] = useState(false)
 
@@ -671,7 +653,7 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
       <div className="feature-card group min-w-0 flex-1 min-h-[400px] flex-col bg-[#f4f4f0] p-6 transition-colors hover:bg-white sm:p-8">
         <div className="flex items-center justify-between"><Icon className="accent-text" size={20} strokeWidth={1.5} /><span className="accent-text font-mono text-[10px]">{number}</span></div>
         <div className="my-9 flex flex-1 flex-col items-center justify-center gap-3 overflow-visible">
-          <span className="self-start text-[9px] uppercase tracking-[0.16em] text-black/25">Live demo — try it</span>
+          <span className="self-start text-[9px] uppercase tracking-[0.16em] text-black/25">Live demo: try it</span>
           {visual}
         </div>
         <h3 className="text-xl font-medium tracking-[-0.025em]">{title}</h3>
@@ -752,19 +734,24 @@ function ImportDemo() {
       />
 
       {loaded ? (
-        <div className="border border-[var(--app-border)] bg-[var(--app-panel)]">
+        // h-[300px] matches QueueDemo's own fixed height (its sibling demo
+        // box in this grid) - without it this box was only as tall as
+        // however many sample rows happened to render, reading smaller than
+        // the demo next to it.
+        <div className="flex h-[300px] flex-col border border-[var(--app-border)] bg-[var(--app-panel)]">
           {source && (
-            <div className="flex items-center gap-2 border-b border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3">
+            <div className="flex shrink-0 items-center gap-2 border-b border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3">
               <FileSpreadsheet size={15} className="text-[var(--app-text-secondary)]" />
               <span className="truncate text-xs font-medium text-[var(--app-text)]">
-                {source === "error" ? "Couldn't read that file - here's a sample" : source}
+                {source === "error" ? "Couldn't read that file, here's a sample" : source}
               </span>
               <span className="ml-auto shrink-0 text-[9px] text-[var(--app-text-faint)]">{delegates.length} rows</span>
             </div>
           )}
           <DelegateRoster
+            className="flex-1"
             delegates={delegates}
-            renderRight={(d) => <span className="text-xs text-[var(--app-text-faint)]">{d.delegate} · {d.school}</span>}
+            renderRight={(d) => <span className="min-w-0 truncate text-xs text-[var(--app-text-faint)]">{d.delegate} · {d.school}</span>}
           />
         </div>
       ) : (
@@ -975,7 +962,7 @@ function PresetDemo() {
       </div>
       <p className="mt-3 border-t border-black/10 pt-3 text-xs text-black/45">
         <span className="font-medium text-black/70">{activePreset.detail ?? active.text}</span>
-        {!activePreset.detail && active.alias?.length ? ` — also recognized as "${active.alias[0]}"` : null}
+        {!activePreset.detail && active.alias?.length ? `, also recognized as "${active.alias[0]}"` : null}
       </p>
     </div>
   )

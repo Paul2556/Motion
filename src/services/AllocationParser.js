@@ -1,13 +1,13 @@
 // Ported from the standalone excelToJson tool (parser.js). Replaces
 // SpreadsheetAnalyzer.js, which only detected generic rectangular table
-// blocks (and never actually implemented column detection — detectColumns()
+// blocks (and never actually implemented column detection: detectColumns()
 // was a stub returning {}). This does the real job: extracting committee
 // title/topic/chairs/delegates/pages/stance from a Model UN allocation sheet,
 // tolerant of the structural differences between different conferences'
 // Excel templates (see excelToJson/claude_info.md for the full rationale).
 //
 // Uses ExcelJS (already a dependency here, via ConferenceService) rather than
-// the SheetJS library the standalone tool switched to — adding a second
+// the SheetJS library the standalone tool switched to. Adding a second
 // spreadsheet-parsing library to this app's bundle would undo the bundle-size
 // benefit SheetJS was chosen for there. If ConferenceService ever moves to
 // SheetJS too, port extractRows() the same way and drop exceljs entirely.

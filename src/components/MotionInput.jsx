@@ -809,7 +809,7 @@ function MetaStat({ label, value }) {
   return (
     <div className="border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2">
       <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">{label}</p>
-      <p className="mt-1 truncate text-sm text-[var(--app-text)]">{value ?? "—"}</p>
+      <p className="mt-1 truncate text-sm text-[var(--app-text)]">{value ?? "-"}</p>
     </div>
   );
 }

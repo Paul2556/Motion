@@ -20,7 +20,7 @@ function AppShellNotFound() {
           <Logo light />
         </div>
 
-        <h1 className="mt-6 text-lg font-medium">404 — Page not found</h1>
+        <h1 className="mt-6 text-lg font-medium">404: Page not found</h1>
 
         <p className="mt-2 text-sm leading-relaxed text-[var(--app-text-muted)]">
           That page doesn't exist.
@@ -50,7 +50,7 @@ function ThemeShellNotFound() {
           <Logo light={darkMode} />
         </div>
 
-        <h1 className="mt-6 text-lg font-medium">404 — Page not found</h1>
+        <h1 className="mt-6 text-lg font-medium">404: Page not found</h1>
 
         <p className={`mt-2 text-sm leading-relaxed ${darkMode ? "text-white/45" : "text-black/45"}`}>
           That page doesn't exist.

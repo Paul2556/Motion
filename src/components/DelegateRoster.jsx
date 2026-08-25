@@ -13,19 +13,20 @@ export default function DelegateRoster({
   rowRefs,
   renderRight,
   emptyMessage = "No delegates in this committee.",
+  className = "",
 }) {
   return (
-    <div className="max-h-[60vh] overflow-y-auto divide-y divide-[var(--app-border-faint)]">
+    <div className={`max-h-[60vh] overflow-y-auto divide-y divide-[var(--app-border-faint)] ${className}`}>
       {delegates.map((delegate, index) => (
         <div
           key={delegate.id}
           ref={rowRefs ? (el) => (rowRefs.current[index] = el) : undefined}
           onClick={onSelectIndex ? () => onSelectIndex(index) : undefined}
-          className={`flex items-center justify-between px-5 py-4 transition ${
+          className={`flex items-center justify-between gap-3 px-5 py-4 transition ${
             index === selectedIndex ? "bg-[var(--app-chip)]" : ""
           } ${onSelectIndex ? "cursor-pointer" : ""}`}
         >
-          <span className="flex items-center gap-2.5 font-medium text-[var(--app-text)]">
+          <span className="flex shrink-0 items-center gap-2.5 font-medium text-[var(--app-text)]">
             <Flag countryCode={delegate.countryCode} className="text-lg" />
             {delegate.countryDisplay || delegate.country}
           </span>

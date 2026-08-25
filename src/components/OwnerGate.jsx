@@ -53,7 +53,7 @@ export default function OwnerGate({ children }) {
 
         {user && (
           <p className="mt-4 text-xs text-[var(--app-text-faint)]">
-            Signed in as {user.email} — not authorized.
+            Signed in as {user.email}. Not authorized.
           </p>
         )}
       </div>

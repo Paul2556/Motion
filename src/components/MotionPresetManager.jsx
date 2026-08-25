@@ -97,7 +97,7 @@ export default function MotionPresetManager() {
   return (
     <div className="space-y-4">
       <p className="text-xs text-[var(--app-text-muted)]">
-        Order matters — when multiple motions are on the floor, the motion log always shows the
+        Order matters. When multiple motions are on the floor, the motion log always shows the
         one nearest the top of this list first. Use the arrows to re-rank a motion.
       </p>
 

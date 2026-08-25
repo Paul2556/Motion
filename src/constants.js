@@ -455,11 +455,11 @@ export const TOPIC_MARKER_PHRASE = [
 // "General Assembly Third Committee (SOCHUM)" contains both "general assembly" and "sochum".
 export const committee = [
   { icon: "unsc", name: "United Nations Security Council", aliases: ["security council", "unsc"] },
-  { icon: "disec", name: "GA First Committee — Disarmament & International Security", aliases: ["disarmament", "disec", "first committee", "ga1"] },
-  { icon: "ecofin", name: "GA Second Committee — Economic & Financial", aliases: ["economic and financial", "ecofin", "second committee", "ga2"] },
-  { icon: "sochum", name: "GA Third Committee — Social, Humanitarian & Cultural", aliases: ["sochum", "social, humanitarian", "third committee", "ga3"] },
-  { icon: "specpol", name: "GA Fourth Committee — Special Political & Decolonization", aliases: ["special political", "decolonization", "specpol", "fourth committee", "ga4"] },
-  { icon: "legal", name: "GA Sixth Committee — Legal", aliases: ["legal committee", "sixth committee", "ga6"] },
+  { icon: "disec", name: "GA First Committee: Disarmament & International Security", aliases: ["disarmament", "disec", "first committee", "ga1"] },
+  { icon: "ecofin", name: "GA Second Committee: Economic & Financial", aliases: ["economic and financial", "ecofin", "second committee", "ga2"] },
+  { icon: "sochum", name: "GA Third Committee: Social, Humanitarian & Cultural", aliases: ["sochum", "social, humanitarian", "third committee", "ga3"] },
+  { icon: "specpol", name: "GA Fourth Committee: Special Political & Decolonization", aliases: ["special political", "decolonization", "specpol", "fourth committee", "ga4"] },
+  { icon: "legal", name: "GA Sixth Committee: Legal", aliases: ["legal committee", "sixth committee", "ga6"] },
   { icon: "ecosoc", name: "Economic and Social Council", aliases: ["economic and social council", "ecosoc"] },
   { icon: "hrc", name: "Human Rights Council", aliases: ["human rights council", "unhrc", "hrc"] },
   { icon: "unicef", name: "United Nations Children's Fund", aliases: ["unicef", "children's fund"] },

@@ -29,7 +29,7 @@ export default function MotionLog({ entries, onDelete, onVote, onAdjustSecond, m
           {entry.topic && <p className="mt-0.5 text-sm text-[var(--app-text-muted)]">{entry.topic}</p>}
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm text-[var(--app-text-secondary)]">
-            <span>Proposer: {entry.delegation ?? "—"}</span>
+            <span>Proposer: {entry.delegation ?? "-"}</span>
             <span className="flex flex-wrap gap-x-4">
               {entry.totalTime != null && <span>{formatDuration(entry.totalTime)} total</span>}
               {entry.speakingTime != null && <span>{formatDuration(entry.speakingTime)} per speaker</span>}

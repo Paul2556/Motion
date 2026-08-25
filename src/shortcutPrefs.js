@@ -102,7 +102,7 @@ function codeToDisplay(code) {
 // remaps to, not just the predefined defaults, so it parses the id rather
 // than looking up a fixed `display` string.
 export function keyIdToDisplay(keyId) {
-  if (!keyId) return "—";
+  if (!keyId) return "-";
   const parts = keyId.split("+");
   const code = parts.pop();
   const modLabels = parts.map((part) => (part === "Mod" ? "⌘/Ctrl" : part));

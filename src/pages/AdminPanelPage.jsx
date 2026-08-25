@@ -35,7 +35,7 @@ async function callAdmin(path, options = {}) {
 }
 
 function formatDate(value) {
-  if (!value) return "—";
+  if (!value) return "-";
   return new Date(value).toLocaleString();
 }
 

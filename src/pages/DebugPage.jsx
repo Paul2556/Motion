@@ -456,7 +456,7 @@ export default function DebugPage() {
 
                   <h3 className="font-semibold">
                     {committee.id}
-                    {committee.title ? ` — ${committee.title}` : ""}
+                    {committee.title ? `: ${committee.title}` : ""}
                   </h3>
 
                   <p className="mt-1 text-sm text-[var(--app-text-muted)]">
