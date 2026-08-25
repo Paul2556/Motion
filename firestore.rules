@@ -43,8 +43,14 @@ service cloud.firestore {
       allow update: if request.auth != null && request.auth.uid == resource.data.ownerId
         && request.auth.uid in request.resource.data.memberIds;
       allow delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
+      // memberIds must be exactly [creator] at creation time - collaborators
+      // are only ever added afterward via the update rule above, which is
+      // owner-gated. Without this, a crafted direct write could set
+      // memberIds to include an arbitrary victim uid at creation, planting
+      // an attacker-controlled session in that victim's session list (see
+      // SEC-011 in .claude/issues.md).
       allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerId
-        && request.auth.uid in request.resource.data.memberIds;
+        && request.resource.data.memberIds == [request.auth.uid];
 
       match /attendance/{delegateId} {
         allow read, write: if isSessionMember(sessionId);

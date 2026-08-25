@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "./_lib/firebaseAdmin.js";
 import { verifyOwner } from "./_lib/requireOwner.js";
+import { mapAuthError } from "./_lib/mapAuthError.js";
 
 // Merged list/set/remove into one dispatched handler (GET = list, POST
 // {action} = set/remove) - Vercel's Hobby plan caps a deployment at 12
@@ -15,7 +16,8 @@ async function listPermissions(res) {
     const contributors = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
     res.status(200).json({ contributors });
   } catch (error) {
-    res.status(500).json({ error: "internal_error", message: error.message });
+    console.error("listPermissions failed:", error);
+    res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
   }
 }
 
@@ -51,7 +53,8 @@ async function setPermission(req, res, owner) {
 
     res.status(200).json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: "internal_error", message: error.message });
+    console.error("setPermission failed:", error);
+    res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
   }
 }
 
@@ -66,7 +69,8 @@ async function removePermission(req, res) {
     await getAdminDb().collection("contributorPermissions").doc(uid).delete();
     res.status(200).json({ ok: true });
   } catch (error) {
-    res.status(500).json({ error: "internal_error", message: error.message });
+    console.error("removePermission failed:", error);
+    res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
   }
 }
 

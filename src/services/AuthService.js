@@ -98,6 +98,11 @@ class AuthService {
   // typing. NOTE: a live password sitting in a URL/QR image is a shared
   // bearer secret - anyone who captures it can sign in. Explicit tradeoff
   // requested for a low-stakes "hand the session to a second screen" flow.
+  // The credentials live in the URL **fragment**, not the query string - a
+  // fragment is never sent to any server, never appears in a `Referer`
+  // header, and isn't part of what @vercel/analytics tracks (pathname +
+  // search only), so this keeps the leak surface to "whoever can see the
+  // literal URL/QR image" instead of also reaching access logs and analytics.
   async createQuickLoginLink() {
     this._ensureInit();
 
@@ -105,28 +110,23 @@ class AuthService {
     const password = randomQuickLoginPassword();
     await createUserWithEmailAndPassword(getFirebaseAuth(), email, password);
 
-    const url = new URL("/cloud", window.location.origin);
-    url.searchParams.set("qrEmail", email);
-    url.searchParams.set("qrPass", password);
-    return url.toString();
+    const params = new URLSearchParams({ qrEmail: email, qrPass: password });
+    return `${window.location.origin}/cloud#${params.toString()}`;
   }
 
-  // Call once on page load. Strips the params from the URL immediately after
-  // use so the credentials don't linger in the address bar/history.
+  // Call once on page load. Clears the hash immediately after use so the
+  // credentials don't linger in the address bar/history.
   async consumeQuickLoginParams() {
     this._ensureInit();
 
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(window.location.hash.slice(1));
     const email = params.get("qrEmail");
     const password = params.get("qrPass");
     if (!email || !password) return false;
 
     await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
 
-    params.delete("qrEmail");
-    params.delete("qrPass");
-    const query = params.toString();
-    window.history.replaceState(null, "", window.location.pathname + (query ? `?${query}` : ""));
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
 
     return true;
   }

@@ -190,12 +190,7 @@ function LandingPage() {
     setJoinSpamCount(0)
     setIsSubmitting(true)
 
-    const submittedEmail = email
-
     try {
-      const formData = new FormData()
-      formData.append('email', email)
-
       // Attribution - read at submit time, not capture-on-load, so it still
       // reflects the query string even after in-page anchor navigation
       // (sweepTo's history.replaceState only touches the hash, so this is
@@ -203,38 +198,29 @@ function LandingPage() {
       // needed to stash it earlier). Empty string (not omitted) for any
       // field that's absent, so the sheet gets a consistent column shape.
       const params = new URLSearchParams(window.location.search)
-      formData.append('utm_source', params.get('utm_source') || '')
-      formData.append('utm_medium', params.get('utm_medium') || '')
-      formData.append('utm_campaign', params.get('utm_campaign') || '')
-      formData.append('referrer', document.referrer || '')
 
-      const response = await fetch(
-        'https://script.google.com/macros/s/AKfycbyz-FDNfNmrr2uLRqZJxCUa_O5pFwAs7BvL4ke-raSru_6pC1In4JM1B2thPnrADmIY/exec',
-        {
-          method: 'POST',
-          body: formData,
-        }
-      )
+      // Single call to our own rate-limited/honeypot-checked endpoint, which
+      // does the Sheet write and welcome email server-side - the Sheet
+      // webhook URL used to live here directly, reachable by anyone who read
+      // the bundle (see SEC-015 in .claude/issues.md).
+      const response = await fetch('/api/waitlist/welcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          company,
+          utm_source: params.get('utm_source') || '',
+          utm_medium: params.get('utm_medium') || '',
+          utm_campaign: params.get('utm_campaign') || '',
+          referrer: document.referrer || '',
+        }),
+      })
 
       if (response.ok) {
         setSubmitted(true)
         setEmail('')
-
-        // Best-effort - the Sheet write above is the source of truth for the signup itself, so
-        // a failed welcome email shouldn't surface as a failed signup. Still logged loudly
-        // though: a non-ok response doesn't reject fetch()'s promise on its own, so this has to
-        // check response.ok explicitly or a 4xx/5xx here fails completely silently.
-        fetch('/api/waitlist/welcome', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: submittedEmail }),
-        }).then(async (welcomeResponse) => {
-          if (!welcomeResponse.ok) {
-            console.error('Waitlist welcome email failed:', welcomeResponse.status, await welcomeResponse.text())
-          }
-        }).catch((error) => {
-          console.error('Waitlist welcome email failed:', error)
-        })
+      } else {
+        console.error('Waitlist submission failed:', response.status, await response.text())
       }
     } catch (error) {
       console.error('Waitlist submission failed:', error)

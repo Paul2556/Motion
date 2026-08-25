@@ -30,7 +30,11 @@ async function callAdmin(path, options = {}) {
     },
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message ?? data.error ?? "Request failed");
+  // `code` is a standardized, safe-to-display error identifier (see
+  // api/admin/_lib/mapAuthError.js); `message` only appears for the rare
+  // handwritten UI copy (e.g. permissions.js's "never signed in" message),
+  // never a raw SDK exception.
+  if (!res.ok) throw new Error(data.message ?? data.code ?? data.error ?? "Request failed");
   return data;
 }
 
