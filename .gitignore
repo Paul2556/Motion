@@ -4,14 +4,13 @@ node_modules/
 # build output
 dist/
 
-# Claude Code's agent memory/planning notes for this repo - internal, not
+# Claude Code's agent memory/planning notes for this repo. This is internal, not
 # meant to be part of the public source (see README's Development section).
 .claude/
 
 # environment variables
 .env
 .env.local
-#! .env.local DON'T REMOVE SINCE IT CONTAINS ALL SECRETS.
 
 # logs
 *.log
