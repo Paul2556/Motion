@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { email, company } = req.body ?? {};
+  const { email, company, utm_source, utm_medium, utm_campaign, referrer } = req.body ?? {};
 
   // Honeypot - see api/feedback/submit.js for the same pattern. This endpoint
   // is called directly from the client (LandingPage.jsx), unauthenticated,
@@ -50,6 +50,42 @@ export default async function handler(req, res) {
   }
 
   const trimmedEmail = email.trim();
+
+  // Writes to the waitlist Sheet server-side now - was a direct client ->
+  // Apps Script call, which put the webhook URL in the public bundle for
+  // anyone to POST fake rows to directly.
+  // Blocking (not best-effort): the Sheet write is the source of truth for
+  // the signup itself, same as when this lived client-side, so a failure
+  // here should surface as a failed submission rather than a silent gap.
+  if (!process.env.WAITLIST_SHEET_WEBHOOK_URL) {
+    console.error("WAITLIST_SHEET_WEBHOOK_URL is not set");
+    res.status(500).json({ error: "sheet_not_configured" });
+    return;
+  }
+
+  try {
+    const sheetForm = new FormData();
+    sheetForm.append("email", trimmedEmail);
+    sheetForm.append("utm_source", utm_source || "");
+    sheetForm.append("utm_medium", utm_medium || "");
+    sheetForm.append("utm_campaign", utm_campaign || "");
+    sheetForm.append("referrer", referrer || "");
+
+    const sheetResponse = await fetch(process.env.WAITLIST_SHEET_WEBHOOK_URL, {
+      method: "POST",
+      body: sheetForm,
+    });
+    if (!sheetResponse.ok) {
+      console.error("Waitlist sheet write failed:", sheetResponse.status, await sheetResponse.text());
+      res.status(502).json({ error: "sheet_write_failed" });
+      return;
+    }
+  } catch (error) {
+    console.error("Waitlist sheet write failed:", error);
+    res.status(502).json({ error: "sheet_write_failed" });
+    return;
+  }
+
   const db = getAdminDb();
   const cooldownRef = db.collection("waitlistSends").doc(hashEmail(trimmedEmail));
 

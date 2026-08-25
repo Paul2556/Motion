@@ -1,5 +1,6 @@
 import { getAdminAuth, getAdminDb } from "./_lib/firebaseAdmin.js";
 import { verifyOwner } from "./_lib/requireOwner.js";
+import { mapAuthError } from "./_lib/mapAuthError.js";
 
 // Merged list/create/update/delete into one dispatched handler (GET = list,
 // POST {action} = create/update/delete) - Vercel's Hobby plan caps a
@@ -44,7 +45,8 @@ async function listUsersHandler(res) {
     const users = await listAllUsers();
     res.status(200).json({ users });
   } catch (error) {
-    res.status(500).json({ error: "internal_error", message: error.message });
+    console.error("listUsers failed:", error);
+    res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
   }
 }
 
@@ -59,7 +61,8 @@ async function createUser(req, res) {
     const userRecord = await getAdminAuth().createUser({ email, password });
     res.status(200).json({ uid: userRecord.uid });
   } catch (error) {
-    res.status(400).json({ error: "create_failed", message: error.message });
+    console.error("createUser failed:", error);
+    res.status(400).json({ error: "create_failed", code: mapAuthError(error) });
   }
 }
 
@@ -82,7 +85,8 @@ async function updateUser(req, res) {
     await getAdminAuth().updateUser(uid, patch);
     res.status(200).json({ ok: true });
   } catch (error) {
-    res.status(400).json({ error: "update_failed", message: error.message });
+    console.error("updateUser failed:", error);
+    res.status(400).json({ error: "update_failed", code: mapAuthError(error) });
   }
 }
 
@@ -96,7 +100,8 @@ async function deleteUser(req, res) {
   try {
     await getAdminAuth().deleteUser(uid);
   } catch (error) {
-    res.status(400).json({ error: "delete_failed", message: error.message });
+    console.error("deleteUser failed:", error);
+    res.status(400).json({ error: "delete_failed", code: mapAuthError(error) });
     return;
   }
 
