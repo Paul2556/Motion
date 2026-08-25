@@ -134,7 +134,7 @@ Motion aims to reflect both sides of that experience.
 
 ## Development
 
-Motion is built with heavy use of [Claude Code](https://claude.com/claude-code), Anthropic's AI coding assistant, throughout development, from architecture and features to UI polish and this README.
+Motion is built with heavy use of [Claude Code](https://claude.com/claude-code), Anthropic's AI coding assistant, throughout development, from architecture and features to UI polish. All design choices were human made though.
 
 ---
 
