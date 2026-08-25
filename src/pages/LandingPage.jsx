@@ -103,6 +103,7 @@ const FAQ_ITEMS = [
   ['Who is Motion for?', 'Chairs running an MUN committee: importing the delegate roster, running debate, managing votes, and keeping time, all from one screen.'],
   ['Do I need to install anything?', 'No. Motion runs in your browser. Upload a delegate roster and you are ready to chair.'],
   ['Is our conference data stored anywhere?', 'No, at least not fully. Motion has backend to store conference ONLY when logged in this is for multi-day conferences, if not, a loaded conference lives only in your browser tab for that session, and closing the tab clears it completely. No traces, no worries.'],
+  ['Is Motion open source?', 'Yes, the full source is public on GitHub.'],
 ]
 
 import Logo from "../components/Logo";
@@ -111,7 +112,7 @@ function LandingPage() {
   const fullPlaceholder = "you@conference.org";
 
   const [email, setEmail] = useState("");
-  // Honeypot - see SourceRequestPage.jsx for the same pattern. A real visitor
+  // Honeypot - see FeedbackPage.jsx for the same pattern. A real visitor
   // never sees or fills this in, but naive bots that autofill every input do.
   const [company, setCompany] = useState("");
 
@@ -173,7 +174,7 @@ function LandingPage() {
     if (submitted) return
 
     // Silently pretend to succeed rather than short-circuiting visibly -
-    // same as api/source/request.js's server-side honeypot handling, so a
+    // same as api/waitlist/welcome.js's own server-side honeypot handling, so a
     // bot gets no signal it was caught.
     if (company) {
       setSubmitted(true)
@@ -542,10 +543,12 @@ function LandingPage() {
               <a className="hover:text-white" href="#waitlist">Waitlist</a>
             </div>
             <a
-              href="/licensing"
+              href="https://github.com/Paul2556/Motion"
+              target="_blank"
+              rel="noreferrer"
               className="inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors hover:text-white/50"
             >
-              Source-Avaliable & Licensed under the Motion Attribution License.
+              Fully open source on GitHub. Licensed under the Motion Attribution License.
             </a>
           </div>
         </div>

@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   const { email, company } = req.body ?? {};
 
-  // Honeypot - see api/source/request.js for the same pattern. This endpoint
+  // Honeypot - see api/feedback/submit.js for the same pattern. This endpoint
   // is called directly from the client (LandingPage.jsx), unauthenticated,
   // so it's reachable by anyone who can read the bundle - the honeypot plus
   // the per-address cooldown below are what keep it from being an open

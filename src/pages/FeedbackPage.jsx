@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../components/Logo";
 
-// Same form shape as SourceRequestPage.jsx (the other form in this codebase besides the landing
-// waitlist): plain useState per field, native required/type validation, manual
-// isSubmitting/submitted state, honeypot for bots.
+// Same form shape as the landing page's waitlist form (LandingPage.jsx): plain
+// useState per field, native required/type validation, manual isSubmitting/
+// submitted state, honeypot for bots.
 export default function FeedbackPage() {
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
@@ -60,7 +60,7 @@ export default function FeedbackPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5 border border-[var(--app-border)] bg-[var(--app-panel)] p-6 sm:p-8">
-          {/* Honeypot - see SourceRequestPage.jsx for the same pattern. */}
+          {/* Honeypot - see LandingPage.jsx's waitlist form for the same pattern. */}
           <div
             className="absolute h-px w-px overflow-hidden whitespace-nowrap border-0 p-0"
             style={{ clip: "rect(0, 0, 0, 0)" }}

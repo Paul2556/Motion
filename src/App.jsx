@@ -16,7 +16,6 @@ import DebugPage from "./pages/DebugPage";
 import ReferPage from "./pages/ReferPage";
 import AdminPanelPage from "./pages/AdminPanelPage";
 import LicensePage from "./pages/LicensePage";
-import SourceRequestPage from "./pages/SourceRequestPage";
 import FeedbackPage from "./pages/FeedbackPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import OwnerGate from "./components/OwnerGate";
@@ -31,10 +30,10 @@ import OwnerGate from "./components/OwnerGate";
 // local dev and preview deploys can still reach every page without needing
 // real subdomains wired up.
 
-// /licensing and /source only exist on the marketing domain (see MarketingRoutes
-// below) - a full cross-origin redirect rather than <Navigate>, since that
-// component only handles same-app client-side navigation and these are a
-// different subdomain entirely.
+// /licensing only exists on the marketing domain (see MarketingRoutes below)
+// - a full cross-origin redirect rather than <Navigate>, since that component
+// only handles same-app client-side navigation and these are a different
+// subdomain entirely.
 function RedirectToMarketing({ path }) {
   useEffect(() => {
     window.location.replace(`https://motionmun.com${path}`);
@@ -47,7 +46,6 @@ function MarketingRoutes() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/licensing" element={<LicensePage />} />
-      <Route path="/source" element={<SourceRequestPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
@@ -74,7 +72,6 @@ function AppRoutes({ includeFeedback = false } = {}) {
       <Route path="/stats" element={<StatsPage />} />
       {includeFeedback && <Route path="/feedback" element={<FeedbackPage />} />}
       <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
-      <Route path="/source" element={<RedirectToMarketing path="/source" />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
@@ -121,7 +118,6 @@ function DebugRoutes() {
       <Route path="/refer" element={<ReferPage />} />
       <Route path="/adminPanel" element={<AdminPanelPage />} />
       <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
-      <Route path="/source" element={<RedirectToMarketing path="/source" />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
@@ -145,7 +141,6 @@ function AllRoutes() {
       <Route path="/debug/refer" element={<ReferPage />} />
       <Route path="/debug/adminPanel" element={<AdminPanelPage />} />
       <Route path="/licensing" element={<LicensePage />} />
-      <Route path="/source" element={<SourceRequestPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
