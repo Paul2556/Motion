@@ -168,7 +168,7 @@ export default function SourceRequestPage() {
           </button>
 
           {submitted && (
-            <p className="text-sm text-[var(--app-text-secondary)]">Request received — you'll hear back by email.</p>
+            <p className="text-sm text-[var(--app-text-secondary)]">Request received. You'll hear back by email.</p>
           )}
           {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
         </form>

@@ -71,7 +71,7 @@ const SOCHUM_COUNTRIES = [
 const demoConferences = [
   {
     id: "demo-unsc",
-    name: "Motion Demo — United Nations Security Council",
+    name: "Motion Demo: United Nations Security Council",
     committees: [
       {
         id: "demo-unsc",
@@ -85,7 +85,7 @@ const demoConferences = [
   },
   {
     id: "demo-sochum",
-    name: "Motion Demo — General Assembly Third Committee",
+    name: "Motion Demo: General Assembly Third Committee",
     committees: [
       {
         id: "demo-sochum",

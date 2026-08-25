@@ -76,7 +76,7 @@ export default function LicensePage() {
             In short
           </p>
           <p>
-            you can use, modify, and deploy Motion — even commercially — as long as your
+            you can use, modify, and deploy Motion, even commercially, as long as your
             product visibly displays "Powered by Motion" with a link back here. You may not
             share Motion's source code with others; source access is granted individually (see{" "}
             <Link to="/source" className="underline underline-offset-2 hover:text-[var(--app-text)]">

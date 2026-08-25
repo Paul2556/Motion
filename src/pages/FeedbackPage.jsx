@@ -114,7 +114,7 @@ export default function FeedbackPage() {
           </button>
 
           {submitted && (
-            <p className="text-sm text-[var(--app-text-secondary)]">Thanks — feedback received.</p>
+            <p className="text-sm text-[var(--app-text-secondary)]">Thanks, feedback received.</p>
           )}
           {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
         </form>
