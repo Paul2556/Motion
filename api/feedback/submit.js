@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
   const { message, email, company } = req.body ?? {};
 
-  // Honeypot - see api/source/request.js for the same pattern.
+  // Honeypot - see api/waitlist/welcome.js for the same pattern.
   if (company) {
     res.status(200).json({ ok: true });
     return;
@@ -29,8 +29,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Keyed separately from api/source/request.js's rate limit so the two features don't share
-    // one IP-keyed budget.
+    // Namespaced so this doesn't share a rate-limit budget with other IP-keyed endpoints.
     await checkRateLimit(`feedback:${getClientIp(req)}`);
   } catch (error) {
     if (error instanceof RateLimitError) {

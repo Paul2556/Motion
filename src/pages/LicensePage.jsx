@@ -77,21 +77,19 @@ export default function LicensePage() {
           </p>
           <p>
             you can use, modify, and deploy Motion, even commercially, as long as your
-            product visibly displays "Powered by Motion" with a link back here. You may not
-            share Motion's source code with others; source access is granted individually (see{" "}
-            <Link to="/source" className="underline underline-offset-2 hover:text-[var(--app-text)]">
-              /source
-            </Link>
-            ). This summary is informational only; the license text below governs.
+            product visibly displays "Powered by Motion" with a link back here. This summary
+            is informational only; the license text below governs.
           </p>
         </div>
 
-        <Link
-          to="/source"
+        <a
+          href="https://github.com/Paul2556/Motion"
+          target="_blank"
+          rel="noreferrer"
           className="mt-6 inline-flex items-center gap-1.5 text-sm text-[var(--app-text-secondary)] underline underline-offset-2 transition hover:text-[var(--app-text)]"
         >
-          Want the source code? Request access →
-        </Link>
+          Motion's source is fully public on GitHub →
+        </a>
 
         <div className="mt-10 space-y-4 border border-[var(--app-border)] bg-[var(--app-panel)] p-6 sm:p-8">
           {blocks.map((block) => (

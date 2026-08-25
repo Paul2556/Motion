@@ -1,6 +1,3 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
-  "functions": {
-    "api/source/download.js": { "includeFiles": "api/source/_archive/**" }
-  }
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "vercel-build": "node scripts/build-source-archive.js && vite build",
+    "vercel-build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings 0"
   },
@@ -22,7 +22,6 @@
     "exceljs": "^4.4.0",
     "firebase": "12.16.0",
     "firebase-admin": "14.1.0",
-    "jszip": "3.10.1",
     "lucide-react": "^1.21.0",
     "qrcode.react": "4.2.0",
     "react": "^19.2.7",

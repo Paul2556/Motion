@@ -1,6 +1,5 @@
 // Plain fetch against Resend's REST API rather than adding their SDK - one
-// HTTP call is all this needs, same reasoning build-source-archive.js
-// already used for the GitHub API instead of @octokit.
+// HTTP call is all this needs.
 export async function sendEmail({ to, subject, html }) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
