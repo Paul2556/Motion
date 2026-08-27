@@ -340,7 +340,7 @@ function LandingPage() {
           <div className="page-container relative py-20 sm:py-28 lg:py-36">
             <div className="mx-auto max-w-5xl text-center">
               <h1 className="fade-up-delay mt-7 text-[clamp(3.6rem,9vw,8.4rem)] font-medium leading-[0.86] tracking-[-0.075em]">
-                From motion<br />to <span className="accent-text">resolution.</span>
+                From motion<br />to <span className="accent-text display-serif">resolution.</span>
               </h1>
               <p className="fade-up-delay-2 mx-auto mt-8 max-w-xl text-lg leading-relaxed text-black/55 sm:text-xl">
                 Modern committee management for Model United Nations, the simulation where students debate and vote as country delegates. Built to keep chairs focused on the room, not the software.
