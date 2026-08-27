@@ -3,12 +3,9 @@ import Timer from "../components/Timer";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ConferenceService from "../services/ConferenceService";
 
-// A bare standalone clock - no motion log, no queue, no committee-state
-// wiring beyond the AppTopBar label. For a chair who just wants a timer
-// running (a caucus, an informal, anything that isn't a logged speaker
-// list) without any of that other bookkeeping. Starts at 3 minutes;
-// double-clicking the ring (Timer's `editable` mode) lets a chair type in
-// a different time directly rather than picking from a separate screen.
+// A bare standalone clock for a chair who just wants a timer running, with no
+// queue or motion-log bookkeeping. Double-clicking the ring types in a
+// different time directly.
 export default function TimerPage() {
   const committee = ConferenceService.getActiveCommittee();
 

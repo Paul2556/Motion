@@ -60,11 +60,9 @@ export function dayNumberForSession(session) {
 const DAY_MARKER_ID = "_dayMarker";
 
 class CloudSessionService {
-  // memberIds always starts as just [ownerId] - collaborators get appended
-  // via addCollaborator. firestore.rules keys every access check (including
-  // attendance, via one get() on this doc) off this single list, so an
-  // owner is just a member who also happens to satisfy the extra
-  // owner-only checks (rename, delete, managing collaborators).
+  // Starts as just [ownerId]; collaborators are appended via addCollaborator.
+  // firestore.rules keys every access check off this one list, so an owner is
+  // a member who also satisfies the extra owner-only checks.
   async createSession({ title, committeeId, ownerId }) {
     const db = getFirebaseDb();
     const ref = await addDoc(collection(db, "sessions"), {
@@ -119,14 +117,10 @@ class CloudSessionService {
     await setDoc(ref, { status }, { merge: true });
   }
 
-  // Attendance from a previous day is stale, not a starting point - if the
-  // last time attendance was taken was an earlier calendar day than today,
-  // it's cleared out here so the roster comes back as all-absent instead of
-  // silently carrying yesterday's roll call forward. The day marker lives
-  // as its own doc *inside* the attendance collection (id "_dayMarker",
-  // impossible for stableDelegateKey to ever produce) rather than a field on
-  // the session doc, since firestore.rules only lets the owner update the
-  // session doc, but any collaborator needs to be able to trigger this reset.
+  // Yesterday's attendance is cleared rather than carried forward. The day
+  // marker is a doc inside the attendance collection, not a field on the
+  // session, since only the owner may update the session doc but any
+  // collaborator needs to trigger this reset.
   async listAttendance(sessionId) {
     const db = getFirebaseDb();
     const attendanceCol = collection(db, "sessions", sessionId, "attendance");

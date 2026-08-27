@@ -21,12 +21,9 @@ function formFromMotion(motion) {
   };
 }
 
-// Full CRUD over the motion vocabulary MotionInput matches against (see
-// motionPresets.js) - built-in and user-added motions are indistinguishable
-// once persisted, so every row gets the same edit/delete controls. No local
-// state mirrors the store; every mutation goes straight to localStorage and
-// a `tick` bump forces a re-render, same approach as SettingsPage's
-// ShortcutRemapList.
+// Built-in and user-added motions are indistinguishable once persisted, so
+// every row gets the same controls. No local state mirrors the store: writes
+// go straight to localStorage and a `tick` bump forces the re-render.
 export default function MotionPresetManager() {
   const [, setTick] = useState(0);
   const [editingId, setEditingId] = useState(null); // motion.id, "new", or null

@@ -6,18 +6,9 @@ import AuthService from "../services/AuthService";
 import { isOwner } from "../services/ownerAccess";
 import { getFirebaseAuth } from "../firebase";
 
-// Owner-only gate (see ownerAccess.js) - client-side convenience redirect,
-// not the real security boundary. That boundary is server-side: every
-// api/admin/* endpoint independently verifies the caller's Firebase ID token
-// against the true owner list (see api/admin/_lib/requireOwner.js) - this
-// page's own gate just spares an unauthorized visitor from seeing the UI at
-// all before their first request would get rejected anyway.
-//
-// Unlike DebugPage/ReferPage, this gate deliberately does NOT go through the
-// contributorPermissions system (usePagePermission) - admin access (this
-// page, and everything under api/admin/*) is intentionally non-delegable.
-// The Permissions tab below manages contributor access to the *other* pages
-// only. See SEC-008 in .claude/issues.md for why these are kept separate.
+// Client-side convenience gate only; the real boundary is server-side, where
+// every api/admin/* endpoint verifies the caller's ID token. Deliberately not
+// routed through contributorPermissions, since admin access is non-delegable.
 
 async function callAdmin(path, options = {}) {
   const token = await getFirebaseAuth().currentUser.getIdToken();
@@ -100,11 +91,9 @@ export default function AdminPanelPage() {
     }
   }
 
-  // Fetches inline (setState only inside the promise chain's callbacks,
-  // never synchronously in the effect body) rather than calling loadUsers
-  // directly - same pattern CloudSessionsPage.jsx uses for its own mount
-  // fetches. loadUsers itself stays for the Refresh button and post-mutation
-  // reloads, which run from event handlers, not an effect.
+  // Fetches inline so setState only happens in promise callbacks, never
+  // synchronously in the effect body. loadUsers stays for the Refresh button
+  // and post-mutation reloads, which run from event handlers.
   useEffect(() => {
     if (!isAuthorized) return;
     callAdmin("users", { method: "GET" })
@@ -143,8 +132,7 @@ export default function AdminPanelPage() {
     setPermissionsError(null);
     try {
       // debug-only by default - the owner can widen access afterward from
-      // the list below (see SEC-008 in .claude/issues.md for why this
-      // default matters).
+      // the list below.
       await callAdmin("permissions", {
         method: "POST",
         body: JSON.stringify({ action: "set", email: newContributorEmail.trim(), debug: true, refer: false, app: false }),

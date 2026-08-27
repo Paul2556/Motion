@@ -16,11 +16,9 @@ export function buildInitialGroups(presentCount, absentCount) {
   return groups;
 }
 
-// Groups always sum to the same total - each vote is a delegate moving from
-// one bloc to another, not an independent tally. Against (index 1) is the
-// shared default bucket both For and Abstain exchange with - a delegate
-// moves For<->Against or Abstain<->Against, never directly between For and
-// Abstain.
+// Groups always sum to the same total, since a vote moves a delegate between
+// blocs rather than tallying independently. Against is the shared bucket both
+// For and Abstain exchange with, never directly with each other.
 export function adjustVoteGroups(groups, index, delta) {
   const partner = index === 1 ? 0 : 1;
   const moved = delta > 0 ? Math.min(delta, groups[partner].seats) : Math.max(delta, -groups[index].seats);
@@ -32,11 +30,9 @@ export function adjustVoteGroups(groups, index, delta) {
   });
 }
 
-// Toggling on appends a fresh Abstain bucket; toggling off folds any
-// existing abstentions back into Against so the total never changes. Only
-// meant to be called when there are no absent-forced abstentions to protect
-// (see MotionPage.jsx/GeneralVotingPage.jsx - the toggle is disabled
-// whenever absentCount > 0).
+// Toggling off folds abstentions back into Against so the total never
+// changes. Only safe when no absent-forced abstentions exist, which is why
+// callers disable the toggle whenever absentCount > 0.
 export function toggleAbstainGroups(groups) {
   if (groups.length > 2) {
     return [groups[0], { ...groups[1], seats: groups[1].seats + groups[2].seats }];

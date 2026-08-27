@@ -6,8 +6,7 @@ import { mapAuthError } from "./_lib/mapAuthError.js";
 // Merged list/set/remove into one dispatched handler (GET = list, POST
 // {action} = set/remove) - Vercel's Hobby plan caps a deployment at 12
 // serverless functions, and three separate files here was what pushed the
-// project over that cap. See .claude/issues.md's SEC-008 for why this
-// collection exists.
+// project over that cap.
 const DEFAULT_PERMISSIONS = { debug: true, refer: false, app: false };
 
 async function listPermissions(res) {

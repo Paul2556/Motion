@@ -1,11 +1,6 @@
-// Minimal, purpose-built formatter for this repo's LICENSE text - not a
-// general markdown parser. The license's author-controlled Markdown subset
-// is simple (## headings, --- dividers, **bold** labels, plain paragraphs
-// with manual line-wraps and indented (a)/(b)/(c) sub-items separated only
-// by single newlines), so a full markdown library isn't warranted - blocks
-// are split on blank lines and classified by their leading pattern, and a
-// paragraph's internal single newlines are preserved via CSS (white-space)
-// rather than parsed into a real list structure.
+// Purpose-built for this repo's LICENSE, not a general markdown parser: its
+// subset is small and author-controlled, so blocks split on blank lines and
+// internal newlines are preserved via CSS rather than parsed into lists.
 export function formatLicenseText(text) {
   return text
     .trim()

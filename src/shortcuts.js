@@ -1,21 +1,7 @@
-// Default dais keyboard shortcuts (spec: Keyboard Dais Controls v0.1). Keys
-// are `event.code`-based (physical key position, e.g. "KeyP", "Digit1"),
-// not `event.key` - layout-independent, and the only way to unambiguously
-// tell "P" from "Shift+P" apart (event.key alone can't, since Shift changes
-// the character itself for letters). `display` is purely presentational,
-// shown in the legend/Settings remap list - never used for matching.
-//
-// Scoped per-view, not globally unique: the same code can mean different
-// things in different scopes, since only one view is ever active at once.
-// `global` is merged into whichever view-scope is active. `voting` is a
-// fixed override merged in *instead of* everything else while a vote is
-// open (see useDaisShortcuts.js) - it reuses the existing select-bloc-then-
-// adjust voting UX already shipped in MotionPage.jsx, not a new "cast one
-// vote per keypress" behavior.
-//
-// `Y` (cycle yield type) from the spec is deliberately not included - the
-// spec itself hedges it "(if applicable)", and there's no yield-type concept
-// anywhere in the app to bind it to yet.
+// Keyed on `event.code` so bindings are layout-independent and "P" is
+// distinguishable from "Shift+P"; `display` is presentational only. Scoped
+// per-view since only one view is active at a time, with `voting` merged in
+// as a fixed override while a vote is open.
 export const SHORTCUT_SCOPES = {
   global: [
     { id: "global.viewSpeakerList", label: "Switch to Speaker List", defaultKey: "Digit1", display: "1" },
@@ -63,11 +49,8 @@ export const SHORTCUT_SCOPES = {
   ],
 };
 
-// Voting is a fixed contextual override (spec: "cannot be remapped away"),
-// so it's excluded from the flat list Settings renders - it's still
-// individually remappable in principle via SHORTCUT_SCOPES.voting, but
-// isn't exposed in the general remap UI to avoid implying it can be
-// disabled/reordered relative to the other scopes.
+// Voting is a fixed override, so it's excluded from the list Settings renders
+// to avoid implying it can be disabled or reordered against other scopes.
 export const REMAPPABLE_SCOPES = ["global", "speakerList", "motions", "rollCall"];
 
 export function findAction(id) {

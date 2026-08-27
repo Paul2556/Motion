@@ -1,8 +1,6 @@
-// Flat, rounded-rectangle flags (sourced from Flagpack, MIT-licensed) copied
-// into src/assets/flags at build time - keyed by each file's own basename,
-// which matches delegate.countryCode/country.code directly (usually an
-// ISO 3166-1 alpha-3 like "FRA", but a few constituent-nation entries like
-// Scotland use their ISO 3166-2 subdivision code "GB-SCT" instead).
+// Flags from Flagpack (MIT), keyed by file basename so they match
+// delegate.countryCode directly. Usually ISO 3166-1 alpha-3, though a few
+// constituent nations use a subdivision code like "GB-SCT".
 const FLAG_URLS = import.meta.glob("../assets/flags/*.svg", { eager: true, query: "?url", import: "default" });
 
 const URL_BY_CODE = new Map(

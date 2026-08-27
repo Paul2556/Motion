@@ -41,13 +41,9 @@ function LicenseBlock({ block }) {
   );
 }
 
-// Renders the exact text of the repo-root LICENSE file (imported raw, not
-// retyped) inside the site's own look, formatted via formatLicenseText.js's
-// small hand-rolled block splitter rather than a raw <pre> dump or a full
-// markdown library - the license text's own Markdown subset (##, ---, **bold**)
-// is simple and author-controlled, so a parser library isn't warranted. The
-// raw file is also served as-is at /license.txt for tooling/machine
-// consumption and as the ultimate source of truth if this rendering ever drifts.
+// Renders the repo-root LICENSE verbatim (imported raw, never retyped) using a
+// small hand-rolled splitter, since its Markdown subset is simple and
+// author-controlled. The raw file at /license.txt remains the source of truth.
 export default function LicensePage() {
   const blocks = formatLicenseText(licenseText);
 

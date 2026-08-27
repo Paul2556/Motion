@@ -4,11 +4,8 @@ import { Check, Copy } from "lucide-react";
 import DebugTopBar from "../components/DebugTopBar";
 import { usePagePermission } from "../services/permissions";
 
-// Gated on the "refer" permission (see permissions.js/contributorPermissions) -
-// lives in the same not-publicly-linked debug area as DebugPage, so it gets
-// the same treatment (client-side convenience, not a real security boundary,
-// fine here since there's nothing sensitive to protect, just consistency
-// with the rest of /debug).
+// Gated on the "refer" permission, the same client-side convenience gate the
+// rest of the debug area uses. Nothing sensitive here to protect.
 
 const BASE_URL = "https://motionmun.com";
 

@@ -3,11 +3,9 @@ import AuthService from "../services/AuthService";
 import { usePagePermission } from "../services/permissions";
 import Logo from "./Logo";
 
-// Gates its children to the "app" permission (owners always have it; see
-// permissions.js/contributorPermissions) - used to lock down app.motionmun.com
-// while it's in private early access. Same convenience-only gate as
-// DebugPage/ReferPage, just shown as a sign-in screen instead of a redirect, since there's no
-// other page on this subdomain to redirect an unauthorized visitor to.
+// Gates children on the "app" permission while the app is in private early
+// access. Shown as a sign-in screen rather than a redirect, since there's no
+// other page on this subdomain to send an unauthorized visitor to.
 export default function OwnerGate({ children }) {
   const { allowed, ready } = usePagePermission("app");
   const [signInError, setSignInError] = useState(null);

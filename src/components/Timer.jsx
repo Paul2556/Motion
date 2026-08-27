@@ -15,12 +15,9 @@ function formatTime(seconds) {
 const MAX_MINUTES = 999;
 const MAX_SECONDS = 59;
 
-// Digits only, capped to 3 characters then clamped to MAX_MINUTES. Empty
-// reads as "0" rather than blank (a cleared field should still look like a
-// number while editing, not a gap), and round-tripping through Number/String
-// strips any leading zeros - without that, clearing back to "0" and then
-// typing fresh digits would prepend onto it ("0" + "3" -> "03", then "0" ->
-// "030") instead of cleanly replacing it.
+// Digits only, capped at 3 chars then clamped to MAX_MINUTES. Round-tripping
+// through Number/String strips leading zeros, without which typing after
+// clearing would prepend ("0" + "3" -> "03") instead of replacing.
 function sanitizeMinutesInput(value) {
   const digits = value.replace(/\D/g, "").slice(0, 3);
   if (digits === "") return "0";
@@ -51,11 +48,9 @@ const Timer = forwardRef(function Timer({
   const [editSeconds, setEditSeconds] = useState("");
   const editContainerRef = useRef(null);
 
-  // `onComplete` defaults to a fresh `() => {}` on every render (a new
-  // default-parameter closure each call), and callers can pass their own
-  // inline arrow function too - either way the reference is unstable across
-  // renders. A ref sidesteps that: always call the latest callback without
-  // making any effect depend on its identity.
+  // `onComplete`'s reference is unstable across renders, so a ref lets the
+  // animation effect call the latest callback without depending on its
+  // identity and restarting.
   const onCompleteRef = useRef(onComplete);
 
   useEffect(() => {
@@ -73,16 +68,10 @@ const Timer = forwardRef(function Timer({
 
   const ringRef = useRef(null);
 
-  // Wall-clock anchor {time, value} the continuous animation is computed
-  // from every frame. A setInterval only ever updates once per second no
-  // matter what, so a CSS transition is really just interpolating between
-  // two once-a-second snapshots - it can look smooth but is never *actually*
-  // continuous, and any timing jitter between ticks shows up as visible
-  // unevenness. Re-deriving the exact fractional position from real elapsed
-  // time on every animation frame (~60fps) instead removes that ceiling
-  // entirely. Re-anchored whenever running starts/resumes or `seconds` is
-  // changed directly (addTime/reset), so it always continues from the
-  // correct point rather than drifting.
+  // Wall-clock anchor the animation recomputes from every frame: a
+  // setInterval only updates once a second, so a CSS transition just
+  // interpolates stale snapshots and any jitter shows. Re-anchored when
+  // running or `seconds` changes, so it resumes correctly rather than drifting.
   const anchorRef = useRef({ time: 0, value: initialTime });
 
   useEffect(() => {
@@ -195,12 +184,9 @@ const Timer = forwardRef(function Timer({
     onNext(elapsed);
   };
 
-  // Exposes just the actions a parent needs to drive from outside (the dais
-  // keyboard shortcuts' Space/R/Enter) - everything else about the timer's
-  // internal animation/state stays fully encapsulated. triggerNext reuses
-  // this same nextSpeaker (not a raw onNext(0) call from the parent), so a
-  // keyboard-triggered advance still reports the real elapsed time, exactly
-  // like the mouse "Next" button does.
+  // Exposes only what the dais keyboard shortcuts need, keeping the timer's
+  // internal state encapsulated. triggerNext reuses nextSpeaker so a
+  // keyboard advance reports real elapsed time, like the button does.
   useImperativeHandle(ref, () => ({
     toggleRunning: () => setRunning((r) => !r),
     reset,

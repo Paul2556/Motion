@@ -21,12 +21,9 @@ export default async function handler(req, res) {
 
   const { email, company, utm_source, utm_medium, utm_campaign, referrer } = req.body ?? {};
 
-  // Honeypot - see api/feedback/submit.js for the same pattern. This endpoint
-  // is called directly from the client (LandingPage.jsx), unauthenticated,
-  // so it's reachable by anyone who can read the bundle - the honeypot plus
-  // the per-address cooldown below are what keep it from being an open
-  // mail-relay rather than any server-side proof the caller actually
-  // completed the waitlist form.
+  // Unauthenticated and reachable by anyone who reads the bundle, so the
+  // honeypot plus the per-address cooldown below are what keep this from
+  // being an open mail relay.
   if (company) {
     res.status(200).json({ ok: true });
     return;
@@ -51,12 +48,9 @@ export default async function handler(req, res) {
 
   const trimmedEmail = email.trim();
 
-  // Writes to the waitlist Sheet server-side now - was a direct client ->
-  // Apps Script call, which put the webhook URL in the public bundle for
-  // anyone to POST fake rows to directly (see SEC-015 in .claude/issues.md).
-  // Blocking (not best-effort): the Sheet write is the source of truth for
-  // the signup itself, same as when this lived client-side, so a failure
-  // here should surface as a failed submission rather than a silent gap.
+  // Server-side now: as a direct client -> Apps Script call, the webhook URL
+  // sat in the public bundle for anyone to POST fake rows to. Blocking, not
+  // best-effort, since this write is the source of truth for the signup.
   if (!process.env.WAITLIST_SHEET_WEBHOOK_URL) {
     console.error("WAITLIST_SHEET_WEBHOOK_URL is not set");
     res.status(500).json({ error: "sheet_not_configured" });

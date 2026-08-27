@@ -26,11 +26,9 @@ function loadCachedVote(committeeId, delegateCount) {
   }
 }
 
-// A standalone voting module for chairs who just want to run a vote without
-// writing it up as a motion first (see MotionPage.jsx for the full
-// motion-text -> vote flow this deliberately skips). No motion log, no
-// active-motion wiring - just the same tally rules (voteGroups.js) and the
-// same absent-delegates-auto-abstain behavior.
+// A standalone vote for chairs who don't want to write a motion first,
+// skipping MotionPage's full flow but reusing the same tally rules and
+// absent-auto-abstain behavior.
 export default function GeneralVotingPage() {
   const committee = ConferenceService.getActiveCommittee();
   const delegateCount = committee?.delegates.length ?? 0;

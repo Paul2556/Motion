@@ -59,11 +59,9 @@ const Queue = forwardRef(function Queue({
     setActiveIndex(-1);
   }
 
-  // Enter with a suggestion highlighted (arrow keys) adds that one; otherwise
-  // it adds the first autosuggestion match. `suggestions` is already scoped
-  // to this committee's own delegates (see SessionPage.jsx), so an empty
-  // `filtered` means the typed text isn't an actual delegation here - Enter
-  // is a no-op rather than adding arbitrary typed text as a fake speaker.
+  // Enter adds the highlighted suggestion, else the first match. Suggestions
+  // are scoped to this committee, so an empty `filtered` means the text isn't
+  // a real delegation and Enter no-ops rather than adding a fake speaker.
   function submitTyped() {
     if (activeIndex >= 0 && filtered[activeIndex]) {
       addSpeaker(filtered[activeIndex]);

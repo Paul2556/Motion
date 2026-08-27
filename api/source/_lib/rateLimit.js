@@ -14,11 +14,8 @@ function hashKey(key) {
   return createHash("sha256").update(key || "unknown").digest("hex");
 }
 
-// Firestore-backed, not in-memory - Vercel functions are stateless across
-// invocations (no shared memory between cold/warm instances), so an
-// in-memory counter would rarely trigger meaningfully despite the original
-// spec allowing it as an option. Same runTransaction shape as
-// CloudSessionService.js's addDay (read, decide, tx.update in one pass).
+// Firestore-backed rather than in-memory, since Vercel functions share no
+// memory across invocations and an in-memory counter would rarely trigger.
 export async function checkRateLimit(key) {
   const db = getAdminDb();
   const ref = db.collection("rateLimits").doc(hashKey(key));

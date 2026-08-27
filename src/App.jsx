@@ -20,16 +20,9 @@ import FeedbackPage from "./pages/FeedbackPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import OwnerGate from "./components/OwnerGate";
 
-// One deployment serves four custom domains (Vercel: attach all four to
-// this same project) - which route tree mounts is decided at runtime from
-// the hostname, since this is a plain client-rendered SPA with no per-domain
-// server routing. Anything that isn't one of the recognized production
-// subdomains falls back to the full combined route table below, so local dev
-// can still reach every page without needing real subdomains wired up - but
-// unlike local dev, that fallback is gated (see isLocalDevHost/OwnerGate in
-// App() below) for anything reachable over the public internet (Vercel
-// preview URLs, the default *.vercel.app domain), since those aren't just
-// the developer's own machine.
+// One deployment serves four domains, so the route tree is chosen at runtime
+// from the hostname. Unrecognized hosts fall back to the combined table, gated
+// unless they're local dev (see isLocalDevHost below).
 
 // /licensing only exists on the marketing domain (see MarketingRoutes below)
 // - a full cross-origin redirect rather than <Navigate>, since that component
@@ -155,9 +148,7 @@ export default function App() {
   if (DEBUG_HOSTS.includes(hostname)) return <OwnerGate><DebugRoutes /></OwnerGate>;
   if (MARKETING_HOSTS.includes(hostname)) return <MarketingRoutes />;
   if (isLocalDevHost(hostname)) return <AllRoutes />;
-  // Any other hostname (a Vercel preview URL, the default *.vercel.app
-  // domain, anything unrecognized) is reachable over the public internet, so
-  // it gets the same owner gate as the real app host rather than the bare
-  // fallback - see SEC-010 in .claude/issues.md.
+  // Anything else is reachable over the public internet, so it gets the same
+  // owner gate as the real app host rather than the bare fallback.
   return <OwnerGate><AllRoutes /></OwnerGate>;
 }

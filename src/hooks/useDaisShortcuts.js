@@ -2,11 +2,8 @@ import { useEffect, useRef } from "react";
 import { SHORTCUT_SCOPES } from "../shortcuts";
 import { resolveKey } from "../shortcutPrefs";
 
-// event.code (physical key position, e.g. "KeyP", "Digit1") rather than
-// event.key - layout-independent, and the only way to unambiguously tell
-// "P" from "Shift+P" apart (event.key alone can't: Shift changes the
-// character itself for letters, so there's no way to recover "was Shift
-// held" from the produced character alone).
+// event.code rather than event.key: layout-independent, and the only way to
+// tell "P" from "Shift+P", since Shift changes the character itself.
 export function eventToKeyId(event) {
   const parts = [];
   if (event.metaKey || event.ctrlKey) parts.push("Mod");
@@ -41,19 +38,9 @@ function buildVotingKeyMap() {
   return map;
 }
 
-// One shared keydown listener per dais page. `scopeName` is one of
-// speakerList/motions/rollCall. `handlers` is { [actionId]: (event) => void }
-// - a page only needs an entry for the actions it actually implements.
-// `active=false` fully disables the hook (used for SessionBoard's
-// landing-page demo instance, which must never respond to keys). While
-// `votingActive`, 1/2/3/+/- are hijacked straight to `voteHandlers`, taking
-// priority over the view's own bindings for those same physical keys -
-// matches the spec's fixed voting override (view-switch on 1/2/3 resumes
-// automatically once the vote closes).
-//
-// `handlers`/`voteHandlers` are read from a ref updated every render (same
-// pattern as Timer.jsx's onCompleteRef) so passing a fresh inline object
-// each render doesn't tear down and re-add the window listener every time.
+// One shared keydown listener per dais page; `active=false` fully disables it
+// for the landing-page demo. Handlers are read from a ref so a fresh inline
+// object each render doesn't tear down and re-add the window listener.
 export function useDaisShortcuts(scopeName, handlers, { active = true, votingActive = false, voteHandlers = null } = {}) {
   const handlersRef = useRef(handlers);
   const voteHandlersRef = useRef(voteHandlers);
