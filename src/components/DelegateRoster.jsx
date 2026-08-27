@@ -1,11 +1,8 @@
 import Flag from "./Flag";
 
-// Plain controlled list, no service coupling - same reusability shape as
-// Queue.jsx. Row content itself (Flag + country) is fixed since that's
-// always true of a delegate; whatever goes on the right (an attendance
-// toggle, a name/school detail, nothing) is caller-supplied via
-// `renderRight`, since that varies by context (RollCallPage's attendance
-// state vs. LandingPage's import demo aren't the same shape of "delegate").
+// Plain controlled list, no service coupling. Flag + country is fixed; the
+// right side is caller-supplied via `renderRight`, since an attendance toggle
+// and a name/school detail aren't the same shape of "delegate".
 export default function DelegateRoster({
   delegates,
   selectedIndex = -1,

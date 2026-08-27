@@ -15,11 +15,8 @@ function readOverrides() {
   }
 }
 
-// Notified after every local write - src/services/prefsSync.js subscribes to
-// push changes up to a signed-in user's account. Plain pub/sub (not an
-// import of prefsSync.js itself) so this module has no idea account sync
-// exists - avoids a circular import, since prefsSync.js already needs to
-// import *this* file.
+// Plain pub/sub so this module has no idea account sync exists, avoiding a
+// circular import with prefsSync.js, which already imports this file.
 const changeListeners = new Set();
 
 export function onShortcutsChange(callback) {
@@ -80,10 +77,8 @@ export function clearShortcutOverride(actionId) {
 }
 
 // Fixed labels only for codes that don't reduce to a single trailing
-// letter/digit (KeyX/DigitN are handled programmatically below, so a user
-// remapping to *any* letter or number key - not just the ones this app
-// binds by default - still gets a clean single-character label instead of
-// the raw "KeyT"/"Digit7").
+// letter/digit, so remapping to any letter or number still shows a clean
+// single character rather than raw "KeyT".
 const CODE_DISPLAY = {
   Enter: "Enter", Space: "Space", Backspace: "Backspace", Escape: "Esc",
   ArrowUp: "↑", ArrowDown: "↓", ArrowLeft: "←", ArrowRight: "→",

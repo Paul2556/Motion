@@ -1,4 +1,0 @@
-# Tracked in git (kept for the team), but excluded from `git archive`/GitHub
-# zipball output - so it never ships in the source-access zip that
-# api/source/download.js hands out (see scripts/build-source-archive.js).
-.claude/ export-ignore

@@ -2,17 +2,10 @@ import { ArrowRight, Minus, Plus } from "lucide-react";
 import SeatChart from "./SeatChart";
 import { getVoteStatusLabel } from "../utils/voteStatus";
 
-// The voting module shared by MotionPage.jsx (voting on a logged motion) and
-// GeneralVotingPage.jsx (a standalone vote with no motion attached) - the
-// abstain toggle/note, majority-status label, seat chart, and manual abstain
-// row are identical between the two; only what surrounds this panel differs
-// (a "Continue to session" button on Motion's flow, nothing on General
-// Voting's ad hoc one - see `onContinue`).
-//
-// `absentCount` locks the "Allow abstentions" toggle whenever there are
-// absent delegates - their seats are already forced into Abstain (see
-// src/utils/voteGroups.js's buildInitialGroups) and folding the group away
-// would misrepresent them as real Against votes.
+// Shared by MotionPage (voting on a logged motion) and GeneralVotingPage (an
+// ad hoc vote); only the surrounding controls differ. `absentCount` locks the
+// abstentions toggle, since absent seats are already forced to Abstain and
+// folding the group away would misrepresent them as Against votes.
 export default function VotingPanel({
   subtitle,
   groups,

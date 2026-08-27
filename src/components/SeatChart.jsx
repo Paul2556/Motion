@@ -247,11 +247,9 @@ export default function SeatChart({
     };
   }
 
-  // The seats needed to win are counted in fill order (group[0] first), so a
-  // vote "passes" a threshold once group[0]'s own seat count reaches it -
-  // the leading bloc is always assumed to be at index 0 (see MotionPage's
-  // "For" group). The two-thirds line only appears once actually reached,
-  // so it reads as confirmation rather than a target shown from the start.
+  // Seats are counted in fill order, so the leading bloc is assumed to be
+  // group[0]. The two-thirds line appears only once reached, reading as
+  // confirmation rather than a target.
   const forSeats = groups[0]?.seats ?? 0;
   const passedSupermajority = totalSeats > 0 && forSeats >= twoThirdsIndex;
   const fullHouse = totalSeats > 0 && forSeats === totalSeats;

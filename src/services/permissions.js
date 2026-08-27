@@ -16,9 +16,7 @@ export async function fetchMyPermissions(user) {
   return snap.exists() ? { ...DEFAULT_PERMISSIONS, ...snap.data() } : DEFAULT_PERMISSIONS;
 }
 
-// Same authReady-gating pattern OwnerGate/DebugPage/ReferPage already used
-// with isAuthorizedUser, extended with the extra async permissions fetch -
-// `ready` only flips true once both auth state and the permission check have
+// `ready` flips true only once both auth state and the permission fetch have
 // resolved, so a page never briefly renders as unauthorized before its real
 // permission is known.
 export function usePagePermission(key) {
@@ -35,11 +33,9 @@ export function usePagePermission(key) {
   useEffect(() => {
     if (!authReady) return;
 
-    // fetchMyPermissions resolves to all-false for a null user, so this
-    // stays one code path for both the signed-out and signed-in cases -
-    // setState only ever happens inside the .then() callback, never
-    // synchronously in the effect body (same constraint AdminPanelPage.jsx's
-    // own mount-fetch effects already follow).
+    // fetchMyPermissions resolves all-false for a null user, keeping one code
+    // path for signed-out and signed-in, with setState only ever inside the
+    // .then() rather than synchronously in the effect body.
     let cancelled = false;
     fetchMyPermissions(user).then((permissions) => {
       if (cancelled) return;

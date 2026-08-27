@@ -42,11 +42,8 @@ const SEED_IDS = {
   "Explanation of Vote": "explanation-of-vote",
 };
 
-// Shared by MotionInput.jsx (phrase building), MotionPage.jsx (precedence
-// lookup), and MotionPresetManager.jsx (list display) so all three agree on
-// which string represents a given motion - always the shortest/most direct
-// phrasing (alias[0]), falling back to the verbose `text` when there's no
-// alias at all.
+// Shared so every consumer agrees on which string represents a motion: the
+// shortest phrasing, falling back to the verbose `text` when no alias exists.
 export function canonicalLabel(motion) {
   return motion.alias?.[0] ?? motion.text;
 }
@@ -74,12 +71,8 @@ export function getMotions() {
   }
 }
 
-// Notified after every local write (add/update/delete/move/reset all funnel
-// through here or resetMotions below) - src/services/prefsSync.js subscribes
-// to push changes up to a signed-in user's account. Kept as a plain pub/sub
-// here (rather than motionPresets.js importing prefsSync.js) so this module
-// has no idea account sync even exists - avoids a circular import, since
-// prefsSync.js already needs to import *this* file.
+// Plain pub/sub so this module has no idea account sync exists, avoiding a
+// circular import with prefsSync.js, which already imports this file.
 const changeListeners = new Set();
 
 export function onMotionsChange(callback) {
@@ -107,11 +100,8 @@ export function replaceMotions(list) {
   saveMotions(list);
 }
 
-// `explicit` (MotionInput's internal requireExactWordCount guard, only ever
-// set on the seed "Extend the Speaking Time") is deliberately never part of
-// the accepted patch shape here - omitting it (rather than writing `false`)
-// means updateMotion's merge below can't ever clobber it on an existing
-// record.
+// `explicit` is deliberately never part of the accepted patch shape, so the
+// merge below can't clobber it on an existing record.
 export function addMotion({ text, alias = [], topic = false, durationField = null }) {
   const motion = { id: crypto.randomUUID(), text, alias, topic, durationField };
   saveMotions([...getMotions(), motion]);

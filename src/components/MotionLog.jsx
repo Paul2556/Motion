@@ -1,11 +1,8 @@
 import { formatDuration } from "../utils/duration";
 
-// List of previously submitted motions (see MotionInput's onSubmit), newest
-// first - a plain snapshot of each motion's parsed meta at submit time, so
-// later edits to the committee roster/constants can't retroactively change
-// what a chair already logged. `secondCount` lives on the entry itself (set
-// by MotionPage's "S" shortcut / onAdjustSecond) rather than derived, since
-// nothing else about a logged motion implies it. Undefined reads as 0.
+// A snapshot of each motion's parsed meta at submit time, so later roster
+// edits can't retroactively change what a chair already logged. `secondCount`
+// is stored rather than derived, since nothing else implies it.
 export default function MotionLog({ entries, onDelete, onVote, onAdjustSecond, maxSeconds = Infinity, selectedIndex = -1 }) {
   if (entries.length === 0) return null;
 

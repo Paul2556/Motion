@@ -1,8 +1,6 @@
-// A caller can set X-Forwarded-For to anything, but Vercel's edge appends the
-// real client IP rather than trusting a supplied value at that position - so
-// the *left-most* entry (what every call site here used to read) is
-// attacker-controlled, while the right-most entry is the one Vercel itself
-// added. x-real-ip is a single Vercel-set value and preferred when present.
+// The left-most X-Forwarded-For entry is attacker-controlled; Vercel appends
+// the real client IP, so the right-most is trustworthy. x-real-ip is a single
+// Vercel-set value and preferred when present.
 export function getClientIp(req) {
   const realIp = req.headers["x-real-ip"];
   if (typeof realIp === "string" && realIp.length) return realIp.trim();

@@ -95,11 +95,9 @@ class ConferenceService {
     return this.conference;
   }
 
-  // `sheet` is one parsed committee from AllocationParser:
-  // { id, title, topic, chairs, delegates, pages }. This just reshapes it
-  // into the committee/delegate records the rest of this service (and its
-  // consumers) expect, adding the session-tracking fields (present/voting/
-  // hasSpoken/speakingTime/notes) AllocationParser has no reason to know about.
+  // Reshapes one parsed committee from AllocationParser into the records this
+  // service exposes, adding the session-tracking fields the parser has no
+  // reason to know about.
   buildCommittee(sheet) {
     return {
       id: sheet.id,

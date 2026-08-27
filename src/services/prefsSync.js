@@ -9,14 +9,10 @@ import {
   onShortcutsChange,
 } from "../shortcutPrefs";
 
-// Account-synced motion presets/shortcuts - localStorage stays the source of
-// truth for guests (unchanged from before this existed), but signing in
-// makes the *server* the source of truth for these two prefs specifically.
-// This isn't just a "merge for convenience" - it exists to fix a real
-// problem: a shared committee-room device used by different chairs across
-// conferences would otherwise leak one chair's customizations into the
-// next's session. "Server wins" on sign-in, and a reset-to-defaults on
-// sign-out, are both deliberate fixes for that, not just a sync nicety.
+// localStorage stays the source of truth for guests, but signing in makes the
+// server authoritative. "Server wins" on sign-in and reset-on-sign-out exist
+// so a shared committee-room device can't leak one chair's customizations
+// into the next chair's session.
 const PREFS_COLLECTION = "userPrefs";
 
 function prefsDocRef(uid) {
@@ -49,15 +45,9 @@ function schedulePush(patch) {
   }, PUSH_DEBOUNCE_MS);
 }
 
-// Doc exists -> that account's data always wins, unconditionally (the
-// "shared device" fix) - overwrite local storage and reload so every
-// mounted component picks up the fresh state (this app's routes are flat
-// siblings that always remount on navigation - see motionPresets.js - but
-// a reload is the only way to also refresh whatever's already mounted on
-// the *current* page).
-// No doc yet -> a brand-new account's first sign-in anywhere, nothing to
-// pull down - push whatever's currently local up as its starting point,
-// so a guest's just-made edits aren't wiped for no reason.
+// Doc exists: that account wins unconditionally, and a reload is the only way
+// to refresh components already mounted on the current page. No doc: first
+// sign-in anywhere, so push local up rather than wiping a guest's edits.
 async function handleSignIn(uid) {
   currentUid = uid;
   try {

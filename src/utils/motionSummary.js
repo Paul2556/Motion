@@ -1,11 +1,8 @@
 import { formatDuration } from "./duration";
 
-// "{motion type} for {total time} with {speaking time} speaking time for the
-// purpose of {topic}" - each clause is only included when that field was
-// actually captured, since not every motion type has a topic/speaking time
-// (e.g. an unmoderated caucus has no topic). Shared by MotionPage (the
-// voting panel's subtitle) and SessionPage (the /session timer's motion
-// badge), since both need to display the same logged-motion shape.
+// Each clause is included only when that field was actually captured, since
+// not every motion has a topic or speaking time. Shared so MotionPage and
+// SessionPage display the same logged-motion shape.
 export function formatMotionSummary(entry) {
   if (!entry) return "";
   const parts = [entry.motion ?? "Motion"];

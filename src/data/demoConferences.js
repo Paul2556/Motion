@@ -1,8 +1,6 @@
-// Bundled sample conferences for demo.motionmun.com - lets a demo visitor try every feature
-// without needing a real conference .xlsx. Shaped exactly like AllocationParser's parsed output
-// ({ name, committees: [{ id, title, topic, chairs, pages, delegates }] }), so
-// ConferenceService.loadDemoConference can feed it straight into buildCommittee with no parser
-// involved. All delegate/chair names below are fictional placeholders, not real people.
+// Sample conferences so a demo visitor can try everything without a real
+// .xlsx, shaped exactly like AllocationParser's output so no parser is
+// involved. All names below are fictional.
 
 const NAME_POOL = [
   "Jordan Ellis", "Morgan Blake", "Riley Chen", "Casey Novak", "Avery Kim",

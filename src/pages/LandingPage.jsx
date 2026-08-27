@@ -191,18 +191,14 @@ function LandingPage() {
     setIsSubmitting(true)
 
     try {
-      // Attribution - read at submit time, not capture-on-load, so it still
-      // reflects the query string even after in-page anchor navigation
-      // (sweepTo's history.replaceState only touches the hash, so this is
-      // safe either way, but submit-time is simplest: no extra state/effect
-      // needed to stash it earlier). Empty string (not omitted) for any
-      // field that's absent, so the sheet gets a consistent column shape.
+      // Read at submit time rather than on load, so no extra state is needed
+      // to stash it. Absent fields send "" rather than being omitted, so the
+      // sheet keeps a consistent column shape.
       const params = new URLSearchParams(window.location.search)
 
       // Single call to our own rate-limited/honeypot-checked endpoint, which
-      // does the Sheet write and welcome email server-side - the Sheet
-      // webhook URL used to live here directly, reachable by anyone who read
-      // the bundle.
+      // does the Sheet write and welcome email server-side - the webhook URL
+      // used to live here, readable by anyone who opened the bundle.
       const response = await fetch('/api/waitlist/welcome', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -652,13 +648,9 @@ function FeatureCard({ icon: Icon, index, number, title, body, visual }) {
   )
 }
 
-// Sample roster shown until a visitor picks a real .xlsx - at that point
-// this runs the actual AllocationParser (same parser HomePage.jsx uses),
-// not a simulated reveal, so what's on screen is a genuine parse of
-// whatever file they choose. Otherwise the real HomePage.jsx flow: the same
-// hidden file input + MenuCard ("New Conference" is a click-to-open file
-// picker in the real app - there's no drag-and-drop UI to replicate), then
-// the real DelegateRoster either way.
+// Shows a sample roster until a visitor picks a real .xlsx, then runs the
+// actual AllocationParser rather than simulating a reveal. Uses the same
+// MenuCard and DelegateRoster the real app does.
 const SAMPLE_DELEGATES = [
   { id: 'd1', country: 'Argentina', countryDisplay: 'Argentina', countryCode: 'ARG', delegate: 'A. Rivas', school: 'Northgate' },
   { id: 'd2', country: 'Canada', countryDisplay: 'Canada', countryCode: 'CAN', delegate: 'J. Mercier', school: 'Lakeview' },
@@ -713,11 +705,9 @@ function ImportDemo() {
         type="file"
         accept=".xlsx"
         className="hidden"
-        // Cleared on click, not after reading it - a file input's onChange
-        // only fires when its value actually changes, so picking the exact
-        // same file twice in a row would silently do nothing the second
-        // time without this (a real bug, not just a demo shortcut: the
-        // same trap exists in HomePage.jsx's own handleFile input today).
+        // Cleared on click, since onChange only fires when the value
+        // actually changes and picking the same file twice would otherwise
+        // silently do nothing the second time.
         onClick={(event) => { event.target.value = "" }}
         onChange={(event) => handleFile(event.target.files?.[0])}
       />
@@ -766,25 +756,18 @@ function QueueDemo() {
   ])
 
   return (
-    // text-white here, not on Queue.jsx itself - its icon buttons rely on
-    // inheriting a white text color, which its native dark .app-shell pages
-    // provide ambiently but this light landing page doesn't. Wider than the
-    // other cards deliberately: Queue's own lg:p-8 padding plus its 3
-    // always-reserved (opacity-0 until hover) row icons need more room than
-    // max-w-xs gives before content clips. --danger supplied directly too,
-    // for its remove-speaker button - same reasoning as TimerDemo.
+    // text-white and --danger are supplied here because Queue inherits them
+    // from .app-shell normally, which this light page isn't. Wider than the
+    // other cards so its padding and hover icons don't clip.
     <div className="product-demo h-[300px] w-full max-w-sm text-white" style={{ '--danger': '#ef4444' }}>
       <Queue queue={queue} setQueue={setQueue} />
     </div>
   )
 }
 
-// The real Timer component. Its ring is a fixed 320px SVG with no size prop,
-// so unlike the others here it's shrunk with a scale transform inside a
-// clipped, fixed-height frame rather than by narrowing its container.
-// It also reads --timer-remaining/--danger off an .app-shell ancestor
-// normally; outside that theme system here, so both CSS vars it needs are
-// supplied directly rather than pulling in the whole app-shell cascade.
+// The ring is a fixed 320px SVG with no size prop, so it's scaled inside a
+// clipped frame rather than narrowed. Its two CSS vars are supplied directly,
+// since there's no .app-shell ancestor here to inherit them from.
 function TimerDemo() {
   return (
     <div
@@ -798,12 +781,9 @@ function TimerDemo() {
   )
 }
 
-// Mirrors MotionPage.jsx's real voting model exactly, abstain toggle
-// included: groups always sum to a fixed delegate count, and a vote is a
-// delegate moving between blocs - For<->Against, or (when abstain is
-// switched on) Abstain<->Against - never an independent per-bloc tally.
-// Abstain is opt-in there because most procedural motions are strictly
-// for/against; only some substantive votes allow abstention.
+// Mirrors MotionPage's voting model: groups sum to a fixed delegate count and
+// a vote moves a delegate between blocs, never an independent per-bloc tally.
+// Abstain is opt-in, since most procedural motions are strictly for/against.
 const VOTE_DELEGATE_COUNT = 23
 
 function VoteDemo() {
@@ -894,23 +874,17 @@ function VoteDemo() {
   )
 }
 
-// The real MotionInput component (src/components/MotionInput.jsx) - the same
-// fuzzy natural-language parser used on the live Motion page. Omitting
-// `delegations` entirely (rather than a small demo list) makes it fall back
-// to MotionInput's own built-in full country + historical-country list, so
-// any real delegation name a visitor types is recognized.
+// The real MotionInput. Omitting `delegations` makes it fall back to the full
+// built-in country list, so any delegation a visitor types is recognized.
 function MotionInputDemo() {
   const [value, setValue] = useState('India motions for a moderated caucus of 12 minutes on the topic of discussing possible solutions to nuclear disarmament with 2 minute speaking time')
 
   return (
     <div
       className="product-demo w-full max-w-lg border border-black/15 bg-[#0d0d0d] p-4 shadow-[0_14px_40px_rgba(0,0,0,.10)]"
-      // MotionInput highlights each category (motion/delegation/speaking-time/
-      // total-time/topic) via CSS vars that only exist inside .app-shell
-      // (themes.css) - --accent already resolves here via the landing page's
-      // own theme-shell system, but these four don't exist outside
-      // .app-shell at all, so they'd otherwise render invisible (inherited
-      // white text) rather than colored. Values match .app-shell's dark mode.
+      // MotionInput's highlight colors come from CSS vars that only exist
+      // inside .app-shell, so they're supplied here or the spans render
+      // invisible. Values match .app-shell's dark mode.
       style={{ '--accent-alt': '#4caf7d', '--accent-time': '#a37fd1', '--accent-duration': '#d4a24c', '--accent-topic': '#4a90e2' }}
     >
       <MotionInput value={value} onChange={setValue} placeholder="Type a motion..." rows={3} fuzzyLevel={0.3} />
@@ -918,11 +892,9 @@ function MotionInputDemo() {
   )
 }
 
-// Pulled from the real MOTIONS vocabulary (src/constants.js) rather than
-// hardcoded chip labels, so the detail line below is always the actual
-// canonical phrasing/aliases Motion recognizes - unless a preset sets its
-// own `detail`, which overrides that lookup for the description only (the
-// button label is always just `label`).
+// Pulled from the real MOTIONS vocabulary rather than hardcoded, so the detail
+// line always shows the phrasing Motion actually recognizes. A preset's own
+// `detail` overrides that lookup for the description only.
 const PRESET_PICKS = [
   { match: 'Open a Moderated Caucus', label: 'Moderated Caucus\n20 min 1 min', detail: 'Open a Moderated Caucus for 20 minutes with 1 minute speaking time with prompted topic' },
   { match: 'Open an Unmoderated Caucus', label: 'Unmoderated\n15 min', detail: 'Open an Unmoderated Caucus for 15 minutes' },

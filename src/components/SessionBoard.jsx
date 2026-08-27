@@ -8,12 +8,9 @@ import ShortcutLegend from "./ShortcutLegend";
 import ConferenceService from "../services/ConferenceService";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
-// The real session dais - speech/timer/queue - shared by the actual /session
-// route (SessionPage.jsx, inside .app-shell) and the landing page's live hero
-// preview (LandingPage.jsx, outside .app-shell, so it supplies
-// --timer-remaining itself). `linked` turns the header's Roll Call/Motion
-// buttons into real navigation only on the real route - the landing preview
-// shouldn't route a visitor away from the marketing page.
+// Shared by the real /session route and the landing page's hero preview,
+// which sits outside .app-shell. `linked` enables real navigation only on the
+// route, so the preview can't route a visitor off the marketing page.
 export default function SessionBoard({
   committeeLabel,
   initialSpeaker = null,
