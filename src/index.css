@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
 @import './themes.css';
 @tailwind base;
 @tailwind components;
@@ -61,6 +61,14 @@ body:has(.theme-shell) { background: #101010; }
 }
 
 .accent-text { color: var(--accent); }
+/* Instrument Serif ships only weight 400, and the headline's -0.075em tracking
+   crushes its serifs, so both are reset rather than inherited. */
+.display-serif {
+  font-family: 'Instrument Serif', ui-serif, Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
 .accent-bg { background-color: var(--accent); }
 .accent-border { border-color: var(--accent); }
 .section-label { color: var(--accent); }
