@@ -95,7 +95,7 @@ export default function HomePage() {
 
         {/* Header - same bare treatment as every other app-shell page's header
             (Settings/Motion/Stats/RollCall/GeneralVoting/Admin), not a bordered
-            card - see DES-002 in .claude/issues.md for why this matters. */}
+            card. */}
 
         <header className="mb-8 flex items-center justify-between">
 

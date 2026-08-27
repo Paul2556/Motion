@@ -200,9 +200,8 @@ function LandingPage() {
       const params = new URLSearchParams(window.location.search)
 
       // Single call to our own rate-limited/honeypot-checked endpoint, which
-      // does the Sheet write and welcome email server-side - the Sheet
-      // webhook URL used to live here directly, reachable by anyone who read
-      // the bundle (see SEC-015 in .claude/issues.md).
+      // does the Sheet write and welcome email server-side - the webhook URL
+      // used to live here, readable by anyone who opened the bundle.
       const response = await fetch('/api/waitlist/welcome', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

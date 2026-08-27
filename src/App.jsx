@@ -155,9 +155,7 @@ export default function App() {
   if (DEBUG_HOSTS.includes(hostname)) return <OwnerGate><DebugRoutes /></OwnerGate>;
   if (MARKETING_HOSTS.includes(hostname)) return <MarketingRoutes />;
   if (isLocalDevHost(hostname)) return <AllRoutes />;
-  // Any other hostname (a Vercel preview URL, the default *.vercel.app
-  // domain, anything unrecognized) is reachable over the public internet, so
-  // it gets the same owner gate as the real app host rather than the bare
-  // fallback - see SEC-010 in .claude/issues.md.
+  // Anything else is reachable over the public internet, so it gets the same
+  // owner gate as the real app host rather than the bare fallback.
   return <OwnerGate><AllRoutes /></OwnerGate>;
 }

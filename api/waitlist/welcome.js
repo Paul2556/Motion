@@ -51,12 +51,9 @@ export default async function handler(req, res) {
 
   const trimmedEmail = email.trim();
 
-  // Writes to the waitlist Sheet server-side now - was a direct client ->
-  // Apps Script call, which put the webhook URL in the public bundle for
-  // anyone to POST fake rows to directly (see SEC-015 in .claude/issues.md).
-  // Blocking (not best-effort): the Sheet write is the source of truth for
-  // the signup itself, same as when this lived client-side, so a failure
-  // here should surface as a failed submission rather than a silent gap.
+  // Server-side now: as a direct client -> Apps Script call, the webhook URL
+  // sat in the public bundle for anyone to POST fake rows to. Blocking, not
+  // best-effort, since this write is the source of truth for the signup.
   if (!process.env.WAITLIST_SHEET_WEBHOOK_URL) {
     console.error("WAITLIST_SHEET_WEBHOOK_URL is not set");
     res.status(500).json({ error: "sheet_not_configured" });

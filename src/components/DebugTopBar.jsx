@@ -27,7 +27,7 @@ const NAV_ITEMS = [
 // - only shows links the signed-in user can actually reach, since access is
 // split across two different systems (usePagePermission's delegable
 // debug/refer permissions vs. AdminPanelPage's owner-only gate, kept
-// deliberately separate - see SEC-008 in .claude/issues.md) and a
+// deliberately separate) and a
 // contributor with only one permission shouldn't see a link that would just
 // bounce them back out.
 export default function DebugTopBar() {

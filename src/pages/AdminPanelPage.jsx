@@ -17,7 +17,7 @@ import { getFirebaseAuth } from "../firebase";
 // contributorPermissions system (usePagePermission) - admin access (this
 // page, and everything under api/admin/*) is intentionally non-delegable.
 // The Permissions tab below manages contributor access to the *other* pages
-// only. See SEC-008 in .claude/issues.md for why these are kept separate.
+// only.
 
 async function callAdmin(path, options = {}) {
   const token = await getFirebaseAuth().currentUser.getIdToken();
@@ -143,8 +143,7 @@ export default function AdminPanelPage() {
     setPermissionsError(null);
     try {
       // debug-only by default - the owner can widen access afterward from
-      // the list below (see SEC-008 in .claude/issues.md for why this
-      // default matters).
+      // the list below.
       await callAdmin("permissions", {
         method: "POST",
         body: JSON.stringify({ action: "set", email: newContributorEmail.trim(), debug: true, refer: false, app: false }),
