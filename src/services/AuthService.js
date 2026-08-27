@@ -21,12 +21,9 @@ function randomQuickLoginPassword() {
 class AuthService {
   constructor() {
     this.user = null;
-    // False until Firebase's real onAuthStateChanged has fired at least once
-    // (or immediately true if Firebase isn't configured at all) - lets a
-    // consumer that needs to make an access decision (e.g. redirecting a
-    // non-owner away from /debug) wait for the real answer instead of acting
-    // on the momentarily-null state subscribe() reports before Firebase has
-    // had a chance to confirm a persisted session.
+    // False until onAuthStateChanged has fired at least once, so an access
+    // decision waits for the real answer instead of acting on the
+    // momentarily-null state reported before a persisted session resolves.
     this.ready = false;
     this.listeners = new Set();
     this._initialized = false;
@@ -93,16 +90,9 @@ class AuthService {
     return firebaseSignOut(getFirebaseAuth());
   }
 
-  // Throwaway account + a URL encoding its credentials, rendered as a QR code
-  // so a second device can scan it to sign into the same account with no
-  // typing. NOTE: a live password sitting in a URL/QR image is a shared
-  // bearer secret - anyone who captures it can sign in. Explicit tradeoff
-  // requested for a low-stakes "hand the session to a second screen" flow.
-  // The credentials live in the URL **fragment**, not the query string - a
-  // fragment is never sent to any server, never appears in a `Referer`
-  // header, and isn't part of what @vercel/analytics tracks (pathname +
-  // search only), so this keeps the leak surface to "whoever can see the
-  // literal URL/QR image" instead of also reaching access logs and analytics.
+  // A live password in a URL is a bearer secret: anyone who captures it can
+  // sign in. Kept in the fragment, not the query string, so it never reaches
+  // servers, `Referer` headers, or analytics.
   async createQuickLoginLink() {
     this._ensureInit();
 

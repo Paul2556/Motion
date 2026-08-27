@@ -28,12 +28,9 @@ function getDelegateState(delegate) {
   return delegate.voting ? "voting" : "present";
 }
 
-// Pure and standalone so a future "apply to all" action (bulk speaking time,
-// clear-all-motions) can reuse this without depending on roll call at all -
-// only counts rows that would actually flip, not every row, and a roster
-// under 10 never needs confirming regardless of how many would change.
-// Not exported yet since nothing else needs it - move it to a shared utils
-// file the moment a second bulk-action feature actually wants it.
+// Counts only rows that would actually flip, and a roster under 10 never
+// needs confirming. Kept pure and unexported so a second bulk action can lift
+// it into utils when one exists.
 function shouldConfirmBulkChange(rosterSize, changesCount) {
   if (rosterSize < 10) return false;
   return changesCount >= Math.floor(rosterSize * 0.25);
@@ -76,11 +73,9 @@ export default function RollCallPage() {
   // bulk "everyone" change (as a list of every delegate's prior state).
   const undoRef = useRef(null);
 
-  // Sorted for display only (alphabetical roll call is the real-world
-  // convention) - a local copy, not ConferenceService.sortDelegates(), so
-  // this page doesn't reorder the roster everywhere else it's used. Falls
-  // back to [] (rather than being skipped) so the hooks below stay
-  // unconditional even before the `!committee` check.
+  // A local sorted copy, so alphabetical display here doesn't reorder the
+  // roster everywhere else. Falls back to [] so the hooks below stay
+  // unconditional before the `!committee` check.
   const delegates = committee
     ? [...committee.delegates].sort((a, b) => (a.countryDisplay || a.country).localeCompare(b.countryDisplay || b.country))
     : [];

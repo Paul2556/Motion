@@ -7,11 +7,8 @@ import { mapAuthError } from "./_lib/mapAuthError.js";
 // deployment at 12 serverless functions, and four separate files here was
 // part of what pushed the project over that cap.
 
-// AuthService.createQuickLoginLink() spins up throwaway
-// quick-*@motion-quicklogin.local accounts for Cloud Sessions' QR flow -
-// these are real Firebase Auth users and will appear here, flagged so the
-// admin panel can list/filter them distinctly rather than mixing them in
-// with real chair accounts.
+// The QR login flow creates throwaway accounts that are real Firebase users,
+// so they're flagged here rather than mixed in with real chair accounts.
 const QUICK_LOGIN_DOMAIN = "@motion-quicklogin.local";
 
 function toRecord(userRecord) {

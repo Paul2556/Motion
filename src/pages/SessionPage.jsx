@@ -17,16 +17,10 @@ export default function SessionPage() {
   // committee.
   if (!committee) return <NoCommitteeModal />;
 
-  // Scope the "Add speaker" autosuggestions to delegations actually in this
-  // committee, not the full ISO country list - same reasoning as MotionInput's
-  // `delegations` prop on MotionPage. Also attach each delegation's known
-  // aliases (e.g. "PRC" for China) so typing one still surfaces the delegate.
-  //
-  // Unlike RollCall/Stats (which intentionally show the allocation sheet's
-  // literal placard text via countryDisplay), the queue always shows the
-  // short canonical name from constants.js - a long formal name (e.g.
-  // "Democratic People's Republic of Korea") wraps to several lines in the
-  // queue's narrow card layout, where "North Korea" fits on one.
+  // Suggestions are scoped to this committee's delegations, with aliases
+  // attached so "PRC" still finds China. The queue shows the short canonical
+  // name rather than placard text, since a long formal name wraps badly in
+  // its narrow card.
   const compressedCountryName = (delegate) =>
     COUNTRY_BY_CODE.get(delegate.countryCode)?.name ?? delegate.countryDisplay ?? delegate.country;
 
@@ -41,14 +35,9 @@ export default function SessionPage() {
   const motion = ConferenceService.getActiveMotion();
   const activeMotion = motion?.motion ?? "No motion active";
 
-  // A passed motion's speaking time (minutes, from MotionInput's parsing)
-  // becomes the per-speaker timer length here - falls back to the motion's
-  // total time (e.g. an unmoderated caucus, which has no per-speaker rate at
-  // all) when there's no speaking time, and only falls back to
-  // SessionBoard's own default when neither is set (e.g. no motion voted on
-  // yet). Rounded since a seconds-derived value (e.g. 12 sec -> 0.2 min) can
-  // otherwise hit this as something like 19.999999999998 due to float
-  // imprecision.
+  // A passed motion's speaking time drives the timer, falling back to its
+  // total time and then SessionBoard's default. Rounded because a
+  // seconds-derived value can arrive as 19.999999999998.
   const speechLength = motion?.speakingTime != null
     ? Math.round(motion.speakingTime * 60)
     : motion?.totalTime != null

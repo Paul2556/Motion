@@ -1,8 +1,6 @@
-// Pure and standalone so callers can render the current vote status as
-// plain text wherever fits their layout, rather than SeatChart trying to
-// place it inside the SVG itself - polar-coordinate label placement that
-// never clips seats or the viewBox edge across every committee size turned
-// out to be a losing battle, and plain document flow doesn't have that problem.
+// Kept out of SeatChart's SVG so callers can place the status in normal
+// document flow: polar-coordinate label placement that never clipped seats or
+// the viewBox across every committee size proved unworkable.
 export function getVoteStatusLabel(groups) {
   const totalSeats = groups.reduce((sum, group) => sum + group.seats, 0);
   if (totalSeats === 0) return null;

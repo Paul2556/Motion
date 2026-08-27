@@ -3,11 +3,8 @@ import { Link } from "react-router-dom";
 import Logo from "../components/Logo";
 import { APP_HOSTS, DEBUG_HOSTS, DEMO_HOSTS } from "../hosts";
 
-// Two visual variants matching this repo's two independent theme systems
-// (see CLAUDE.md's Theming section) - a product subdomain gets the dark
-// app-shell look, everything else (marketing domain, localhost/preview
-// fallback) gets LandingPage's native light look, so the 404 never clashes
-// with whichever theme system actually owns the surrounding page.
+// Two variants matching the repo's two theme systems, so the 404 never
+// clashes with whichever one owns the surrounding page.
 function isProductSubdomain(hostname) {
   return APP_HOSTS.includes(hostname) || DEMO_HOSTS.includes(hostname) || DEBUG_HOSTS.includes(hostname);
 }

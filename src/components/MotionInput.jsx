@@ -9,11 +9,9 @@ function buildMotionPhrases(motions) {
       text,
       lower: text.toLowerCase(),
       category: "motion",
-      // Always resolve to the shortest alias ("Moderated Caucus"), regardless
-      // of which variant (the verbose motion.text or another alias) actually
-      // matched - meta.motion is a status label shown elsewhere (SessionBoard's
-      // badge, MotionLog), which shouldn't carry the "Open a"/"Open an" verb
-      // filler only useful in the chair's own typed sentence.
+      // Always the shortest alias, whichever variant matched: meta.motion is a
+      // status label elsewhere, so it shouldn't carry the "Open a" verb filler
+      // that only reads well in the chair's own typed sentence.
       canonical: canonicalLabel(motion),
       requireExactWordCount: motion.explicit === true,
       durationField: motion.durationField ?? null,
@@ -24,11 +22,8 @@ function buildMotionPhrases(motions) {
 const ALL_COUNTRIES = [...countries, ...historicalCountries];
 const COUNTRY_BY_CODE = new Map(ALL_COUNTRIES.map((c) => [c.code, c]));
 
-// canonical is each phrase's own text (name or alias), not always the
-// country's primary name - a typo/completed match corrects to whichever of
-// the name/aliases it's actually closest to (picked by findFuzzyMatch's edit
-// distance), so "Hollnd" fixes to "Holland" rather than jumping to
-// "Netherlands" just because that alias happens to belong to that country.
+// canonical is each phrase's own text, not the country's primary name, so
+// "Hollnd" corrects to "Holland" rather than jumping to "Netherlands".
 function countryPhrases(country) {
   return [country.name, ...(country.alias ?? [])].map((text) => ({
     text,
@@ -38,11 +33,9 @@ function countryPhrases(country) {
   }));
 }
 
-// `delegations` is the committee roster: [{ name, code }, ...]. Entries with
-// a recognized country code get that country's full name + aliases (so "USA"
-// still matches); entries with no code - press corps, NGOs, IGOs, and other
-// non-country delegations a sheet might include - get just their own display
-// name, since there's no alias list for those.
+// Roster entries with a country code get that country's name + aliases; those
+// without (press corps, NGOs) get only their display name, since no alias
+// list exists for them.
 function buildDelegationPhrases(delegations) {
   if (!delegations) return ALL_COUNTRIES.flatMap(countryPhrases);
 
@@ -121,14 +114,10 @@ function wordBudget(length, fuzzyLevel) {
   return Math.max(1, Math.round(length * fuzzyLevel));
 }
 
-// Extra guard for requireExactWordCount phrases: every word in the window
-// must be individually close to its counterpart in the phrase, not just the
-// whole string's aggregate distance. Without this, unrelated text that
-// happens to coincidentally land within the phrase's total length/word count
-// budget (e.g. "12 minutes speaking time" vs "extend the speaking time" -
-// both 4 words, similar total length) could still slip through at a high
-// fuzzy level, even with no real word-for-word resemblance. A genuine typo
-// of the real phrase still passes, since each word only differs slightly.
+// Every word must be individually close to its counterpart, not just the
+// aggregate distance, or unrelated text of similar length and word count
+// ("12 minutes speaking time" vs "extend the speaking time") slips through
+// at high fuzzy levels.
 function perWordWithinBudget(windowLower, phraseLower, fuzzyLevel) {
   const windowWords = windowLower.split(" ");
   const phraseWords = phraseLower.split(" ");
@@ -146,14 +135,10 @@ function tokenize(text) {
   return tokens;
 }
 
-// Best fuzzy match starting exactly at tokens[tokenIndex]. Each window length
-// is checked against phrases up to 1 word shorter/longer than it (not just
-// equal), so a dropped/extra word (e.g. missing "a") still matches the whole
-// phrase, on top of in-word typos via character edit distance - except
-// phrases flagged requireExactWordCount (constants.js's `explicit`), which
-// are only ever compared against a window matching their own word count, so
-// a subset of their words (e.g. "speaking time" missing "Extend") can never
-// fuzzy-match them.
+// Windows are checked against phrases up to 1 word shorter/longer, so a
+// dropped word still matches. requireExactWordCount phrases are the
+// exception, compared only against their own word count so a subset of their
+// words can't match.
 function findFuzzyMatch(tokens, tokenIndex, text, fuzzyLevel, phraseIndex) {
   let best = null;
   const maxWindow = phraseIndex.maxWords + 1;
@@ -195,15 +180,10 @@ function findFuzzyMatch(tokens, tokenIndex, text, fuzzyLevel, phraseIndex) {
 const NUMBER_WORD = /^\d+$/;
 const TIGHT_TYPO_BUDGET = 1;
 
-// Very tight fuzzy match against one target word ("fro"->"for", "wth"->
-// "with", "mon"->"min") - not the country/delegation fuzzy system (that's
-// fuzzyBudget/wordBudget, untouched). Targets 3-4 chars get a fixed, very
-// tight 1-typo budget - too short for the usual proportional scaling to mean
-// anything. Targets 5+ chars ("minute", "topic") scale with fuzzyLevel like
-// everywhere else in the app. Targets under 3 chars ("of") stay exact-only -
-// practically every 2-letter word is 1 typo away from another one ("on" vs
-// "of"), so any tolerance there is just noise (this is what broke "topic of"
-// detection when "on" started matching "of").
+// Tight per-word fuzzy match, separate from the country fuzzy system: 3-4
+// chars get a fixed 1-typo budget, 5+ scale with fuzzyLevel. Under 3 chars
+// stays exact, since nearly every 2-letter word is one typo from another
+// ("on" vs "of") and tolerance there broke "topic of" detection.
 function isCloseToWord(word, target, fuzzyLevel) {
   const upper = word.toUpperCase();
   if (upper === target) return true;
@@ -266,11 +246,9 @@ function explicitLabel(tokens, text, fromIndex, toIndex) {
 }
 
 
-// Given a number token already found at numberIndex, looks for its measurement
-// unit within 2 words either side and builds the duration result - shared by
-// extendWithDuration (narrow, motion-adjacent search) and findDurationInRange
-// (wide search, for topic motions where the number can be arbitrarily far
-// from the motion once a topic phrase sits in between).
+// Looks for a number's unit within 2 words either side. Shared by the narrow
+// motion-adjacent search and the wide search used when a topic phrase sits
+// between the motion and its number.
 function resolveDurationAt(tokens, text, numberIndex, connectiveIndex, motionStartIndex, fuzzyLevel) {
   const minuteStart = Math.max(0, numberIndex - 2);
   let minuteIndex = -1;
@@ -299,11 +277,9 @@ function resolveDurationAt(tokens, text, numberIndex, connectiveIndex, motionSta
   };
 }
 
-// If a motion match is followed by "for <number> minute(s)" - e.g. "Moderated
-// Caucus for 10 minutes" - within a couple words of slack at each step,
-// extends the highlight to cover the whole duration phrase, not just the
-// bare motion phrase. The connective ("for"/"of"/"with") is optional - a
-// terse "India mod 12 min" (no connective at all) still works.
+// Extends the highlight over a trailing "for 10 minutes" so it covers the
+// whole duration phrase. The connective is optional, so "India mod 12 min"
+// still works.
 function extendWithDuration(tokens, text, motionStartIndex, afterIndex, fuzzyLevel) {
   const forIndex = findTokenWithin(tokens, text, afterIndex, 2, (w) => isConnectiveWord(w, fuzzyLevel));
   const numberSearchStart = forIndex === -1 ? afterIndex : forIndex + 1;
@@ -328,11 +304,9 @@ function findDurationInRange(tokens, text, fromIndex, toIndex, motionStartIndex,
   return null;
 }
 
-// A standalone "<number> minute(s)" with no motion/connective nearby - the
-// implicit per-speaker (or total, if labeled "total") time in a line that
-// already stated its counterpart, e.g. the "1 minute" in "...Caucus for 10
-// minutes, 1 minute each". Stops at `limit` (the current line's end) so it
-// never reaches into the next line.
+// A standalone "1 minute" with no motion nearby, i.e. the implicit
+// per-speaker time in "...Caucus for 10 minutes, 1 minute each". Stops at
+// `limit` so it never reaches into the next line.
 function findBareDuration(tokens, text, fromIndex, limit, fuzzyLevel) {
   for (let i = fromIndex; i < tokens.length && tokens[i].start < limit; i++) {
     const word = bareWord(text, tokens[i]);
@@ -389,11 +363,9 @@ function skipTrailingLabel(tokens, text, pos, limit) {
 // THE TOPIC OF" or "DISCUSSING") split into its own word list.
 const TOPIC_MARKER_PHRASES = TOPIC_MARKER_PHRASE.map((phrase) => phrase.split(" "));
 
-// Finds any TOPIC_MARKER_PHRASE alternative anywhere in [fromIndex, toIndex)
-// as a whole word-for-word sequence (each word tight-fuzzy-tolerant, e.g.
-// "on da tpoic of"), not just the bare word "topic", and returns the token
-// index of its last word, or null. Doesn't care what's on either side - the
-// caller decides what that implies (topic before or after the duration).
+// Finds any TOPIC_MARKER_PHRASE as a whole word-for-word sequence, each word
+// tight-fuzzy-tolerant ("on da tpoic of"). The caller decides what its
+// position implies.
 function findTopicOf(tokens, text, fromIndex, toIndex, fuzzyLevel) {
   for (let i = fromIndex; i < toIndex; i++) {
     for (const words of TOPIC_MARKER_PHRASES) {
@@ -408,23 +380,10 @@ function findTopicOf(tokens, text, fromIndex, toIndex, fuzzyLevel) {
   return null;
 }
 
-// Requires constants.js's `topic: true`. Captures the caucus's subject. An
-// explicit "topic of" always wins, wherever it falls in the line - before
-// the duration, after it, or even between two durations - and overrides the
-// trailing-text fallback entirely. The topic runs from right after "of" up
-// to the *next* number+unit found after that (or line end, if none) - so
-// "on the topic of X with 12 min speaking time" stops right before "12 min"
-// instead of swallowing the second duration as part of the topic. Only when
-// "topic of" isn't said anywhere does it fall back to whatever trails the
-// duration(s) instead. `needsSecondLookup` (dual-duration motions only)
-// peeks ahead for a second bare number+unit in that fallback case, so it
-// starts after BOTH durations, not between them.
-// A single stray word (e.g. "each", left over from "1 minute each" with no
-// real topic said) isn't a real topic - require at least 2 words.
-// Returns {text, start, end} (trimmed position, not the raw slice's) so the
-// caller can highlight exactly the topic span, or null. `rangeStart` is where
-// the untrimmed slice begins, needed to translate the trim back into
-// absolute text positions.
+// An explicit "topic of" always wins wherever it falls, and the topic stops
+// at the next number+unit so a trailing duration isn't swallowed. Without
+// that marker it falls back to whatever trails the duration(s), requiring at
+// least 2 words so a stray "each" isn't mistaken for a topic.
 function finalizeTopic(text, rangeStart) {
   const trimmed = text.trim();
   if (!trimmed || trimmed.split(/\s+/).length <= 1) return null;
@@ -432,14 +391,9 @@ function finalizeTopic(text, rangeStart) {
   return { text: trimmed, start, end: start + trimmed.length };
 }
 
-// Returns { topic, secondDuration } rather than just a topic - a second,
-// unlabeled duration (e.g. "2 minute speaking time") can sit between the
-// first duration and an explicit "topic of" marker ("...12 minutes with 2
-// minute speaking time on the topic of X"), and has to be found *here*: once
-// this function returns, the caller's cursor jumps straight from the first
-// duration to the end of the topic span, skipping right over that gap
-// without ever token-scanning it, so nothing else ever gets a chance to
-// notice that second duration.
+// Returns secondDuration alongside topic because an unlabeled duration can
+// sit between the first duration and a "topic of" marker. The caller's cursor
+// jumps over that gap afterward, so nothing else would ever see it.
 function extractTopic(tokens, text, motionEndPos, lineEnd, motionStartIndex, duration, fuzzyLevel, needsSecondLookup) {
   const fromIndex = tokenIndexAtOrAfter(tokens, motionEndPos);
   if (fromIndex === -1) return { topic: null, secondDuration: null };
@@ -475,23 +429,18 @@ function extractTopic(tokens, text, motionEndPos, lineEnd, motionStartIndex, dur
   return { topic: finalizeTopic(text.slice(trailStart, lineEnd), trailStart), secondDuration: null };
 }
 
-// A motion's duration is classified per line: an explicit "speaking"/"total"
-// label always wins, wherever it appears. Otherwise the first duration found
-// defaults to the total caucus time, and a second, later duration on the
-// same line - with or without its own "for" - defaults to whichever role the
-// first one *didn't* take (so if the first was explicitly speaking time, an
-// unlabeled second one is assumed to be the total, and vice versa).
+// An explicit "speaking"/"total" label always wins. Otherwise the first
+// duration is the total and a second defaults to whichever role the first
+// one didn't take.
 function classifyDuration(lineState, label) {
   if (label) return label;
   if (!lineState.sawDuration) return "total-time";
   return lineState.firstRole === "speaking-time" ? "total-time" : "speaking-time";
 }
 
-// Non-overlapping motion/country matches in text: exact whole-word matches
-// first (longest phrase wins), falling back to a fuzzy word-window match
-// (typo-tolerant, see editDistance/fuzzyBudget) wherever nothing exact fits.
-// Also returns `meta` - the first motion/delegation/total-time/speaking-time
-// detected, for a summary display below the input.
+// Exact whole-word matches first (longest phrase wins), falling back to a
+// fuzzy word-window match where nothing exact fits. `meta` carries the first
+// of each kind detected, for the summary below the input.
 function findHighlightRanges(text, fuzzyLevel, phraseIndex) {
   const lower = text.toLowerCase();
   const tokens = tokenize(text);
@@ -662,21 +611,10 @@ function shouldAutoExpand(matchedText, canonical) {
   return true;
 }
 
-// Textarea that highlights recognized parliamentary motions (motionPresets.js's
-// getMotions(), seeded from constants.js's MOTIONS but user-editable via
-// Settings, accent color), delegation names/aliases (a second accent color),
-// and a motion's duration - total caucus time vs. per-speaker "speaking
-// time" (a third accent color, see classifyDuration) - as the chair types,
-// underlined dashed for a close (typo-tolerant) match rather than an exact
-// one. A summary row below shows the current motion/country/speaking time/
-// total time at a glance. Pass delegations ([{ name, code }, ...] from the
-// committee roster) to scope matching to that roster - including non-country
-// delegations like press corps/NGOs - instead of every ISO country. Pass
-// onSubmit to let plain Enter (Shift+Enter for a real newline) hand the
-// current parsed meta up to the caller and clear the box for the next motion
-// - e.g. to log it in a list rendered below (see MotionLog). A plain
-// textarea can't render colored spans, so a read-only backdrop with the
-// highlighted text sits behind a transparent textarea, keeping the real caret/selection.
+// Highlights motions, delegations, and durations as the chair types, dashed
+// underline for a typo-tolerant match. A plain textarea can't render colored
+// spans, so a read-only highlighted backdrop sits behind a transparent
+// textarea, preserving the real caret and selection.
 const MotionInput = forwardRef(function MotionInput({ value, onChange, placeholder, rows = 8, className = "", fuzzyLevel = 0.3, delegations, onSubmit }, ref) {
   const textareaRef = useRef(null);
   const backdropRef = useRef(null);
@@ -702,13 +640,9 @@ const MotionInput = forwardRef(function MotionInput({ value, onChange, placehold
     }
   }
 
-  // Plain Enter (no shift) submits the current motion - passes today's
-  // parsed meta up to the caller and clears the box for the next one.
-  // Shift+Enter still inserts a real newline, for a motion that spans
-  // multiple lines. A per-speaker time longer than the total caucus time is
-  // never valid, so it's rejected instead: a brief red flash + shake, then
-  // the offending "N min" speaking-time span is cut out and the cursor left
-  // right there for the chair to retype it.
+  // Plain Enter submits and clears; Shift+Enter inserts a newline. A
+  // per-speaker time longer than the total is never valid, so it's rejected
+  // with a flash and the offending span cut out for retyping.
   function handleKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       if (!onSubmit || !value.trim()) return;

@@ -1,16 +1,7 @@
-// Ported from the standalone excelToJson tool (parser.js). Replaces
-// SpreadsheetAnalyzer.js, which only detected generic rectangular table
-// blocks (and never actually implemented column detection: detectColumns()
-// was a stub returning {}). This does the real job: extracting committee
-// title/topic/chairs/delegates/pages/stance from a Model UN allocation sheet,
-// tolerant of the structural differences between different conferences'
-// Excel templates (see excelToJson/claude_info.md for the full rationale).
-//
-// Uses ExcelJS (already a dependency here, via ConferenceService) rather than
-// the SheetJS library the standalone tool switched to. Adding a second
-// spreadsheet-parsing library to this app's bundle would undo the bundle-size
-// benefit SheetJS was chosen for there. If ConferenceService ever moves to
-// SheetJS too, port extractRows() the same way and drop exceljs entirely.
+// Extracts committee title/topic/chairs/delegates/pages/stance from a Model UN
+// allocation sheet, tolerant of per-conference layout differences. Uses ExcelJS
+// (already a dependency) rather than SheetJS, to avoid bundling two spreadsheet
+// parsers.
 import ExcelJS from "exceljs";
 import { countries, historicalCountries, CHAIR_WORDS, PAGE_WORDS, SKIP_SHEETS, NAME_WORDS, EMAIL_WORDS, TOPIC_WORDS } from "../constants";
 
@@ -44,17 +35,9 @@ function stripEmoji(s) {
     .trim();
 }
 
-// Cleans a raw country cell (flag emoji + "Afghanistan" -> "afghanistan") and
-// looks it up against the countries list to attach a stable id a UI can use to
-// render the actual flag SVG (see components/Flag.jsx). `display` is always
-// the original cell text as-is (emoji/whitespace stripped, otherwise
-// untouched) rather than the matched country's canonical name - a delegate's
-// placard at the physical conference reads whatever that sheet actually
-// wrote ("USA", "Deutschland", "The Netherlands"), and this should match it,
-// not silently "correct" it. `code` (from the match, or null if unmatched)
-// is what actually drives the flag and delegation-scoped fuzzy matching, so
-// spelling/language variation still resolves to the right country under the
-// hood even though the displayed text is untouched.
+// `display` deliberately keeps the sheet's own wording ("USA", "Deutschland")
+// rather than the canonical name, since it has to match the delegate's physical
+// placard. `code` is what drives flags and fuzzy matching underneath.
 const matchesName = (c, name) =>
   c.name.toLowerCase() === name || c.alias?.some(a => a.toLowerCase() === name);
 
@@ -86,11 +69,8 @@ export default class AllocationParser {
 
       const committee = this.parseWorksheet(ws, ws.name);
 
-      // A sheet that yields nobody in any bucket isn't a real committee -
-      // it's some other kind of leftover tab SKIP_SHEETS doesn't already
-      // name (e.g. HISMUN's "Copy of Team Harrow", a teacher's personal
-      // contact-list copy of the real committee sheets, not an allocation
-      // table itself). Drop it rather than emit a noisy empty committee.
+      // A sheet with nobody in any bucket is a leftover tab SKIP_SHEETS
+      // doesn't name (e.g. a teacher's contact-list copy), not a committee.
       if (committee.chairs.length || committee.delegates.length || committee.pages.length) {
         conference.committees.push(committee);
       }
@@ -127,13 +107,9 @@ export default class AllocationParser {
         continue;
       }
 
-      // A row that collapses to one repeated value (via merged cells) is a
-      // free-floating banner - either the committee title or, on some
-      // templates, a topic stated as a bare sentence with no "Topic:" label.
-      // Require more than one populated cell so a genuinely sparse data row
-      // (e.g. MUN07's "The New York Times" delegation with no student
-      // assigned yet - a single populated cell, not a merge) isn't mistaken
-      // for one.
+      // A row collapsing to one repeated value (merged cells) is a banner:
+      // the title, or a topic stated with no "Topic:" label. Require more
+      // than one populated cell so a sparse data row isn't mistaken for one.
       if (uniq.length === 1 && nonNullCount(row) > 1) {
         const text = String(uniq[0]).trim();
         const norm = normalize(text);
@@ -145,11 +121,9 @@ export default class AllocationParser {
         if (norm.includes("CHAIR REPORT")) continue;
 
         if (!header && norm.startsWith(normalize(sheetName))) {
-          // EISMUN's real title banner restates the tab's own id
-          // ("WHO (World Health Organization)" on sheet "WHO") - recognizing
-          // it by the sheet name lets us tell it apart from the very next
-          // banner (the topic, stated as a bare sentence) instead of just
-          // taking whichever banner happens to come last.
+          // Some templates restate the tab's own id as the title banner;
+          // matching on sheet name tells it apart from the topic banner
+          // that follows.
           committee.title = text;
           titleConfirmedById = true;
         } else if (!header && !titleConfirmedById) {
@@ -237,12 +211,8 @@ export default class AllocationParser {
         }
       }
 
-      // Give every entry a role label for consistent display. Chairs already
-      // have real descriptive text from their own header column ("Head
-      // Chair", "Co-Chair") or from being promoted out of `country` above;
-      // pages from a dedicated PAGE/COURSIER column only ever hold a row
-      // number there (nothing to promote), and delegates never had a role
-      // column at all - default both by bucket instead of leaving them blank.
+      // Chairs get real role text from their own column; pages and delegates
+      // never do, so default those by bucket rather than leaving them blank.
       if (!obj.role) obj.role = bucket === "pages" ? "Page" : bucket === "chairs" ? "Chair" : "Delegate";
 
       if (obj.country) {
@@ -314,12 +284,9 @@ export default class AllocationParser {
     const roleIdxs=[];
     const countryIdxs=[];
 
-    // First match wins for every key below: some sheets repeat a header
-    // word for a second, unrelated mini-table sharing the same rows (MUN07
-    // embeds a "Page" mini-table in extra columns to the right of the main
-    // chairs table, with its own "Name" header cell reappearing further
-    // along the same header row) - don't let that later duplicate clobber
-    // the real column already found for the primary table.
+    // First match wins: some sheets repeat a header word for an unrelated
+    // mini-table sharing the same rows, and that later duplicate must not
+    // clobber the real column already found for the primary table.
     header.forEach((h,i)=>{
       const t=normalize(h);
 
@@ -327,14 +294,9 @@ export default class AllocationParser {
         roleIdxs.push(i);
         if (map.role===undefined) map.role=i;
       }
-      // ALLOCATION is HISMUN's header word for the country/delegation column
-      // ("Allocation | Name | Email | School") - but the same conference
-      // also reuses "Allocation" for a chairs table's role column ("Name |
-      // Email | Allocation | School", holding "Co-Chair"). Mapping it to
-      // `country` here is safe either way: the existing ambiguous-role
-      // fallback below already reclassifies a `country` value that's
-      // actually a chair/page word (ANY conference's shared-header layout
-      // does this, not just HISMUN's).
+      // ALLOCATION means the country column on some sheets and a chairs role
+      // column on others. Mapping it to `country` is safe either way, since
+      // the ambiguous-role fallback below reclassifies a chair/page word.
       else if (t.includes("COUNTRY")||t.includes("DELEGATION")||t.includes("NEWS")||t.includes("PAYS")||t.includes("AGENCY")||t.includes("NATION")||t.includes("MEMBER")||t.includes("PORTFOLIO")||t.includes("REPRESENTS")||t.includes("CHARACTER")||t.includes("ALLOCATION")) {
         countryIdxs.push(i);
         if (map.country===undefined) map.country=i;
@@ -346,30 +308,18 @@ export default class AllocationParser {
       else if (t.includes("PAGE")||t.includes("COURSIER")||t.includes("MESSENGER")||t.includes("RUNNER")||t.includes("USHER")) { if (map.page===undefined) map.page=i; }
     });
 
-    // EISMUN mislabels the person's-name column with the same word as the
-    // role/country column instead of "Name" - a merged header cell repeats
-    // "Chairs" (or "Delegations") across several columns, e.g. chairs:
-    // [role, name, name] (role is 1 cell, name spans the other 2), but
-    // delegates: [country, country, name] (country spans 2 cells, name is
-    // just the 3rd) - the OPPOSITE split. So which extra column is the
-    // real name isn't a fixed position; it's whichever duplicate-labeled
-    // column's *value* actually differs from the primary field in a given
-    // row (a true merge duplicate always repeats the identical string).
-    // Surface every candidate; parseWorksheet picks the one that differs.
+    // Some templates label the name column with the same merged word as the
+    // role/country column, and which extra column holds the real name flips
+    // between chairs and delegates blocks. Surface every candidate;
+    // parseWorksheet picks whichever value differs from the primary field.
     const nameCandidates = map.name===undefined
       ? [...roleIdxs.slice(1), ...countryIdxs.slice(1)]
       : [];
 
-    // Some sheets leave the leftmost role/position column with no header
-    // label at all (data like "Head Chair"/"Editor" sits directly under a
-    // blank cell) while Name/Email/etc still carry real labels - MUN07's
-    // chairs blocks do this. We can't just always map an unlabeled leading
-    // column to `role` though: MUN101 reuses this exact same header for a
-    // later delegates block whose leading column instead holds a bare row
-    // number ("#1","#2"...) - not a role, and must not override the
-    // "Delegate" default. So only surface the column as a *candidate*
-    // here; parseWorksheet promotes it to `role` only if that row's actual
-    // cell value looks like a real chair/page word.
+    // Some sheets leave the leading role column unlabeled, but others use
+    // that same position for a bare row number. Only surface it as a
+    // candidate; parseWorksheet promotes it to `role` only if the value
+    // looks like a real chair/page word.
     let roleCandidate;
     if (map.role===undefined) {
       const labeled=Object.values(map);

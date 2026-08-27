@@ -8,29 +8,18 @@ import MotionLog from "../components/MotionLog";
 import Flag from "../components/Flag";
 import DebugTopBar from "../components/DebugTopBar";
 
-// Dev-only tooling, not for casual visitors - gated to the "debug" permission
-// (owners always have it; contributors get it via the Admin Panel's
-// Permissions tab, see permissions.js/contributorPermissions). This is a
-// client-side convenience redirect, not a real security boundary (there's no
-// backend to enforce it), which is fine here since this page only ever
-// touches the current tab's in-memory ConferenceService state, never other
-// users' data.
+// Dev-only tooling gated on the "debug" permission. A convenience redirect
+// rather than a real boundary, which is fine since this page only touches the
+// current tab's in-memory state, never other users' data.
 
 export default function DebugPage() {
   const navigate = useNavigate();
   const { allowed: isAuthorized, ready: authReady } = usePagePermission("debug");
 
-  // Wait for authReady - AuthService reports `null` synchronously before
-  // Firebase has confirmed a persisted session, so redirecting immediately
-  // would wrongly boot out an authorized user during that brief startup window.
-  //
-  // On the debug.motionmun.com subdomain, this page is the *only* route
-  // App.jsx mounts there (see DebugRoutes) - there's no "/home" for
-  // react-router's navigate() to resolve to, since HomePage lives on a
-  // different origin (app.motionmun.com). A real cross-origin redirect is
-  // required there; everywhere else (localhost, previews, the original
-  // *.vercel.app domain) still has "/home" in the same combined route table,
-  // so the ordinary client-side navigate keeps working.
+  // Waits for authReady, since redirecting on the momentarily-null state
+  // would boot an authorized user during startup. The debug host needs a
+  // cross-origin redirect because "/home" lives on a different subdomain
+  // there; everywhere else the ordinary client-side navigate works.
   useEffect(() => {
     if (!authReady || isAuthorized) return;
 

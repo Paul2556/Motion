@@ -5,11 +5,8 @@ import AuthService from "../services/AuthService";
 import { isOwner } from "../services/ownerAccess";
 import { usePagePermission } from "../services/permissions";
 
-// debug.motionmun.com mounts these at the root ("/", "/refer", "/adminPanel"
-// - see DebugRoutes in App.jsx), but everywhere else (localhost, previews,
-// the shared *.vercel.app domain) they're combined into AllRoutes under a
-// "/debug" prefix instead. Same two-path-shapes problem DebugPage's own
-// redirect effect already deals with, so it gets the same hostname check.
+// The debug host mounts these at the root, but everywhere else they sit under
+// a "/debug" prefix, so the path shape depends on the hostname.
 const ON_DEBUG_HOST = typeof window !== "undefined" && window.location.hostname === "debug.motionmun.com";
 const BASE = ON_DEBUG_HOST ? "" : "/debug";
 // DebugPage itself sits at BASE's root - "/" when BASE is empty, "/debug"
@@ -23,13 +20,9 @@ const NAV_ITEMS = [
   { to: `${BASE}/refer`, label: "Referrals", permission: "refer" },
 ];
 
-// Shared nav for the debug-area pages (DebugPage, AdminPanelPage, ReferPage)
-// - only shows links the signed-in user can actually reach, since access is
-// split across two different systems (usePagePermission's delegable
-// debug/refer permissions vs. AdminPanelPage's owner-only gate, kept
-// deliberately separate) and a
-// contributor with only one permission shouldn't see a link that would just
-// bounce them back out.
+// Only shows links the signed-in user can actually reach, since access spans
+// two systems (delegable debug/refer permissions vs. an owner-only gate) and a
+// contributor shouldn't see a link that would bounce them straight back.
 export default function DebugTopBar() {
   const location = useLocation();
   const { allowed: debugAllowed } = usePagePermission("debug");

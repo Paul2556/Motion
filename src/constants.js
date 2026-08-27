@@ -1,16 +1,6 @@
-// Motions for fuzzy matching, ordered by procedural precedence (most
-// "disruptive" first) - this array's own order IS the precedence rank
-// MotionPage.jsx sorts the motion log by (see canonicalLabel/precedence in
-// motionPresets.js), not a separate numeric field. It's a general MUN/
-// Robert's-Rules-style convention (points/appeals outrank meeting-halting
-// motions, which outrank debate-closing motions, which outrank caucus/
-// debate-opening motions, which outrank substantive business, with
-// informational points last) - not something ThaiMUN's RoP itself defines
-// numerically. Fully reorderable per-conference from Settings.
-//
-// Everything from "Point of Order" through "Explanation of the Vote" below
-// (except the 11 pre-existing entries kept in place) is sourced from
-// THAIMUN's Rules of Procedure - see the footnote on the Motions page.
+// This array's own order IS the precedence rank MotionPage sorts by, most
+// disruptive first, not a separate numeric field. It follows general
+// Robert's-Rules convention and is reorderable per-conference from Settings.
 export const MOTIONS = [
   { text: "Appeal the Decision of the Chair", alias: ["Appeal the Chair", "Appeal the Decision"] },
   { text: "Adjourn the Meeting", alias: ["Adjourn Meeting"] },
@@ -292,14 +282,9 @@ export const countries = [
   { name: "Åland Islands", code: "ALA", alias: ["Aland Islands", "Îles Åland"] },
 ];
 
-// Genuinely defunct states, not aliased to a modern country: their borders,
-// government, or membership differ materially from any single present-day
-// successor (a split, dissolution, or legally distinct former government),
-// unlike the rename-only cases above (Zaire, Burma, Ceylon, Upper Volta,
-// etc.) which are aliases since the same continuous state just renamed
-// itself. Codes for the 20th-century entries are the former ISO 3166-3
-// withdrawn codes, for historical MUN crisis committees (e.g. Cold War,
-// Yugoslav Wars, decolonization).
+// Genuinely defunct states rather than renames, so they're separate entries
+// instead of aliases. Codes are the withdrawn ISO 3166-3 ones, for historical
+// crisis committees.
 export const historicalCountries = [
   { name: "Soviet Union", code: "SUN", alias: ["USSR", "CCCP", "Union of Soviet Socialist Republics", "Cоюз Советских Социалистических Республик"] },
   { name: "Yugoslavia", code: "YUG", alias: ["Socialist Federal Republic of Yugoslavia", "SFR Yugoslavia"] },
@@ -377,12 +362,9 @@ export const SKIP_SHEETS = new Set([
   "chairs info",
 ]);
 
-// Exact-match signals (post normalize()) that a row is a header row, and
-// which field a header column maps to. Kept as sets (not a regex/substring
-// check) because these are compared against a whole header cell, not
-// scanned for as a substring of arbitrary data - "Delegate"/"Student" as a
-// whole cell is a safe signal; as a substring of someone's real name it
-// would not be.
+// Exact-match sets rather than substring checks, since these compare against
+// a whole header cell. "Delegate" as a full cell is a safe signal; as a
+// substring of someone's name it would not be.
 export const NAME_WORDS = new Set([
   "NAME",
   "NOM",
@@ -433,11 +415,9 @@ export const SECOND_WORDS = new Set([
   "SECS"
 ]);
 
-// Used by MotionInput's topic-phrase detection - the whole phrase (matched
-// word-for-word, not just the bare word "topic") that introduces a motion's
-// subject, e.g. "...on the topic of nuclear disarmament". Distinct from
-// TOPIC_WORDS above, which is header/row classification vocab for
-// AllocationParser, not floor language a chair actually says.
+// The whole phrase that introduces a motion's subject, matched word-for-word.
+// Distinct from TOPIC_WORDS above, which is spreadsheet header vocab rather
+// than floor language.
 export const TOPIC_MARKER_PHRASE = [
   "ON THE TOPIC OF",
   "DISCUSSING",
@@ -448,11 +428,9 @@ export const TOPIC_MARKER_PHRASE = [
   "TOPIC WERE TO BE ABOUT",
 ];
 
-// Maps a committee's freeform title (whatever text an uploaded workbook's sheet name/title
-// happens to use, or a bundled demo conference) to one of the icons in src/assets/committee -
-// see src/utils/committeeIcon.js for the matching logic. `icon` is that file's basename.
-// Order matters: more specific committees must come before generic fallbacks, since a title like
-// "General Assembly Third Committee (SOCHUM)" contains both "general assembly" and "sochum".
+// Maps a committee's freeform title to an icon basename. Order matters:
+// specific committees must precede generic fallbacks, since one title can
+// contain both "general assembly" and "sochum".
 export const committee = [
   { icon: "unsc", name: "United Nations Security Council", aliases: ["security council", "unsc"] },
   { icon: "disec", name: "GA First Committee: Disarmament & International Security", aliases: ["disarmament", "disec", "first committee", "ga1"] },

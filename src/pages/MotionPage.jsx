@@ -17,11 +17,9 @@ function voteStorageKey(committeeId) {
   return `motion-vote-${committeeId}`;
 }
 
-// sessionStorage, same reasoning as ConferenceService: survives a refresh,
-// still gone once the tab closes. Ignores a cache whose total seat count no
-// longer matches the roster (e.g. a re-imported workbook with a different size).
-// Sums every group present (2 without abstain, 3 with it) rather than
-// hardcoding indices, since group count now varies.
+// sessionStorage so it survives a refresh but not the tab closing. Ignores a
+// cache whose seat count no longer matches the roster, and sums every group
+// present rather than hardcoding indices, since the count varies.
 function loadCachedVote(committeeId, delegateCount) {
   try {
     const raw = sessionStorage.getItem(voteStorageKey(committeeId));
@@ -34,11 +32,8 @@ function loadCachedVote(committeeId, delegateCount) {
   }
 }
 
-// Inserts a new motion-log entry immediately above the first existing entry
-// whose rank is no more disruptive than it (so same-rank motions still read
-// newest-first, and a highly disruptive new motion - e.g. a Point of Order -
-// jumps straight to the top instead of just being prepended). An entry whose
-// text the parser didn't recognize as any known motion sinks to the bottom.
+// Inserts by precedence, so a Point of Order jumps to the top while same-rank
+// motions still read newest-first. Unrecognized text sinks to the bottom.
 function insertByPrecedence(list, entry, precedenceByLabel) {
   const rank = entry.motion != null ? (precedenceByLabel.get(entry.motion) ?? Infinity) : Infinity;
   const at = list.findIndex((existing) => {
@@ -89,22 +84,18 @@ export default function MotionPage() {
   const clampedMotionIndex = motionLog.length === 0 ? -1 : Math.min(selectedMotionIndex, motionLog.length - 1);
   const selectedMotion = clampedMotionIndex >= 0 ? motionLog[clampedMotionIndex] : null;
 
-  // Opening voting always starts the tally fresh - it's voting *on this
-  // motion*, not a running total carried over from whatever was voted on
-  // before it. Also marks it as the committee's active motion (a chair
-  // reopening voting on an older logged motion is explicitly bringing it
-  // back to the floor), which is what the /session timer's badge reads.
+  // Opening voting starts a fresh tally rather than carrying one over, and
+  // marks this as the active motion, since reopening an older motion means
+  // bringing it back to the floor.
   function startVoting(entry) {
     setVotingMotion(entry);
     setGroups(buildInitialGroups(presentCount, absentCount));
     ConferenceService.setActiveMotion(entry);
   }
 
-  // The most recently logged motion becomes the committee's active motion
-  // too - most motions (procedural ones especially) govern the floor as
-  // soon as they're moved, well before/without an explicit vote. Inserted by
-  // precedence rather than prepended, so a highly disruptive motion (Point
-  // of Order) always shows above a less disruptive one already on the floor.
+  // The newest motion becomes active immediately, since procedural motions
+  // govern the floor as soon as they're moved. Inserted by precedence, so a
+  // Point of Order outranks whatever is already on the floor.
   function handleMotionSubmit(meta) {
     setMotionLog((prev) => insertByPrecedence(prev, meta, precedenceByLabel));
     ConferenceService.setActiveMotion(meta);
@@ -119,11 +110,9 @@ export default function MotionPage() {
     navigate("/session");
   }
 
-  // Sets the chosen per-speaker time as the active motion (same field
-  // /session already reads for the timer) and tells SessionPage to seed the
-  // queue with the full roster, alphabetically - a one-time router-state
-  // flag rather than persisted state, so a later refresh of /session doesn't
-  // keep re-seeding over whatever the chair has done with the queue since.
+  // Seeds the queue with the full roster via a one-time router-state flag
+  // rather than persisted state, so refreshing /session doesn't re-seed over
+  // whatever the chair has done since.
   function startSpeakingTime(seconds) {
     ConferenceService.setActiveMotion({ motion: "Speakers' List", speakingTime: seconds / 60 });
     navigate("/session", { state: { seedQueue: true } });
@@ -181,12 +170,9 @@ export default function MotionPage() {
     setGroups((prev) => toggleAbstainGroups(prev));
   }
 
-  // Voting is a fixed contextual override (spec: "cannot be remapped away")
-  // - while votingMotion is set, 1/2/3/+/- go straight to these handlers
-  // before the motions scope below ever sees them, reusing the exact same
-  // select-bloc-then-adjust behavior this page already shipped (not the
-  // "cast one vote per keypress" reading of the spec's literal wording -
-  // that'd be a UX change to already-designed voting, not a shortcuts pass).
+  // A fixed contextual override that can't be remapped away: while
+  // votingMotion is set, 1/2/3/+/- reach these handlers before the motions
+  // scope sees them, reusing the existing select-then-adjust behavior.
   useDaisShortcuts(
     "motions",
     {
