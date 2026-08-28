@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 
 import { APP_HOSTS, DEMO_HOSTS, DEBUG_HOSTS, MARKETING_HOSTS, isLocalDevHost } from "./hosts";
 import LandingPage from "./pages/LandingPage";
+import PreviewLandingPage from "./pages/PreviewLandingPage";
 import HomePage from "./pages/HomePage";
 import SessionPage from "./pages/SessionPage";
 import RollCallPage from "./pages/RollCallPage";
@@ -135,6 +136,10 @@ function AllRoutes() {
       <Route path="/debug/refer" element={<ReferPage />} />
       <Route path="/debug/adminPanel" element={<AdminPanelPage />} />
       <Route path="/licensing" element={<LicensePage />} />
+      {/* Local/fallback-only design concept - never added to MarketingRoutes,
+          so it's inert on the real motionmun.com domain even after this
+          ships to main. See .claude/motion.md. */}
+      <Route path="/previewlanding" element={<PreviewLandingPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
