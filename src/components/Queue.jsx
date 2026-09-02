@@ -17,6 +17,7 @@ const Queue = forwardRef(function Queue({
   suggestions = [],
   selectedIndex = -1,
   onSelectIndex,
+  readOnly = false,
 }, ref) {
   const [newSpeaker, setNewSpeaker] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -135,6 +136,7 @@ const Queue = forwardRef(function Queue({
         </p>
       </div>
 
+      {!readOnly && (
       <div className="relative mt-6 flex gap-2">
         <div className="relative flex-1">
           <input
@@ -191,6 +193,7 @@ const Queue = forwardRef(function Queue({
           <Plus size={18} />
         </button>
       </div>
+      )}
 
       <div className="mt-6 min-h-0 flex-1 overflow-y-auto space-y-3 pr-1">
 
@@ -203,8 +206,8 @@ const Queue = forwardRef(function Queue({
         {queue.map((speaker, index) => (
           <div
             key={speaker.id}
-            onClick={() => onSelectIndex?.(index)}
-            className={`group border px-5 py-4 transition hover:bg-[var(--app-chip-active)] ${
+            onClick={readOnly ? undefined : () => onSelectIndex?.(index)}
+            className={`group border px-5 py-4 transition ${readOnly ? "" : "hover:bg-[var(--app-chip-active)]"} ${
               index === selectedIndex ? "border-[var(--app-border-active)] bg-[var(--app-chip-active)]" : "border-[var(--app-border)] bg-[var(--app-chip)]"
             }`}
           >
@@ -221,6 +224,7 @@ const Queue = forwardRef(function Queue({
                 </span>
               </div>
 
+              {!readOnly && (
               <div className="flex gap-1 opacity-0 transition group-hover:opacity-100">
 
                 <button
@@ -263,6 +267,7 @@ const Queue = forwardRef(function Queue({
                 </button>
 
               </div>
+              )}
 
             </div>
           </div>

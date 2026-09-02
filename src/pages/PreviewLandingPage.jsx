@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -12,13 +12,22 @@ import {
 } from "lucide-react";
 
 import Logo from "../components/Logo";
-import Flag from "../components/Flag";
 import Timer from "../components/Timer";
 import Queue from "../components/Queue";
 import SeatChart from "../components/SeatChart";
-import MotionInput from "../components/MotionInput";
 import DelegateRoster from "../components/DelegateRoster";
+import SessionBoard from "../components/SessionBoard";
 import { countries } from "../constants";
+
+// Same seed data the real landing page's hero preview uses (LandingPage.jsx) -
+// kept local since that file stays untouched, not imported from it.
+const HERO_SUGGESTIONS = countries.map((c) => ({ name: c.name, code: c.code, alias: c.alias }));
+const HERO_SPEAKER = { country: "United Kingdom", countryCode: "GBR" };
+const HERO_QUEUE = [
+  { id: "hero-1", country: "Brazil", countryCode: "BRA" },
+  { id: "hero-2", country: "Japan", countryCode: "JPN" },
+  { id: "hero-3", country: "Ghana", countryCode: "GHA" },
+];
 
 // Same real steps LandingPage's "#how" section tells, just restyled here with
 // a heavier scroll-reveal - content stays identical on purpose (one story,
@@ -41,7 +50,8 @@ const SAMPLE_DELEGATES = [
 
 const STAGES = [
   { label: "Import the roster", body: "Upload the allocation sheet once. Countries, delegates, and schools come through matched." },
-  { label: "Run the queue and clock", body: "Keep the speakers list and the timer moving without losing the room." },
+  { label: "Keep time", body: "One precise, visible clock for speeches, caucuses, and yields." },
+  { label: "Run the queue", body: "Keep the speakers list moving without losing the room." },
   { label: "Call the vote", body: "Track the room and calculate the majority the moment debate closes." },
 ];
 
@@ -54,13 +64,6 @@ function PreviewLandingPage() {
 
   return (
     <div className="theme-shell min-h-screen bg-[#f4f4f0] text-[#101010]">
-      <style>{`
-        @keyframes fan-drift { 0%,100% { transform: var(--fan-rest); } 50% { transform: var(--fan-drift); } }
-        .fan-card { animation: fan-drift 7s ease-in-out infinite; }
-        .word-dim { color: rgba(16,16,16,.16); transition: color .35s ease; }
-        .word-lit { color: rgba(16,16,16,1); transition: color .35s ease; }
-      `}</style>
-
       <Link
         to="/"
         className="fixed bottom-4 left-4 z-50 inline-flex items-center gap-1.5 rounded-full border border-black/15 bg-white/90 px-3 py-1.5 text-[11px] text-black/50 shadow-sm backdrop-blur-md transition hover:border-black/30 hover:text-black"
@@ -68,36 +71,36 @@ function PreviewLandingPage() {
         Design preview <ArrowUpRight size={12} /> back to site
       </Link>
 
-      <header className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
-        <div className="flex w-full max-w-2xl items-center justify-between gap-3 rounded-full border border-black/10 bg-white/85 px-3 py-2 shadow-[0_8px_30px_rgba(0,0,0,.06)] backdrop-blur-xl">
-          <a href="#hero" onClick={(e) => { e.preventDefault(); scrollToId("hero"); }} className="logo-link pl-1.5">
-            <Logo compact size="w-7" />
-          </a>
-          <nav className="hidden items-center gap-5 text-[13px] text-black/55 sm:flex">
-            <a className="nav-link" href="#pitch" onClick={(e) => { e.preventDefault(); scrollToId("pitch"); }}>Why</a>
-            <a className="nav-link" href="#rhythm" onClick={(e) => { e.preventDefault(); scrollToId("rhythm"); }}>Process</a>
-            <a className="nav-link" href="#preview" onClick={(e) => { e.preventDefault(); scrollToId("preview"); }}>Product</a>
-          </nav>
-          <div className="flex items-center gap-1.5">
-            <a href="/#waitlist" className="button-primary hidden sm:inline-flex">Join waitlist <ArrowRight size={14} /></a>
-            <button className="sandwich-toggle h-8 w-8 sm:hidden" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-label="Open menu">
-              {menuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
+      <header className="fixed inset-x-0 top-4 z-40">
+        <div className="page-container relative">
+          <div className="flex items-center justify-between gap-3 rounded-full border border-black/10 bg-white/85 px-4 py-2 shadow-[0_8px_30px_rgba(0,0,0,.06)] backdrop-blur-xl">
+            <a href="#hero" onClick={(e) => { e.preventDefault(); scrollToId("hero"); }} className="logo-link">
+              <Logo compact size="w-7" />
+            </a>
+            <nav className="hidden items-center gap-6 text-[13px] text-black/55 sm:flex">
+              <a className="nav-link" href="#rhythm" onClick={(e) => { e.preventDefault(); scrollToId("rhythm"); }}>Process</a>
+              <a className="nav-link" href="#preview" onClick={(e) => { e.preventDefault(); scrollToId("preview"); }}>Product</a>
+            </nav>
+            <div className="flex items-center gap-1.5">
+              <a href="/#waitlist" className="button-primary hidden sm:inline-flex">Join waitlist <ArrowRight size={14} /></a>
+              <button className="sandwich-toggle h-8 w-8 sm:hidden" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-label="Open menu">
+                {menuOpen ? <X size={18} /> : <Menu size={18} />}
+              </button>
+            </div>
           </div>
+          {menuOpen && (
+            <div className="absolute right-5 top-16 w-48 rounded-2xl border border-black/10 bg-white/95 p-1.5 shadow-lg backdrop-blur-xl sm:hidden">
+              <a className="dropdown-link" href="#rhythm" onClick={(e) => { e.preventDefault(); setMenuOpen(false); scrollToId("rhythm"); }}>Process</a>
+              <a className="dropdown-link" href="#preview" onClick={(e) => { e.preventDefault(); setMenuOpen(false); scrollToId("preview"); }}>Product</a>
+              <a className="dropdown-link" href="/#waitlist">Join waitlist</a>
+            </div>
+          )}
         </div>
-        {menuOpen && (
-          <div className="absolute right-4 top-16 w-48 rounded-2xl border border-black/10 bg-white/95 p-1.5 shadow-lg backdrop-blur-xl sm:hidden">
-            <a className="dropdown-link" href="#pitch" onClick={(e) => { e.preventDefault(); setMenuOpen(false); scrollToId("pitch"); }}>Why</a>
-            <a className="dropdown-link" href="#rhythm" onClick={(e) => { e.preventDefault(); setMenuOpen(false); scrollToId("rhythm"); }}>Process</a>
-            <a className="dropdown-link" href="#preview" onClick={(e) => { e.preventDefault(); setMenuOpen(false); scrollToId("preview"); }}>Product</a>
-            <a className="dropdown-link" href="/#waitlist">Join waitlist</a>
-          </div>
-        )}
       </header>
 
       <main id="hero">
         <Hero />
-        <PitchReveal />
+        <ScrollTimerScene />
         <FeatureRhythm />
         <StickyPreview />
         <ClosingCta />
@@ -120,74 +123,55 @@ function PreviewLandingPage() {
   );
 }
 
+// The right side is a single real, live SessionBoard preview - same
+// component and seed data shape LandingPage.jsx's own hero uses - rather
+// than a cluster of decorative cards, so there's one clear focal point.
 function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-black/10 pt-24">
+    <section className="relative border-b border-black/10 pt-24">
       <div className="hero-grid absolute inset-0 opacity-40" />
-      <div className="page-container relative grid gap-10 py-10 sm:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6 lg:py-16">
-        <div className="flex flex-col justify-center">
-          <span className="eyebrow w-fit">A more dynamic take · concept</span>
+      <div className="page-container relative py-10 sm:py-14 lg:py-16">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="eyebrow mx-auto w-fit">A more dynamic take · concept</span>
           <h1 className="fade-up-delay mt-5 text-[clamp(2.8rem,7vw,6rem)] font-medium leading-[0.88] tracking-[-0.06em]">
             From motion<br />to <span className="accent-text display-serif">resolution.</span>
           </h1>
-          <p className="fade-up-delay-2 mt-5 max-w-md text-base leading-relaxed text-black/55">
+          <p className="fade-up-delay-2 mx-auto mt-5 max-w-md text-base leading-relaxed text-black/55">
             One live screen for the room: roster, queue, timer, and votes, so a chair's
             attention stays on the debate, not the spreadsheets.
           </p>
-          <div className="fade-up-delay-2 mt-6 flex flex-wrap gap-2.5">
+          <div className="fade-up-delay-2 mt-6 flex flex-wrap justify-center gap-2.5">
             <a href="/#waitlist" className="button-primary px-4 py-3">Join the waitlist <ArrowRight size={15} /></a>
             <a href="#preview" onClick={(e) => { e.preventDefault(); scrollToId("preview"); }} className="button-secondary px-4 py-3">See it in action</a>
           </div>
         </div>
 
-        <div className="relative hidden min-h-[360px] lg:block">
-          <FanCard rest="rotate(-7deg)" drift="rotate(-9deg) translateY(-6px)" className="left-4 top-0 w-[220px] border-[var(--accent)]/40 shadow-[0_20px_50px_rgba(154,91,58,.18)]">
-            <div className="pointer-events-none flex scale-[0.62] origin-top-left items-center justify-center p-3" style={{ '--timer-remaining': '#9a5b3a', '--danger': '#ef4444', width: '161%', height: '161%' }}>
-              <Timer initialTime={90} />
-            </div>
-          </FanCard>
-          <FanCard rest="rotate(4deg)" drift="rotate(6deg) translateY(6px)" className="left-24 top-40 w-[260px]" style={{ animationDelay: "1.2s" }}>
-            <div className="pointer-events-none bg-[#0d0d0d] p-3" style={{ '--accent-alt': '#4caf7d', '--accent-time': '#a37fd1', '--accent-duration': '#d4a24c', '--accent-topic': '#4a90e2' }}>
-              <p className="ui-label mb-2">Motion</p>
-              <p className="text-[11px] leading-relaxed text-white/70">
-                India motions for a moderated caucus of <span style={{ color: 'var(--accent-duration)' }}>12 minutes</span> with <span style={{ color: 'var(--accent-time)' }}>2 minute</span> speaking time
-              </p>
-            </div>
-          </FanCard>
-          <FanCard rest="rotate(-3deg)" drift="rotate(-5deg) translateY(-5px)" className="left-2 top-[19rem] w-[210px]" style={{ animationDelay: "2.4s" }}>
-            <div className="pointer-events-none space-y-2 bg-[#0d0d0d] p-3">
-              <p className="ui-label mb-1">Up next</p>
-              {[{ n: "Brazil", c: "BRA" }, { n: "Japan", c: "JPN" }, { n: "Ghana", c: "GHA" }].map((s) => (
-                <div key={s.c} className="flex items-center gap-2 border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] text-white/75">
-                  <Flag countryCode={s.c} /> {s.n}
-                </div>
-              ))}
-            </div>
-          </FanCard>
+        <div className="product-shell mx-auto mt-10 sm:mt-14">
+          <div className="h-[860px] p-4 text-white sm:p-6" style={{ '--timer-remaining': '#9a5b3a', '--danger': '#ef4444', '--motion-accent': '#c98500' }}>
+            <SessionBoard
+              committeeLabel="DISEC"
+              initialSpeaker={HERO_SPEAKER}
+              initialQueue={HERO_QUEUE}
+              activeMotion="Moderated Caucus: 72s / speaker"
+              suggestions={HERO_SUGGESTIONS}
+              linked={false}
+            />
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function FanCard({ rest, drift, className = "", style, children }) {
-  return (
-    <div
-      className={`fan-card absolute overflow-hidden rounded-2xl border border-black/10 bg-[#0d0d0d] shadow-[0_20px_50px_rgba(0,0,0,.16)] ${className}`}
-      style={{ '--fan-rest': rest, '--fan-drift': drift, transform: rest, ...style }}
-    >
-      {children}
-    </div>
-  );
-}
-
-// Scroll-linked word reveal: each word dims/lights based on how far the
-// paragraph has traveled through a fixed band of the viewport.
-function PitchReveal() {
-  const ref = useRef(null);
-  const [lit, setLit] = useState(0);
-  const text = "Motion replaces the spreadsheets, timers, and paper tallies chairs already juggle, with one live screen built for the room.";
-  const words = useMemo(() => text.split(" "), []);
+// A proper scroll-scrubbed set piece, à la Apple product pages: a tall track
+// with a sticky-pinned stage inside it. Progress is read straight off the
+// track's position on every scroll event and applied with no easing/delay,
+// so the ring drains (and refills, scrolling back up) in lockstep with the
+// scrollbar rather than just fading in once on the way past - MUN's debate
+// clock is the thing actually being chaired, not an arbitrary shape.
+function ScrollTimerScene() {
+  const trackRef = useRef(null);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     let frame = null;
@@ -195,30 +179,59 @@ function PitchReveal() {
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = null;
-        const el = ref.current;
+        const el = trackRef.current;
         if (!el) return;
         const rect = el.getBoundingClientRect();
-        const start = window.innerHeight * 0.85;
-        const end = window.innerHeight * 0.35;
-        const progress = Math.min(1, Math.max(0, (start - rect.top) / (start - end)));
-        setLit(Math.round(progress * words.length));
+        const scrollable = rect.height - window.innerHeight;
+        const raw = scrollable > 0 ? -rect.top / scrollable : 0;
+        setProgress(Math.min(1, Math.max(0, raw)));
       });
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [words.length]);
+  }, []);
+
+  const totalSeconds = 90;
+  const remaining = Math.max(0, Math.ceil(totalSeconds * (1 - progress)));
+  const overtime = progress >= 1;
+  const radius = 140;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * progress;
+  const minutes = String(Math.floor(remaining / 60)).padStart(2, "0");
+  const seconds = String(remaining % 60).padStart(2, "0");
 
   return (
-    <section id="pitch" className="border-b border-black/10 py-10 sm:py-14">
-      <div className="page-container">
-        <p ref={ref} className="mx-auto max-w-3xl text-2xl font-medium leading-snug tracking-[-0.02em] sm:text-3xl">
-          {words.map((w, i) => (
-            <span key={i} className={i < lit ? "word-lit" : "word-dim"}>{w} </span>
-          ))}
+    <section ref={trackRef} className="relative bg-[#0d0d0d]" style={{ height: "300vh" }}>
+      <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden text-white">
+        <p className="section-label text-white/40">{overtime ? "Scroll back up to reset" : "Scroll to run the clock"}</p>
+        <div className="relative mt-6 flex h-[280px] w-[280px] items-center justify-center sm:h-[360px] sm:w-[360px]">
+          <svg viewBox="0 0 320 320" className="absolute inset-0 h-full w-full -rotate-90">
+            <circle cx="160" cy="160" r={radius} fill="none" stroke="#242424" strokeWidth="4" />
+            <circle
+              cx="160" cy="160" r={radius} fill="none"
+              stroke={overtime ? "#ef4444" : "var(--accent)"}
+              strokeWidth="4" strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+            />
+          </svg>
+          <div className="text-center">
+            <div className={`text-6xl font-light tracking-[-0.05em] sm:text-7xl ${overtime ? "text-red-400" : "text-white"}`}>
+              {minutes}:{seconds}
+            </div>
+            <div className="mt-2 text-[10px] uppercase tracking-[0.25em] text-white/35">
+              {overtime ? "Motion carried" : "Remaining"}
+            </div>
+          </div>
+        </div>
+        <p className="mt-8 max-w-xs text-center text-sm text-white/40">
+          The clock runs with your scroll, not on its own - keep going, or scroll back to rewind it.
         </p>
       </div>
     </section>
@@ -272,49 +285,63 @@ function RhythmRow({ icon: Icon, index, title, body }) {
   );
 }
 
-// Sticky right-hand panel swaps between three real, live components as the
-// matching caption on the left crosses the middle of the viewport.
+const STAGE_COMPONENTS = [RosterStage, TimerStage, QueueStage, VoteStage];
+
+// Genuinely scroll-scrubbed, like ScrollTimerScene above: one continuous
+// progress value read off the section's own position on every scroll event
+// (no IntersectionObserver thresholds, no easing/delay), turned into a float
+// across the four stages. Every stage stays mounted, cross-fading in and out
+// by how close stageFloat sits to its index - so the panel moves smoothly
+// with the scrollbar in both directions instead of snapping at a trigger line.
 function StickyPreview() {
-  const stageRefs = useRef([]);
-  const [active, setActive] = useState(0);
+  const sectionRef = useRef(null);
+  const [stageFloat, setStageFloat] = useState(0);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = stageRefs.current.indexOf(entry.target);
-            if (index !== -1) setActive(index);
-          }
-        });
-      },
-      { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
-    );
-    stageRefs.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
+    let frame = null;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        const el = sectionRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const scrollable = rect.height - window.innerHeight;
+        const raw = scrollable > 0 ? -rect.top / scrollable : 0;
+        const progress = Math.min(1, Math.max(0, raw));
+        setStageFloat(progress * (STAGES.length - 1));
+      });
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   return (
-    <section id="preview" className="border-b border-black/10 bg-white py-10 sm:py-16">
+    <section id="preview" ref={sectionRef} className="border-b border-black/10 bg-white py-10 sm:py-16">
       <div className="page-container grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
         <div>
           <p className="section-label">The product</p>
           <h2 className="section-title mt-3 mb-4">Everything on the dais.</h2>
-          {STAGES.map((stage, index) => (
-            <div
-              key={stage.label}
-              ref={(el) => { stageRefs.current[index] = el; }}
-              className="flex min-h-[52vh] flex-col justify-center border-t border-black/10 py-6 first:border-t-0 lg:min-h-[60vh]"
-            >
-              <span className={`font-mono text-xs transition-colors ${active === index ? "accent-text" : "text-black/30"}`}>
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <h3 className={`mt-2 text-2xl font-medium tracking-[-0.02em] transition-colors sm:text-3xl ${active === index ? "text-black" : "text-black/30"}`}>
-                {stage.label}
-              </h3>
-              <p className={`mt-2 max-w-sm text-sm transition-colors ${active === index ? "text-black/55" : "text-black/25"}`}>{stage.body}</p>
-            </div>
-          ))}
+          {STAGES.map((stage, index) => {
+            const closeness = Math.max(0, 1 - Math.abs(stageFloat - index));
+            return (
+              <div key={stage.label} className="flex min-h-[52vh] flex-col justify-center border-t border-black/10 py-6 first:border-t-0 lg:min-h-[60vh]">
+                <span className="font-mono text-xs" style={{ color: `rgba(var(--accent-rgb), ${0.3 + closeness * 0.7})` }}>
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <h3 className="mt-2 text-2xl font-medium tracking-[-0.02em] sm:text-3xl" style={{ color: `rgba(16,16,16, ${0.28 + closeness * 0.72})` }}>
+                  {stage.label}
+                </h3>
+                <p className="mt-2 max-w-sm text-sm" style={{ color: `rgba(16,16,16, ${0.22 + closeness * 0.48})` }}>{stage.body}</p>
+              </div>
+            );
+          })}
         </div>
 
         <div className="hidden lg:block">
@@ -324,15 +351,31 @@ function StickyPreview() {
               <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
               <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
             </div>
-            <div className="h-[440px] p-4">
-              {active === 0 && <RosterStage />}
-              {active === 1 && <QueueTimerStage />}
-              {active === 2 && <VoteStage />}
+            <div className="relative h-[480px]">
+              {STAGE_COMPONENTS.map((StageComponent, index) => {
+                const opacity = Math.max(0, 1 - Math.abs(stageFloat - index));
+                return (
+                  <div
+                    key={index}
+                    className="absolute inset-4"
+                    style={{ opacity, pointerEvents: opacity > 0.5 ? "auto" : "none" }}
+                  >
+                    <StageComponent />
+                  </div>
+                );
+              })}
             </div>
             <div className="flex justify-center gap-1.5 border-t border-white/10 py-3">
-              {STAGES.map((stage, index) => (
-                <span key={stage.label} className={`h-1 rounded-full transition-all duration-300 ${active === index ? "w-7 bg-[var(--accent)]" : "w-3 bg-white/15"}`} />
-              ))}
+              {STAGES.map((stage, index) => {
+                const closeness = Math.max(0, 1 - Math.abs(stageFloat - index));
+                return (
+                  <span
+                    key={stage.label}
+                    className="h-1 rounded-full bg-[var(--accent)]"
+                    style={{ width: `${12 + closeness * 16}px`, opacity: 0.2 + closeness * 0.8 }}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
@@ -353,7 +396,18 @@ function RosterStage() {
   );
 }
 
-function QueueTimerStage() {
+function TimerStage() {
+  return (
+    <div
+      className="flex h-full items-center justify-center border border-[var(--app-border)] bg-[var(--app-panel)]"
+      style={{ '--timer-remaining': '#9a5b3a', '--danger': '#ef4444' }}
+    >
+      <div className="scale-[0.78]"><Timer initialTime={90} /></div>
+    </div>
+  );
+}
+
+function QueueStage() {
   const [queue, setQueue] = useState([
     { id: "q1", country: "Germany" },
     { id: "q2", country: "Mexico" },
@@ -361,10 +415,7 @@ function QueueTimerStage() {
   ]);
 
   return (
-    <div className="grid h-full grid-cols-[auto_1fr] gap-3" style={{ '--timer-remaining': '#9a5b3a', '--danger': '#ef4444' }}>
-      <div className="flex items-center justify-center border border-[var(--app-border)] bg-[var(--app-panel)] px-4">
-        <div className="scale-[0.55]"><Timer initialTime={90} /></div>
-      </div>
+    <div className="h-full" style={{ '--danger': '#ef4444' }}>
       <Queue queue={queue} setQueue={setQueue} suggestions={SUGGESTIONS} />
     </div>
   );
@@ -386,10 +437,8 @@ function VoteStage() {
   }
 
   return (
-    <div className="flex h-full items-center justify-center border border-[var(--app-border)] bg-[var(--app-panel)] p-4">
-      <div className="w-full max-w-xs">
-        <SeatChart groups={groups} onIncrement={(i) => adjust(i, 1)} onDecrement={(i) => adjust(i, -1)} />
-      </div>
+    <div className="h-full border border-[var(--app-border)] bg-[var(--app-panel)] p-5">
+      <SeatChart groups={groups} onIncrement={(i) => adjust(i, 1)} onDecrement={(i) => adjust(i, -1)} />
     </div>
   );
 }

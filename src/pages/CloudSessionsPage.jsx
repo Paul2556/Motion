@@ -7,6 +7,7 @@ import Logo from "../components/Logo";
 import AuthService from "../services/AuthService";
 import CloudSessionService, { stableDelegateKey, dayNumberForSession } from "../services/CloudSessionService";
 import ConferenceService from "../services/ConferenceService";
+import LiveSessionService from "../services/LiveSessionService";
 
 const PILL = "border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]";
 const PILL_ACTIVE = "border border-[var(--app-border-active)] bg-[var(--app-chip-active)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text)] transition";
@@ -36,6 +37,7 @@ export default function CloudSessionsPage() {
   const [newCommitteeId, setNewCommitteeId] = useState(ConferenceService.getActiveCommitteeId() ?? "");
 
   const [attendance, setAttendance] = useState({});
+  const [liveSessionId, setLiveSessionId] = useState(() => LiveSessionService.getActiveSessionId());
   const [newCollaboratorUid, setNewCollaboratorUid] = useState("");
   const [pendingDeleteSessionId, setPendingDeleteSessionId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -138,6 +140,15 @@ export default function CloudSessionsPage() {
     } finally {
       setIsDeleting(false);
     }
+  }
+
+  // Flips SessionBoard/MotionPage's publish gate for this tab - not scoped
+  // to activeSessionId's owner, so a co-chair sitting at the dais can go
+  // live too, same as attendance's read/write access.
+  function handleToggleLive() {
+    const next = liveSessionId === activeSessionId ? null : activeSessionId;
+    LiveSessionService.setActiveSessionId(next);
+    setLiveSessionId(next);
   }
 
   async function handleAddCollaborator() {
@@ -325,6 +336,34 @@ export default function CloudSessionsPage() {
                   />
                   <button onClick={handleAddCollaborator} className={PILL}>Add</button>
                 </div>
+              </div>
+            )}
+
+            {activeSessionId && (
+              <div className={`mt-6 ${PANEL}`}>
+                <p className={LABEL}>Delegate View</p>
+                <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+                  Delegates scan this to see the live speaker queue, timer, and current motion on
+                  their own devices &mdash; no login needed.
+                </p>
+
+                <button
+                  onClick={handleToggleLive}
+                  className={`mt-4 ${liveSessionId === activeSessionId ? PILL_ACTIVE : PILL}`}
+                >
+                  {liveSessionId === activeSessionId ? "Stop Broadcasting" : "Go Live"}
+                </button>
+
+                {liveSessionId === activeSessionId && (
+                  <>
+                    <p className="mt-4 break-all border border-[var(--app-border)] bg-[var(--app-input)] px-3 py-2 font-mono text-xs text-[var(--app-text-secondary)]">
+                      {`https://delegate.motionmun.com/s/${activeSessionId}`}
+                    </p>
+                    <div className="mt-4 inline-block bg-white p-4">
+                      <QRCodeSVG value={`https://delegate.motionmun.com/s/${activeSessionId}`} size={180} />
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

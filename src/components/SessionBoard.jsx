@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Timer from "./Timer";
 import Queue from "./Queue";
@@ -6,6 +6,7 @@ import Flag from "./Flag";
 import AppTopBar from "./AppTopBar";
 import ShortcutLegend from "./ShortcutLegend";
 import ConferenceService from "../services/ConferenceService";
+import LiveSessionService from "../services/LiveSessionService";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
 // Shared by the real /session route and the landing page's hero preview,
@@ -20,8 +21,21 @@ export default function SessionBoard({
   suggestions = [],
   linked = true,
 }) {
-  const [currentSpeaker, setCurrentSpeaker] = useState(initialSpeaker);
-  const [queue, setQueue] = useState(initialQueue);
+  // Landing on a fresh queue (seeded roster or a passed motion's mover, see
+  // SessionPage) with no one recognized yet shouldn't sit idle on "No
+  // speaker selected" - the very first speaker is pulled up front and the
+  // rest of the queue starts one shorter, computed once in these lazy
+  // initializers (each runs exactly once, at mount, off the true initial
+  // props) rather than via an effect correcting the state after the fact.
+  const [currentSpeaker, setCurrentSpeaker] = useState(() => initialSpeaker ?? initialQueue[0] ?? null);
+  const [queue, setQueue] = useState(() =>
+    initialSpeaker || initialQueue.length === 0 ? initialQueue : initialQueue.slice(1)
+  );
+  // Whether that auto-advance happened - also computed once at mount and
+  // never changed afterward, so the timer-start effect below has a stable
+  // dependency and genuinely only ever runs once, same intent as the state
+  // above without needing to inspect currentSpeaker/queue after the fact.
+  const [shouldAutoStartTimer] = useState(() => !initialSpeaker && initialQueue.length > 0);
   const [history, setHistory] = useState([]);
   const [selectedQueueIndex, setSelectedQueueIndex] = useState(-1);
   const [legendOpen, setLegendOpen] = useState(false);
@@ -36,6 +50,24 @@ export default function SessionBoard({
   const undoRef = useRef(null);
 
   const clampedQueueIndex = queue.length === 0 ? -1 : Math.min(selectedQueueIndex, queue.length - 1);
+
+  // Only set once the chair hits "Go Live" on /cloud - a purely local
+  // session never reads this and never touches Firestore.
+  const liveSessionId = LiveSessionService.getActiveSessionId();
+
+  useEffect(() => {
+    if (!liveSessionId) return;
+    LiveSessionService.publish(liveSessionId, { currentSpeaker, queue });
+  }, [liveSessionId, currentSpeaker, queue]);
+
+  // The other half of the auto-advance above: Timer only attaches its ref
+  // after mount, so starting it can't happen in the lazy initializers
+  // themselves. shouldAutoStartTimer never changes after mount, so this
+  // effect - which calls no local setState, only an imperative ref method -
+  // genuinely only ever runs once.
+  useEffect(() => {
+    if (shouldAutoStartTimer) timerRef.current?.start();
+  }, [shouldAutoStartTimer]);
 
   const nextSpeaker = (elapsedSeconds = 0) => {
     if (queue.length === 0) return;
@@ -141,6 +173,7 @@ export default function SessionBoard({
               ref={timerRef}
               initialTime={speechLength}
               onNext={nextSpeaker}
+              onAnchorChange={(anchor) => liveSessionId && LiveSessionService.publishTimerAnchor(liveSessionId, anchor)}
             />
           </div>
 

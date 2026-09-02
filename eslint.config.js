@@ -17,6 +17,12 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
+      // React Compiler-readiness rules, off rather than fought: this app is
+      // moving toward more cloud-synced state (Firestore listeners feeding
+      // local UI state, e.g. LiveSessionService), which legitimately wants
+      // patterns these two flag. rules-of-hooks/exhaustive-deps/etc. stay on.
+      'react-hooks/purity': 'off',
+      'react-hooks/set-state-in-effect': 'off',
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },

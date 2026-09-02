@@ -1,16 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
-
-function formatTime(seconds) {
-  const abs = Math.abs(seconds);
-
-  const minutes = Math.floor(abs / 60);
-  const secs = abs % 60;
-
-  const formatted = `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-
-  return seconds < 0 ? `-${formatted}` : formatted;
-}
+import { formatTime } from "../utils/formatTime";
 
 const MAX_MINUTES = 999;
 const MAX_SECONDS = 59;
@@ -37,6 +27,7 @@ const Timer = forwardRef(function Timer({
   initialTime = 72,
   onComplete = () => {},
   onNext = () => {},
+  onAnchorChange = () => {},
   editable = false,
 }, ref) {
   const [seconds, setSeconds] = useState(initialTime);
@@ -57,6 +48,13 @@ const Timer = forwardRef(function Timer({
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
+  // Same instability as onCompleteRef above.
+  const onAnchorChangeRef = useRef(onAnchorChange);
+
+  useEffect(() => {
+    onAnchorChangeRef.current = onAnchorChange;
+  }, [onAnchorChange]);
+
   const radius = 150;
   const circumference = 2 * Math.PI * radius;
 
@@ -76,7 +74,34 @@ const Timer = forwardRef(function Timer({
 
   useEffect(() => {
     anchorRef.current = { time: Date.now(), value: seconds };
-  }, [seconds, running]);
+  }, [seconds, running, maxTime, overtime]);
+
+  // Publishes an anchor to the caller (SessionBoard forwards this to
+  // LiveSessionService) only at genuine transition points - start/pause,
+  // +-15s, edit, reset, overtime - not on every per-second RAF re-anchor
+  // above, which would otherwise write to Firestore roughly once a second
+  // for as long as any dais timer runs.
+  const publishAnchor = (value, overrides = {}) => {
+    const time = Date.now();
+    anchorRef.current = { time, value };
+    onAnchorChangeRef.current({
+      time,
+      value,
+      maxTime: overrides.maxTime ?? maxTime,
+      running: overrides.running ?? running,
+      overtime: overrides.overtime ?? overtime,
+    });
+  };
+
+  // Same instability as onCompleteRef above - lets the tick effect below call
+  // the latest publishAnchor (which closes over this render's maxTime/running/
+  // overtime) without those needing to sit in its dependency array and
+  // restart the RAF loop every render.
+  const publishAnchorRef = useRef(publishAnchor);
+
+  useEffect(() => {
+    publishAnchorRef.current = publishAnchor;
+  });
 
   useEffect(() => {
     if (!running) return;
@@ -99,6 +124,7 @@ const Timer = forwardRef(function Timer({
         setOvertime(true);
         onCompleteRef.current();
         setSeconds(-1);
+        publishAnchorRef.current(-1, { overtime: true });
       } else {
         const rounded = Math.ceil(value);
         setSeconds((prev) => (prev === rounded ? prev : rounded));
@@ -122,11 +148,13 @@ const Timer = forwardRef(function Timer({
   const addTime = (amount) => {
     setSeconds((prev) => {
       const next = Math.max(0, prev + amount);
+      const nextOvertime = next > 0 ? false : overtime;
 
       if (next > 0) {
         setOvertime(false);
       }
 
+      publishAnchor(next, { overtime: nextOvertime });
       return next;
     });
   };
@@ -139,6 +167,7 @@ const Timer = forwardRef(function Timer({
     setSeconds(initialTime);
     setMaxTime(initialTime);
     setOvertime(false);
+    publishAnchor(initialTime, { maxTime: initialTime, running: false, overtime: false });
   };
 
   function startEditing() {
@@ -161,6 +190,7 @@ const Timer = forwardRef(function Timer({
     setSeconds(total);
     setMaxTime(total);
     setOvertime(false);
+    publishAnchor(total, { maxTime: total, running: false, overtime: false });
   }
 
   // Only commits once focus leaves both fields entirely (not when tabbing
@@ -184,11 +214,25 @@ const Timer = forwardRef(function Timer({
     onNext(elapsed);
   };
 
+  const toggleRunning = () => {
+    setRunning((prev) => {
+      const next = !prev;
+      publishAnchor(seconds, { running: next });
+      return next;
+    });
+  };
+
+  const start = () => {
+    setRunning(true);
+    publishAnchor(seconds, { running: true });
+  };
+
   // Exposes only what the dais keyboard shortcuts need, keeping the timer's
   // internal state encapsulated. triggerNext reuses nextSpeaker so a
   // keyboard advance reports real elapsed time, like the button does.
   useImperativeHandle(ref, () => ({
-    toggleRunning: () => setRunning((r) => !r),
+    toggleRunning,
+    start,
     reset,
     triggerNext: nextSpeaker,
   }));
@@ -283,7 +327,7 @@ const Timer = forwardRef(function Timer({
         )}
 
         <button
-            onClick={() => setRunning((r) => !r)}
+            onClick={toggleRunning}
             className="flex w-full items-center justify-center gap-2 rounded-none border border-[var(--app-border)] bg-[var(--app-cta-bg)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--app-cta-text)] transition hover:bg-[var(--app-cta-hover)] sm:w-auto"
         >
             {running ? <Pause size={16} /> : <Play size={16} />}
