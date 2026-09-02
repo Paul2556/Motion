@@ -46,9 +46,14 @@ function schedulePush(patch) {
 }
 
 // Doc exists: that account wins unconditionally, and a reload is the only way
-// to refresh components already mounted on the current page. No doc: first
-// sign-in anywhere, so push local up rather than wiping a guest's edits.
-async function handleSignIn(uid) {
+// to refresh components already mounted on the current page - but only for a
+// live sign-in during this session. A cold page load also reports "signed
+// in" the instant Firebase restores the persisted session, and nothing is
+// mounted with stale prefs yet at that point, so reloading there would just
+// loop forever (each reload forgets `previousUid` and sees the same restore
+// as a fresh sign-in again). No doc: first sign-in anywhere, so push local up
+// rather than wiping a guest's edits.
+async function handleSignIn(uid, { reload }) {
   currentUid = uid;
   try {
     const snap = await getDoc(prefsDocRef(uid));
@@ -56,7 +61,7 @@ async function handleSignIn(uid) {
       const data = snap.data();
       if (data.motions) replaceMotions(data.motions);
       if (data.shortcuts) replaceOverrides(data.shortcuts);
-      window.location.reload();
+      if (reload) window.location.reload();
     } else {
       await setDoc(prefsDocRef(uid), {
         motions: getMotions(),
@@ -88,10 +93,20 @@ export function initPrefsSync() {
   onShortcutsChange((shortcuts) => schedulePush({ shortcuts }));
 
   let previousUid = null;
+  // AuthService.subscribe() replays the current (possibly not-yet-resolved)
+  // user synchronously, then Firebase's own onAuthStateChanged fires once
+  // more with the real answer once it resolves - that first real resolution
+  // is a cold-load restore, not a live sign-in. Only calls after that one
+  // represent an actual sign-in/switch happening while the app is running.
+  let hasSeenFirstResolution = false;
+
   AuthService.subscribe((user) => {
+    const isColdRestore = !hasSeenFirstResolution;
+    if (AuthService.isReady()) hasSeenFirstResolution = true;
+
     if (user && user.uid !== previousUid) {
       previousUid = user.uid;
-      handleSignIn(user.uid);
+      handleSignIn(user.uid, { reload: !isColdRestore });
     } else if (!user && previousUid !== null) {
       previousUid = null;
       handleSignOut();

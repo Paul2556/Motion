@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../components/Logo";
-import { APP_HOSTS, DEBUG_HOSTS, DEMO_HOSTS } from "../hosts";
+import { APP_HOSTS, DEBUG_HOSTS, DEMO_HOSTS, DELEGATE_HOSTS } from "../hosts";
 
 // Two variants matching the repo's two theme systems, so the 404 never
 // clashes with whichever one owns the surrounding page.
 function isProductSubdomain(hostname) {
-  return APP_HOSTS.includes(hostname) || DEMO_HOSTS.includes(hostname) || DEBUG_HOSTS.includes(hostname);
+  return (
+    APP_HOSTS.includes(hostname) ||
+    DEMO_HOSTS.includes(hostname) ||
+    DEBUG_HOSTS.includes(hostname) ||
+    DELEGATE_HOSTS.includes(hostname)
+  );
 }
 
 function AppShellNotFound() {

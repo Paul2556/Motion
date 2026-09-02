@@ -10,6 +10,7 @@ import ShortcutLegend from "../components/ShortcutLegend";
 import { formatMotionSummary } from "../utils/motionSummary";
 import { buildInitialGroups, adjustVoteGroups, toggleAbstainGroups } from "../utils/voteGroups";
 import ConferenceService from "../services/ConferenceService";
+import LiveSessionService from "../services/LiveSessionService";
 import { getMotions, canonicalLabel } from "../motionPresets";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
@@ -84,6 +85,15 @@ export default function MotionPage() {
   const clampedMotionIndex = motionLog.length === 0 ? -1 : Math.min(selectedMotionIndex, motionLog.length - 1);
   const selectedMotion = clampedMotionIndex >= 0 ? motionLog[clampedMotionIndex] : null;
 
+  // Only set once the chair hits "Go Live" on /cloud - a purely local
+  // session never reads this and never touches Firestore.
+  const liveSessionId = LiveSessionService.getActiveSessionId();
+
+  function publishActiveMotion(entry) {
+    if (!liveSessionId) return;
+    LiveSessionService.publish(liveSessionId, { activeMotionLabel: entry?.motion ?? null });
+  }
+
   // Opening voting starts a fresh tally rather than carrying one over, and
   // marks this as the active motion, since reopening an older motion means
   // bringing it back to the floor.
@@ -91,6 +101,7 @@ export default function MotionPage() {
     setVotingMotion(entry);
     setGroups(buildInitialGroups(presentCount, absentCount));
     ConferenceService.setActiveMotion(entry);
+    publishActiveMotion(entry);
   }
 
   // The newest motion becomes active immediately, since procedural motions
@@ -99,22 +110,30 @@ export default function MotionPage() {
   function handleMotionSubmit(meta) {
     setMotionLog((prev) => insertByPrecedence(prev, meta, precedenceByLabel));
     ConferenceService.setActiveMotion(meta);
+    publishActiveMotion(meta);
   }
 
   // votingMotion is already the committee's active motion (set in
   // startVoting) - re-setting here is just belt-and-suspenders so /session
   // picks up this exact passed motion even if something else changed the
   // active motion mid-vote.
+  // seedProposer is the delegation MotionInput parsed off the motion text
+  // (e.g. "Malaysia moves for a moderated caucus...") - SessionPage resolves
+  // it against the roster and seeds the queue, so the mover doesn't have to
+  // be re-typed into the queue by hand once their motion passes.
   function continueToSession() {
     ConferenceService.setActiveMotion(votingMotion);
-    navigate("/session");
+    publishActiveMotion(votingMotion);
+    navigate("/session", { state: { seedProposer: votingMotion?.delegation ?? null } });
   }
 
   // Seeds the queue with the full roster via a one-time router-state flag
   // rather than persisted state, so refreshing /session doesn't re-seed over
   // whatever the chair has done since.
   function startSpeakingTime(seconds) {
-    ConferenceService.setActiveMotion({ motion: "Speakers' List", speakingTime: seconds / 60 });
+    const entry = { motion: "Speakers' List", speakingTime: seconds / 60 };
+    ConferenceService.setActiveMotion(entry);
+    publishActiveMotion(entry);
     navigate("/session", { state: { seedQueue: true } });
   }
 

@@ -5,6 +5,7 @@
 export const APP_HOSTS = ["app.motionmun.com"];
 export const DEMO_HOSTS = ["demo.motionmun.com"];
 export const DEBUG_HOSTS = ["debug.motionmun.com"];
+export const DELEGATE_HOSTS = ["delegate.motionmun.com"];
 export const MARKETING_HOSTS = ["motionmun.com", "www.motionmun.com"];
 
 // True only for hosts reachable from the developer's own machine or local

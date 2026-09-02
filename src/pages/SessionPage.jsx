@@ -44,9 +44,25 @@ export default function SessionPage() {
       ? Math.round(motion.totalTime * 60)
       : undefined;
 
-  // One-time seed from MotionPage's speaking time selector - router state,
-  // not persisted, so a later refresh of /session doesn't keep re-seeding
-  // over whatever the chair has done with the queue since.
+  // One-time seed from MotionPage - router state, not persisted, so a later
+  // refresh of /session doesn't keep re-seeding over whatever the chair has
+  // done with the queue since. Two mutually-exclusive sources: the speaking
+  // time selector seeds the full roster (seedQueue), a passed motion with a
+  // named mover (e.g. "Malaysia moves for...") seeds just that one delegate
+  // (seedProposer) - matched case-insensitively against the roster since
+  // MotionInput's parsed delegation is a display name, not a stable id.
+  const seedProposer = location.state?.seedProposer;
+  const proposerDelegate = seedProposer
+    ? committee.delegates.find((delegate) => {
+        const name = compressedCountryName(delegate);
+        return (
+          name?.toLowerCase() === seedProposer.toLowerCase() ||
+          delegate.countryDisplay?.toLowerCase() === seedProposer.toLowerCase() ||
+          delegate.country?.toLowerCase() === seedProposer.toLowerCase()
+        );
+      })
+    : null;
+
   const initialQueue = location.state?.seedQueue
     ? [...committee.delegates]
         .sort((a, b) => (a.countryDisplay || a.country).localeCompare(b.countryDisplay || b.country))
@@ -55,7 +71,13 @@ export default function SessionPage() {
           country: compressedCountryName(delegate),
           countryCode: delegate.countryCode,
         }))
-    : [];
+    : proposerDelegate
+      ? [{
+          id: proposerDelegate.id,
+          country: compressedCountryName(proposerDelegate),
+          countryCode: proposerDelegate.countryCode,
+        }]
+      : [];
 
   return (
     <div className="app-shell h-screen overflow-hidden bg-[var(--app-bg)] text-[var(--app-text)]">

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 
-import { APP_HOSTS, DEMO_HOSTS, DEBUG_HOSTS, MARKETING_HOSTS, isLocalDevHost } from "./hosts";
+import { APP_HOSTS, DEMO_HOSTS, DEBUG_HOSTS, DELEGATE_HOSTS, MARKETING_HOSTS, isLocalDevHost } from "./hosts";
 import LandingPage from "./pages/LandingPage";
 import PreviewLandingPage from "./pages/PreviewLandingPage";
 import HomePage from "./pages/HomePage";
@@ -14,6 +14,7 @@ import SettingsPage from "./pages/SettingsPage";
 import CloudSessionsPage from "./pages/CloudSessionsPage";
 import StatsPage from "./pages/StatsPage";
 import DebugPage from "./pages/DebugPage";
+import DelegateSessionPage from "./pages/DelegateSessionPage";
 import ReferPage from "./pages/ReferPage";
 import AdminPanelPage from "./pages/AdminPanelPage";
 import LicensePage from "./pages/LicensePage";
@@ -106,6 +107,18 @@ function DemoRoutes() {
   );
 }
 
+// Public, unauthenticated - reachable from a scanned QR code with no login,
+// so unlike every other subdomain's route tree this exposes exactly one
+// route rather than the whole app surface.
+function DelegateRoutes() {
+  return (
+    <Routes>
+      <Route path="/s/:sessionId" element={<DelegateSessionPage />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
+}
+
 function DebugRoutes() {
   return (
     <Routes>
@@ -135,6 +148,7 @@ function AllRoutes() {
       <Route path="/debug" element={<DebugPage />} />
       <Route path="/debug/refer" element={<ReferPage />} />
       <Route path="/debug/adminPanel" element={<AdminPanelPage />} />
+      <Route path="/s/:sessionId" element={<DelegateSessionPage />} />
       <Route path="/licensing" element={<LicensePage />} />
       {/* Local/fallback-only design concept - never added to MarketingRoutes,
           so it's inert on the real motionmun.com domain even after this
@@ -151,6 +165,7 @@ export default function App() {
   if (APP_HOSTS.includes(hostname)) return <OwnerGate><AppRoutes /></OwnerGate>;
   if (DEMO_HOSTS.includes(hostname)) return <DemoRoutes />;
   if (DEBUG_HOSTS.includes(hostname)) return <OwnerGate><DebugRoutes /></OwnerGate>;
+  if (DELEGATE_HOSTS.includes(hostname)) return <DelegateRoutes />;
   if (MARKETING_HOSTS.includes(hostname)) return <MarketingRoutes />;
   if (isLocalDevHost(hostname)) return <AllRoutes />;
   // Anything else is reachable over the public internet, so it gets the same

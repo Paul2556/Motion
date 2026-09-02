@@ -35,6 +35,14 @@ service cloud.firestore {
       match /attendance/{delegateId} {
         allow read, write: if isSessionMember(sessionId);
       }
+
+      // Public delegate view (delegate.motionmun.com) - a deliberately narrow
+      // mirror of currentSpeaker/queue/timer/activeMotion only. No login on
+      // that subdomain, so read must be open; writes stay chair-only.
+      match /live/{docId} {
+        allow read: if true;
+        allow write: if isSessionMember(sessionId);
+      }
     }
 
     // Admin-SDK-only collections, which bypass these rules entirely, so
