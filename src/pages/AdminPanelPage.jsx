@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { RefreshCw, Trash2, UserPlus } from "lucide-react";
+import { RefreshCw, Send, Trash2, Upload, UserPlus } from "lucide-react";
 import DebugTopBar from "../components/DebugTopBar";
 import AuthService from "../services/AuthService";
 import { isOwner } from "../services/ownerAccess";
 import { getFirebaseAuth } from "../firebase";
+import { ANNOUNCEMENT_TEMPLATES } from "../data/announcementTemplates";
 
 // Client-side convenience gate only; the real boundary is server-side, where
 // every api/admin/* endpoint verifies the caller's ID token. Deliberately not
@@ -78,6 +79,20 @@ export default function AdminPanelPage() {
   const [addingContributor, setAddingContributor] = useState(false);
   const [confirmRemoveUid, setConfirmRemoveUid] = useState(null);
 
+  const [subscribers, setSubscribers] = useState([]);
+  const [subscriberTotal, setSubscriberTotal] = useState(0);
+  const [unsubscribedCount, setUnsubscribedCount] = useState(0);
+  const [subscribersLoading, setSubscribersLoading] = useState(true);
+  const [subscribersError, setSubscribersError] = useState(null);
+  const [importText, setImportText] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+  const [confirmSend, setConfirmSend] = useState(false);
+  const [sendResult, setSendResult] = useState(null);
+
   async function loadUsers() {
     setLoading(true);
     setError(null);
@@ -123,6 +138,80 @@ export default function AdminPanelPage() {
       .catch((err) => setPermissionsError(err.message))
       .finally(() => setPermissionsLoading(false));
   }, [isAuthorized]);
+
+  async function loadSubscribers() {
+    setSubscribersLoading(true);
+    setSubscribersError(null);
+    try {
+      const data = await callAdmin("announcements", { method: "GET" });
+      setSubscribers(data.subscribers);
+      setSubscriberTotal(data.total);
+      setUnsubscribedCount(data.unsubscribedCount);
+    } catch (err) {
+      setSubscribersError(err.message);
+    } finally {
+      setSubscribersLoading(false);
+    }
+  }
+
+  // Same inline-fetch-on-mount pattern as users/permissions above.
+  useEffect(() => {
+    if (!isAuthorized) return;
+    callAdmin("announcements", { method: "GET" })
+      .then((data) => {
+        setSubscribers(data.subscribers);
+        setSubscriberTotal(data.total);
+        setUnsubscribedCount(data.unsubscribedCount);
+      })
+      .catch((err) => setSubscribersError(err.message))
+      .finally(() => setSubscribersLoading(false));
+  }, [isAuthorized]);
+
+  async function handleImport(event) {
+    event.preventDefault();
+    const emails = importText.split(/[\n,]/).map((e) => e.trim()).filter(Boolean);
+    if (emails.length === 0) return;
+
+    setImporting(true);
+    setSubscribersError(null);
+    setImportResult(null);
+    try {
+      const data = await callAdmin("announcements", {
+        method: "POST",
+        body: JSON.stringify({ action: "import", emails }),
+      });
+      setImportResult(data);
+      setImportText("");
+      await loadSubscribers();
+    } catch (err) {
+      setSubscribersError(err.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function applyTemplate(template) {
+    setSubject(template.subject);
+    setBody(template.body);
+  }
+
+  async function handleSend() {
+    setSending(true);
+    setSubscribersError(null);
+    setSendResult(null);
+    try {
+      const data = await callAdmin("announcements", {
+        method: "POST",
+        body: JSON.stringify({ action: "send", subject, body }),
+      });
+      setSendResult(data);
+      setConfirmSend(false);
+    } catch (err) {
+      setSubscribersError(err.message);
+    } finally {
+      setSending(false);
+    }
+  }
 
   async function handleAddContributor(event) {
     event.preventDefault();
@@ -223,11 +312,11 @@ export default function AdminPanelPage() {
         <div className="flex items-center justify-between gap-3">
           <DebugTopBar />
           <button
-            onClick={tab === "users" ? loadUsers : loadPermissions}
+            onClick={tab === "users" ? loadUsers : tab === "permissions" ? loadPermissions : loadSubscribers}
             aria-label="Refresh"
             className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
           >
-            <RefreshCw size={14} className={(tab === "users" ? loading : permissionsLoading) ? "animate-spin" : ""} />
+            <RefreshCw size={14} className={(tab === "users" ? loading : tab === "permissions" ? permissionsLoading : subscribersLoading) ? "animate-spin" : ""} />
             Refresh
           </button>
         </div>
@@ -236,11 +325,13 @@ export default function AdminPanelPage() {
         <p className="mt-2 text-[var(--app-text-muted)]">
           {tab === "users"
             ? "Firebase Auth accounts - list, disable/enable, delete."
-            : "Contributor page access - Debug/Refer/App are granted individually; admin access always stays owner-only."}
+            : tab === "permissions"
+            ? "Contributor page access - Debug/Refer/App are granted individually; admin access always stays owner-only."
+            : "Compose and send an email to the waitlist from hello@motionmun.com."}
         </p>
 
         <div className="mt-6 flex gap-2 border-b border-[var(--app-border)]">
-          {[["users", "Users"], ["permissions", "Permissions"]].map(([key, label]) => (
+          {[["users", "Users"], ["permissions", "Permissions"], ["announcements", "Announcements"]].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -262,6 +353,12 @@ export default function AdminPanelPage() {
         {tab === "permissions" && permissionsError && (
           <p className="mt-4 border border-[rgba(var(--danger-rgb),0.4)] bg-[rgba(var(--danger-rgb),0.08)] px-4 py-2.5 text-sm text-[var(--danger)]">
             {permissionsError}
+          </p>
+        )}
+
+        {tab === "announcements" && subscribersError && (
+          <p className="mt-4 border border-[rgba(var(--danger-rgb),0.4)] bg-[rgba(var(--danger-rgb),0.08)] px-4 py-2.5 text-sm text-[var(--danger)]">
+            {subscribersError}
           </p>
         )}
 
@@ -362,7 +459,7 @@ export default function AdminPanelPage() {
           )}
         </div>
         </>
-        ) : (
+        ) : tab === "permissions" ? (
         <>
         <form onSubmit={handleAddContributor} className="mt-6 flex flex-wrap items-end gap-3 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <label className="flex-1 min-w-[220px]">
@@ -435,6 +532,141 @@ export default function AdminPanelPage() {
           {!permissionsLoading && contributors.length === 0 && (
             <div className="border border-dashed border-[var(--app-border)] py-10 text-center text-sm text-[var(--app-text-faint)]">
               No contributors yet.
+            </div>
+          )}
+        </div>
+        </>
+        ) : (
+        <>
+        <div className="mt-6 flex flex-wrap gap-4 text-sm text-[var(--app-text-secondary)]">
+          <p><span className="text-[var(--app-text)]">{subscriberTotal}</span> waitlist subscribers</p>
+          <p><span className="text-[var(--app-text)]">{unsubscribedCount}</span> unsubscribed</p>
+        </div>
+
+        <form onSubmit={handleImport} className="mt-4 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+          <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
+            Import emails (comma or newline-separated)
+          </span>
+          <textarea
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            rows={3}
+            placeholder="One-time backfill of the existing waitlist"
+            className="mt-1.5 w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)] placeholder:text-[var(--app-text-faint)]"
+          />
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={importing}
+              className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip-active)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text)] transition hover:bg-[var(--app-chip-active-hover)] disabled:opacity-50"
+            >
+              <Upload size={14} /> Import
+            </button>
+            {importResult && (
+              <p className="text-xs text-[var(--app-text-muted)]">
+                Imported {importResult.imported}, skipped {importResult.skipped} (already on the list).
+              </p>
+            )}
+          </div>
+        </form>
+
+        {/* Audience is waitlist-only for now; a selector belongs here once
+            announcements can also target every signed-up Firebase user. */}
+        <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Audience: Waitlist</p>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {ANNOUNCEMENT_TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => applyTemplate(t)}
+                className="border border-[var(--app-border)] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <label className="mt-4 block">
+            <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Subject</span>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="mt-1.5 w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]"
+            />
+          </label>
+
+          <label className="mt-4 block">
+            <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Body</span>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={10}
+              className="mt-1.5 w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]"
+            />
+          </label>
+
+          <div className="mt-4 flex items-center gap-3">
+            {confirmSend ? (
+              <>
+                <button
+                  onClick={handleSend}
+                  disabled={sending}
+                  className="flex items-center gap-2 border border-[rgba(var(--danger-rgb),0.4)] bg-[rgba(var(--danger-rgb),0.08)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--danger)] transition hover:bg-[rgba(var(--danger-rgb),0.15)] disabled:opacity-50"
+                >
+                  <Send size={14} /> Confirm: send to {subscriberTotal - unsubscribedCount} people
+                </button>
+                <button
+                  onClick={() => setConfirmSend(false)}
+                  className="text-xs uppercase tracking-[0.14em] text-[var(--app-text-muted)] hover:text-[var(--app-text-secondary)]"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setConfirmSend(true)}
+                disabled={!subject.trim() || !body.trim()}
+                className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip-active)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text)] transition hover:bg-[var(--app-chip-active-hover)] disabled:opacity-50"
+              >
+                <Send size={14} /> Send
+              </button>
+            )}
+            {sendResult && (
+              <p className="text-xs text-[var(--app-text-muted)]">
+                Sent {sendResult.sent}{sendResult.failed > 0 ? `, ${sendResult.failed} failed` : ""}.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-2">
+          {subscribers.map((s) => (
+            <div key={s.email} className="border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm text-[var(--app-text-secondary)]">{s.email}</p>
+                    <span className="shrink-0 border border-[var(--app-border)] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--app-text-muted)]">
+                      {s.source}
+                    </span>
+                    {s.unsubscribed && (
+                      <span className="shrink-0 border border-[var(--danger)] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--danger)]">
+                        Unsubscribed
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--app-text-faint)]">Added {formatDate(s.createdAt)}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {!subscribersLoading && subscribers.length === 0 && (
+            <div className="border border-dashed border-[var(--app-border)] py-10 text-center text-sm text-[var(--app-text-faint)]">
+              No subscribers yet.
             </div>
           )}
         </div>
