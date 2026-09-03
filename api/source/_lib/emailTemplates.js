@@ -45,6 +45,25 @@ export function denialEmail({ name }) {
   };
 }
 
+// body is admin-composed (Announcements tab), but escaped anyway - same
+// "neither is trusted" treatment as name/note above, applied consistently
+// rather than carving out an exception for this one caller.
+export function announcementEmail({ subject, body, unsubscribeUrl }) {
+  const paragraphs = body
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
+    .join("\n");
+
+  return {
+    subject,
+    html: `${paragraphs}
+<p>${GSIGNATURE}</p>
+<p style="margin-top:2em;font-size:12px;color:#888;"><a href="${unsubscribeUrl}">Unsubscribe</a> from these emails.</p>`,
+  };
+}
+
 export function waitlistWelcomeEmail() {
   return {
     subject: "Thanks for joining the Motion waitlist",

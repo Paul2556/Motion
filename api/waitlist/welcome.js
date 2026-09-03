@@ -81,7 +81,25 @@ export default async function handler(req, res) {
   }
 
   const db = getAdminDb();
-  const cooldownRef = db.collection("waitlistSends").doc(hashEmail(trimmedEmail));
+  const emailHash = hashEmail(trimmedEmail);
+  const cooldownRef = db.collection("waitlistSends").doc(emailHash);
+
+  // Recorded for the admin panel's Announcements tab (api/admin/announcements.js) - plaintext,
+  // unlike the sha256-only waitlistSends doc above, since that one exists purely as a resend
+  // cooldown key and was never meant to be readable back into an email list. unsubscribed is
+  // reset to false so a repeat signup after a prior unsubscribe re-opts in; createdAt is only
+  // set the first time, so a repeat signup doesn't bump their original join date.
+  const subscriberRef = db.collection("waitlistSubscribers").doc(emailHash);
+  const subscriberSnap = await subscriberRef.get();
+  await subscriberRef.set(
+    {
+      email: trimmedEmail,
+      source: "signup",
+      unsubscribed: false,
+      ...(subscriberSnap.exists ? {} : { createdAt: Timestamp.now() }),
+    },
+    { merge: true },
+  );
 
   // Caps mail-bomb impact on a single destination address even under IP
   // rotation, which the rate limit above can't defend against on its own -

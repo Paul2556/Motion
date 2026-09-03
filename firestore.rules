@@ -78,5 +78,12 @@ service cloud.firestore {
     match /waitlistSends/{emailHash} {
       allow read, write: if false;
     }
+
+    // Plaintext waitlist emails for the admin panel's Announcements tab
+    // (api/admin/announcements.js) - Admin-SDK-only, same reasoning as
+    // waitlistSends above.
+    match /waitlistSubscribers/{emailHash} {
+      allow read, write: if false;
+    }
   }
 }
