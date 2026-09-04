@@ -53,10 +53,14 @@ export default function SessionBoard({
   // session never reads this and never touches Firestore.
   const liveSessionId = LiveSessionService.getActiveSessionId();
 
+  // Delegates get the full queue (speaker included at the front), not just
+  // restQueue - unlike the chair's own "Up Next" list, the delegate view
+  // has no separate reordering UI to exclude the speaker from, and seeing
+  // them at the top of the list doubles as confirmation of who's up.
   useEffect(() => {
     if (!liveSessionId) return;
-    LiveSessionService.publish(liveSessionId, { currentSpeaker, queue: restQueue });
-  }, [liveSessionId, currentSpeaker, restQueue]);
+    LiveSessionService.publish(liveSessionId, { currentSpeaker, queue });
+  }, [liveSessionId, currentSpeaker, queue]);
 
   const nextSpeaker = (elapsedSeconds = 0) => {
     if (queue.length === 0) return;
