@@ -21,21 +21,15 @@ export default function SessionBoard({
   suggestions = [],
   linked = true,
 }) {
-  // Landing on a fresh queue (seeded roster or a passed motion's mover, see
-  // SessionPage) with no one recognized yet shouldn't sit idle on "No
-  // speaker selected" - the very first speaker is pulled up front and the
-  // rest of the queue starts one shorter, computed once in these lazy
-  // initializers (each runs exactly once, at mount, off the true initial
-  // props) rather than via an effect correcting the state after the fact.
-  const [currentSpeaker, setCurrentSpeaker] = useState(() => initialSpeaker ?? initialQueue[0] ?? null);
+  // The queue is the single source of truth for who's speaking: whoever is
+  // at the front is the current speaker, grabbed off the top rather than
+  // tracked as separate state that could drift out of sync with the queue
+  // itself. A distinct initialSpeaker (the landing hero's demo data) is just
+  // prepended ahead of the rest so it becomes that same front-of-queue entry.
   const [queue, setQueue] = useState(() =>
-    initialSpeaker || initialQueue.length === 0 ? initialQueue : initialQueue.slice(1)
+    initialSpeaker ? [initialSpeaker, ...initialQueue] : initialQueue
   );
-  // Whether that auto-advance happened - also computed once at mount and
-  // never changed afterward, so the timer-start effect below has a stable
-  // dependency and genuinely only ever runs once, same intent as the state
-  // above without needing to inspect currentSpeaker/queue after the fact.
-  const [shouldAutoStartTimer] = useState(() => !initialSpeaker && initialQueue.length > 0);
+  const currentSpeaker = queue[0] ?? null;
   const [history, setHistory] = useState([]);
   const [selectedQueueIndex, setSelectedQueueIndex] = useState(-1);
   const [legendOpen, setLegendOpen] = useState(false);
@@ -43,12 +37,18 @@ export default function SessionBoard({
   const navigate = useNavigate();
   const timerRef = useRef(null);
   const queueRef = useRef(null);
-  // Single-slot "undo the last thing" - not a history stack. Overwritten by
-  // the next undoable action, same as a clipboard. A ref (not state) since
-  // it doesn't need to trigger a render on its own, only the undo/redo it
-  // drives does.
+  // Single-slot "undo the last thing" - not a history stack. Holds a plain
+  // { queue, history } snapshot taken right before the most recent mutation,
+  // from every mutation site (mouse or keyboard) - see nextSpeaker,
+  // removeSelected, and the Queue element's wrapped setQueue below. A ref
+  // (not state) since it doesn't need to trigger a render on its own, only
+  // the undo it drives does.
   const undoRef = useRef(null);
 
+  // The Queue component renders the full queue - the current speaker is
+  // just whoever sits at index 0, so moving them (e.g. to the bottom) hands
+  // "currently speaking" off to whoever ends up on top, same as any other
+  // reorder.
   const clampedQueueIndex = queue.length === 0 ? -1 : Math.min(selectedQueueIndex, queue.length - 1);
 
   // Only set once the chair hits "Go Live" on /cloud - a purely local
@@ -60,67 +60,38 @@ export default function SessionBoard({
     LiveSessionService.publish(liveSessionId, { currentSpeaker, queue });
   }, [liveSessionId, currentSpeaker, queue]);
 
-  // The other half of the auto-advance above: Timer only attaches its ref
-  // after mount, so starting it can't happen in the lazy initializers
-  // themselves. shouldAutoStartTimer never changes after mount, so this
-  // effect - which calls no local setState, only an imperative ref method -
-  // genuinely only ever runs once.
-  useEffect(() => {
-    if (shouldAutoStartTimer) timerRef.current?.start();
-  }, [shouldAutoStartTimer]);
-
+  // The one function both the mouse "Next" button and the keyboard shortcut
+  // (via Timer's triggerNext) funnel through, so snapshotting here covers
+  // undo for both.
   const nextSpeaker = (elapsedSeconds = 0) => {
     if (queue.length === 0) return;
 
-    if (currentSpeaker) {
-      ConferenceService.markSpoken(currentSpeaker.id, Math.round(elapsedSeconds));
-      setHistory((prev) => [...prev, currentSpeaker]);
-    }
-
-    setCurrentSpeaker(queue[0]);
+    undoRef.current = { queue, history };
+    ConferenceService.markSpoken(queue[0].id, Math.round(elapsedSeconds));
+    setHistory((prev) => [...prev, queue[0]]);
     setQueue((prev) => prev.slice(1));
   };
 
-  // Snapshots pre-advance state for undo, then drives the advance through
-  // Timer's own nextSpeaker (via triggerNext) rather than calling the
-  // SessionBoard nextSpeaker above directly - that's the only path that
-  // computes real elapsed speaking time, same as the mouse "Next" button.
+  // Drives the advance through Timer's own nextSpeaker (via triggerNext)
+  // rather than calling the SessionBoard nextSpeaker above directly - that's
+  // the only path that computes real elapsed speaking time, same as the
+  // mouse "Next" button.
   function recognizeNext() {
-    if (queue.length === 0) return;
-    undoRef.current = {
-      type: "advance",
-      previousSpeaker: currentSpeaker,
-      previousQueue: queue,
-      hadPreviousSpeaker: Boolean(currentSpeaker),
-    };
     timerRef.current?.triggerNext();
   }
 
   function removeSelected() {
     if (clampedQueueIndex < 0) return;
-    const removed = queue[clampedQueueIndex];
-    undoRef.current = { type: "remove", speaker: removed, index: clampedQueueIndex };
+    undoRef.current = { queue, history };
     setQueue((prev) => prev.filter((_, i) => i !== clampedQueueIndex));
   }
 
   function performUndo() {
-    const action = undoRef.current;
-    if (!action) return;
+    const snapshot = undoRef.current;
+    if (!snapshot) return;
     undoRef.current = null;
-
-    if (action.type === "remove") {
-      setQueue((prev) => {
-        const next = [...prev];
-        next.splice(Math.min(action.index, next.length), 0, action.speaker);
-        return next;
-      });
-    } else if (action.type === "advance") {
-      setCurrentSpeaker(action.previousSpeaker);
-      setQueue(action.previousQueue);
-      if (action.hadPreviousSpeaker) {
-        setHistory((prev) => prev.slice(0, -1));
-      }
-    }
+    setQueue(snapshot.queue);
+    setHistory(snapshot.history);
   }
 
   useDaisShortcuts(
@@ -143,9 +114,7 @@ export default function SessionBoard({
     { active: linked }
   );
 
-  const estimatedMinutes = Math.ceil(
-    ((queue.length + (currentSpeaker ? 1 : 0)) * speechLength) / 60
-  );
+  const estimatedMinutes = Math.ceil((queue.length * speechLength) / 60);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -192,7 +161,7 @@ export default function SessionBoard({
             </div>
             <div className="rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-6 py-4 xl:py-5 text-center">
               <p className="text-2xl sm:text-xl sm:text-4xl font-semibold">
-                {queue.length}
+                {Math.max(queue.length - 1, 0)}
               </p>
               <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Queued</p>
             </div>
@@ -202,7 +171,10 @@ export default function SessionBoard({
         <Queue
           ref={queueRef}
           queue={queue}
-          setQueue={setQueue}
+          setQueue={(next) => {
+            undoRef.current = { queue, history };
+            setQueue(next);
+          }}
           suggestions={suggestions}
           selectedIndex={clampedQueueIndex}
           onSelectIndex={setSelectedQueueIndex}
