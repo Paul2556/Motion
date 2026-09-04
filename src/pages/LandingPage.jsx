@@ -104,6 +104,7 @@ const FAQ_ITEMS = [
   ['Do I need to install anything?', 'No. Motion runs in your browser. Upload a delegate roster and you are ready to chair.'],
   ['Is our conference data stored anywhere?', 'No, at least not fully. Motion has backend to store conference ONLY when logged in this is for multi-day conferences, if not, a loaded conference lives only in your browser tab for that session, and closing the tab clears it completely. No traces, no worries.'],
   ['Is Motion open source?', 'Yes, the full source is public on GitHub.'],
+  ['What if I don’t know how to use the natural language motions?', 'No problem, you can switch to a dropdown-based form instead from Settings, no typing required.'],
 ]
 
 import Logo from "../components/Logo";
