@@ -90,6 +90,16 @@ export default function SessionBoard({
 
     if (action.type === "remove") {
       setQueue((prev) => {
+        // Same duplicate rule as Queue.jsx's add flow - if this delegate was
+        // manually re-added since the removal, undo shouldn't reinsert a
+        // second copy of them.
+        const alreadyQueued = prev.some((speaker) =>
+          action.speaker.countryCode
+            ? speaker.countryCode === action.speaker.countryCode
+            : speaker.country.toLowerCase() === action.speaker.country.toLowerCase()
+        );
+        if (alreadyQueued) return prev;
+
         const next = [...prev];
         next.splice(Math.min(action.index, next.length), 0, action.speaker);
         return next;
