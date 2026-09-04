@@ -21,21 +21,16 @@ export default function SessionBoard({
   suggestions = [],
   linked = true,
 }) {
-  // Landing on a fresh queue (seeded roster or a passed motion's mover, see
-  // SessionPage) with no one recognized yet shouldn't sit idle on "No
-  // speaker selected" - the very first speaker is pulled up front and the
-  // rest of the queue starts one shorter, computed once in these lazy
-  // initializers (each runs exactly once, at mount, off the true initial
-  // props) rather than via an effect correcting the state after the fact.
-  const [currentSpeaker, setCurrentSpeaker] = useState(() => initialSpeaker ?? initialQueue[0] ?? null);
+  // The queue is the single source of truth for who's speaking: whoever is
+  // at the front is the current speaker, grabbed off the top rather than
+  // tracked as separate state that could drift out of sync with the queue
+  // itself. A distinct initialSpeaker (the landing hero's demo data) is just
+  // prepended ahead of the rest so it becomes that same front-of-queue entry.
   const [queue, setQueue] = useState(() =>
-    initialSpeaker || initialQueue.length === 0 ? initialQueue : initialQueue.slice(1)
+    initialSpeaker ? [initialSpeaker, ...initialQueue] : initialQueue
   );
-  // Whether that auto-advance happened - also computed once at mount and
-  // never changed afterward, so the timer-start effect below has a stable
-  // dependency and genuinely only ever runs once, same intent as the state
-  // above without needing to inspect currentSpeaker/queue after the fact.
-  const [shouldAutoStartTimer] = useState(() => !initialSpeaker && initialQueue.length > 0);
+  const currentSpeaker = queue[0] ?? null;
+  const restQueue = queue.slice(1);
   const [history, setHistory] = useState([]);
   const [selectedQueueIndex, setSelectedQueueIndex] = useState(-1);
   const [legendOpen, setLegendOpen] = useState(false);
@@ -49,7 +44,10 @@ export default function SessionBoard({
   // drives does.
   const undoRef = useRef(null);
 
-  const clampedQueueIndex = queue.length === 0 ? -1 : Math.min(selectedQueueIndex, queue.length - 1);
+  // Indexes into restQueue (the "Up Next" list the Queue component
+  // renders), not the full queue - the current speaker at queue[0] isn't
+  // selectable there.
+  const clampedQueueIndex = restQueue.length === 0 ? -1 : Math.min(selectedQueueIndex, restQueue.length - 1);
 
   // Only set once the chair hits "Go Live" on /cloud - a purely local
   // session never reads this and never touches Firestore.
@@ -57,27 +55,14 @@ export default function SessionBoard({
 
   useEffect(() => {
     if (!liveSessionId) return;
-    LiveSessionService.publish(liveSessionId, { currentSpeaker, queue });
-  }, [liveSessionId, currentSpeaker, queue]);
-
-  // The other half of the auto-advance above: Timer only attaches its ref
-  // after mount, so starting it can't happen in the lazy initializers
-  // themselves. shouldAutoStartTimer never changes after mount, so this
-  // effect - which calls no local setState, only an imperative ref method -
-  // genuinely only ever runs once.
-  useEffect(() => {
-    if (shouldAutoStartTimer) timerRef.current?.start();
-  }, [shouldAutoStartTimer]);
+    LiveSessionService.publish(liveSessionId, { currentSpeaker, queue: restQueue });
+  }, [liveSessionId, currentSpeaker, restQueue]);
 
   const nextSpeaker = (elapsedSeconds = 0) => {
     if (queue.length === 0) return;
 
-    if (currentSpeaker) {
-      ConferenceService.markSpoken(currentSpeaker.id, Math.round(elapsedSeconds));
-      setHistory((prev) => [...prev, currentSpeaker]);
-    }
-
-    setCurrentSpeaker(queue[0]);
+    ConferenceService.markSpoken(queue[0].id, Math.round(elapsedSeconds));
+    setHistory((prev) => [...prev, queue[0]]);
     setQueue((prev) => prev.slice(1));
   };
 
@@ -87,20 +72,16 @@ export default function SessionBoard({
   // computes real elapsed speaking time, same as the mouse "Next" button.
   function recognizeNext() {
     if (queue.length === 0) return;
-    undoRef.current = {
-      type: "advance",
-      previousSpeaker: currentSpeaker,
-      previousQueue: queue,
-      hadPreviousSpeaker: Boolean(currentSpeaker),
-    };
+    undoRef.current = { type: "advance", previousQueue: queue };
     timerRef.current?.triggerNext();
   }
 
   function removeSelected() {
     if (clampedQueueIndex < 0) return;
-    const removed = queue[clampedQueueIndex];
+    const fullIndex = clampedQueueIndex + 1;
+    const removed = queue[fullIndex];
     undoRef.current = { type: "remove", speaker: removed, index: clampedQueueIndex };
-    setQueue((prev) => prev.filter((_, i) => i !== clampedQueueIndex));
+    setQueue((prev) => prev.filter((_, i) => i !== fullIndex));
   }
 
   function performUndo() {
@@ -111,15 +92,12 @@ export default function SessionBoard({
     if (action.type === "remove") {
       setQueue((prev) => {
         const next = [...prev];
-        next.splice(Math.min(action.index, next.length), 0, action.speaker);
+        next.splice(Math.min(action.index + 1, next.length), 0, action.speaker);
         return next;
       });
     } else if (action.type === "advance") {
-      setCurrentSpeaker(action.previousSpeaker);
       setQueue(action.previousQueue);
-      if (action.hadPreviousSpeaker) {
-        setHistory((prev) => prev.slice(0, -1));
-      }
+      setHistory((prev) => prev.slice(0, -1));
     }
   }
 
@@ -133,7 +111,7 @@ export default function SessionBoard({
       "speakerList.addSpeaker": () => queueRef.current?.focusAddInput(),
       "speakerList.moveUp": () => setSelectedQueueIndex((i) => Math.max(0, (i < 0 ? 0 : i) - 1)),
       "speakerList.moveDown": () =>
-        setSelectedQueueIndex((i) => Math.min(queue.length - 1, (i < 0 ? -1 : i) + 1)),
+        setSelectedQueueIndex((i) => Math.min(restQueue.length - 1, (i < 0 ? -1 : i) + 1)),
       "global.undo": performUndo,
       "global.legend": () => setLegendOpen((open) => !open),
       "global.viewRollCall": () => navigate("/rollcall"),
@@ -143,9 +121,7 @@ export default function SessionBoard({
     { active: linked }
   );
 
-  const estimatedMinutes = Math.ceil(
-    ((queue.length + (currentSpeaker ? 1 : 0)) * speechLength) / 60
-  );
+  const estimatedMinutes = Math.ceil((queue.length * speechLength) / 60);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -192,7 +168,7 @@ export default function SessionBoard({
             </div>
             <div className="rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-6 py-4 xl:py-5 text-center">
               <p className="text-2xl sm:text-xl sm:text-4xl font-semibold">
-                {queue.length}
+                {restQueue.length}
               </p>
               <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Queued</p>
             </div>
@@ -201,8 +177,10 @@ export default function SessionBoard({
 
         <Queue
           ref={queueRef}
-          queue={queue}
-          setQueue={setQueue}
+          queue={restQueue}
+          setQueue={(nextRest) =>
+            setQueue((prev) => (prev.length > 0 ? [prev[0], ...nextRest] : nextRest))
+          }
           suggestions={suggestions}
           selectedIndex={clampedQueueIndex}
           onSelectIndex={setSelectedQueueIndex}
