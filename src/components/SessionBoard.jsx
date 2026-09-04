@@ -188,6 +188,7 @@ export default function SessionBoard({
           suggestions={suggestions}
           selectedIndex={clampedQueueIndex}
           onSelectIndex={setSelectedQueueIndex}
+          pinned={currentSpeaker}
         />
       </div>
 
