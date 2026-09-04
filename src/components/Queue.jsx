@@ -18,7 +18,6 @@ const Queue = forwardRef(function Queue({
   selectedIndex = -1,
   onSelectIndex,
   readOnly = false,
-  pinned = null,
 }, ref) {
   const [newSpeaker, setNewSpeaker] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -198,26 +197,9 @@ const Queue = forwardRef(function Queue({
 
       <div className="mt-6 min-h-0 flex-1 overflow-y-auto space-y-3 pr-1">
 
-        {queue.length === 0 && !pinned && (
+        {queue.length === 0 && (
           <div className="border border-dashed border-[var(--app-border)] py-10 text-center text-sm text-[var(--app-text-faint)]">
             No speakers queued.
-          </div>
-        )}
-
-        {pinned && (
-          <div className="border border-[var(--app-border-active)] bg-[var(--app-chip-active)] px-5 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <span className="font-mono text-xs text-[var(--app-text-muted)]">01</span>
-
-                <span className="inline-flex items-center gap-2 text-[var(--app-text)]">
-                  <Flag countryCode={pinned.countryCode} />
-                  {pinned.country}
-                </span>
-              </div>
-
-              <span className="text-[9px] uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Speaking</span>
-            </div>
           </div>
         )}
 
@@ -233,7 +215,7 @@ const Queue = forwardRef(function Queue({
 
               <div className="flex items-center gap-4">
                 <span className="font-mono text-xs text-[var(--app-text-muted)]">
-                  {String(index + (pinned ? 2 : 1)).padStart(2, "0")}
+                  {String(index + 1).padStart(2, "0")}
                 </span>
 
                 <span className="inline-flex items-center gap-2 text-[var(--app-text)]">

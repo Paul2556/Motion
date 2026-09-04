@@ -30,7 +30,6 @@ export default function SessionBoard({
     initialSpeaker ? [initialSpeaker, ...initialQueue] : initialQueue
   );
   const currentSpeaker = queue[0] ?? null;
-  const restQueue = queue.slice(1);
   const [history, setHistory] = useState([]);
   const [selectedQueueIndex, setSelectedQueueIndex] = useState(-1);
   const [legendOpen, setLegendOpen] = useState(false);
@@ -44,19 +43,16 @@ export default function SessionBoard({
   // drives does.
   const undoRef = useRef(null);
 
-  // Indexes into restQueue (the "Up Next" list the Queue component
-  // renders), not the full queue - the current speaker at queue[0] isn't
-  // selectable there.
-  const clampedQueueIndex = restQueue.length === 0 ? -1 : Math.min(selectedQueueIndex, restQueue.length - 1);
+  // The Queue component renders the full queue - the current speaker is
+  // just whoever sits at index 0, so moving them (e.g. to the bottom) hands
+  // "currently speaking" off to whoever ends up on top, same as any other
+  // reorder.
+  const clampedQueueIndex = queue.length === 0 ? -1 : Math.min(selectedQueueIndex, queue.length - 1);
 
   // Only set once the chair hits "Go Live" on /cloud - a purely local
   // session never reads this and never touches Firestore.
   const liveSessionId = LiveSessionService.getActiveSessionId();
 
-  // Delegates get the full queue (speaker included at the front), not just
-  // restQueue - unlike the chair's own "Up Next" list, the delegate view
-  // has no separate reordering UI to exclude the speaker from, and seeing
-  // them at the top of the list doubles as confirmation of who's up.
   useEffect(() => {
     if (!liveSessionId) return;
     LiveSessionService.publish(liveSessionId, { currentSpeaker, queue });
@@ -82,10 +78,9 @@ export default function SessionBoard({
 
   function removeSelected() {
     if (clampedQueueIndex < 0) return;
-    const fullIndex = clampedQueueIndex + 1;
-    const removed = queue[fullIndex];
+    const removed = queue[clampedQueueIndex];
     undoRef.current = { type: "remove", speaker: removed, index: clampedQueueIndex };
-    setQueue((prev) => prev.filter((_, i) => i !== fullIndex));
+    setQueue((prev) => prev.filter((_, i) => i !== clampedQueueIndex));
   }
 
   function performUndo() {
@@ -96,7 +91,7 @@ export default function SessionBoard({
     if (action.type === "remove") {
       setQueue((prev) => {
         const next = [...prev];
-        next.splice(Math.min(action.index + 1, next.length), 0, action.speaker);
+        next.splice(Math.min(action.index, next.length), 0, action.speaker);
         return next;
       });
     } else if (action.type === "advance") {
@@ -115,7 +110,7 @@ export default function SessionBoard({
       "speakerList.addSpeaker": () => queueRef.current?.focusAddInput(),
       "speakerList.moveUp": () => setSelectedQueueIndex((i) => Math.max(0, (i < 0 ? 0 : i) - 1)),
       "speakerList.moveDown": () =>
-        setSelectedQueueIndex((i) => Math.min(restQueue.length - 1, (i < 0 ? -1 : i) + 1)),
+        setSelectedQueueIndex((i) => Math.min(queue.length - 1, (i < 0 ? -1 : i) + 1)),
       "global.undo": performUndo,
       "global.legend": () => setLegendOpen((open) => !open),
       "global.viewRollCall": () => navigate("/rollcall"),
@@ -172,7 +167,7 @@ export default function SessionBoard({
             </div>
             <div className="rounded-none border border-[var(--app-border)] bg-[var(--app-chip)] px-6 py-4 xl:py-5 text-center">
               <p className="text-2xl sm:text-xl sm:text-4xl font-semibold">
-                {restQueue.length}
+                {Math.max(queue.length - 1, 0)}
               </p>
               <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Queued</p>
             </div>
@@ -181,14 +176,11 @@ export default function SessionBoard({
 
         <Queue
           ref={queueRef}
-          queue={restQueue}
-          setQueue={(nextRest) =>
-            setQueue((prev) => (prev.length > 0 ? [prev[0], ...nextRest] : nextRest))
-          }
+          queue={queue}
+          setQueue={setQueue}
           suggestions={suggestions}
           selectedIndex={clampedQueueIndex}
           onSelectIndex={setSelectedQueueIndex}
-          pinned={currentSpeaker}
         />
       </div>
 
