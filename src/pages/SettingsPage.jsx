@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Check, Coffee, Moon, RotateCcw, Sun } from "lucide-react";
+import { ArrowLeft, Check, Coffee, ListChecks, Moon, RotateCcw, Sun, Type } from "lucide-react";
 
 import Logo from "../components/Logo";
 import MotionPresetManager from "../components/MotionPresetManager";
 import { getAppTheme, setAppTheme, getAppReducedMotion, setAppReducedMotion } from "../appTheme";
+import { getMotionInputMode, setMotionInputMode } from "../motionInputMode";
 import AuthService from "../services/AuthService";
 import { SHORTCUT_SCOPES, REMAPPABLE_SCOPES } from "../shortcuts";
 import { getShortcutOverride, setShortcutOverride, clearShortcutOverride, resolveKey, keyIdToDisplay } from "../shortcutPrefs";
@@ -149,6 +150,7 @@ function ThemeOption({ label, icon, active, onClick }) {
 export default function SettingsPage() {
   const [theme, setTheme] = useState(getAppTheme);
   const [reducedMotion, setReducedMotion] = useState(getAppReducedMotion);
+  const [motionInputMode, setMotionInputModeState] = useState(getMotionInputMode);
   const [user, setUser] = useState(() => AuthService.getCurrentUser());
 
   useEffect(() => AuthService.subscribe(setUser), []);
@@ -156,6 +158,11 @@ export default function SettingsPage() {
   function chooseTheme(next) {
     setTheme(next);
     setAppTheme(next);
+  }
+
+  function chooseMotionInputMode(next) {
+    setMotionInputModeState(next);
+    setMotionInputMode(next);
   }
 
   function toggleReducedMotion() {
@@ -273,6 +280,26 @@ export default function SettingsPage() {
 
           <div className="mt-5">
             <ShortcutRemapList />
+          </div>
+        </div>
+
+        <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Motion input</p>
+          <p className="mt-2 text-sm text-[var(--app-text-muted)]">Choose how you add new motions on the Motions page.</p>
+
+          <div className="mt-5 flex gap-4">
+            <ThemeOption
+              label="Natural language"
+              icon={<Type size={18} />}
+              active={motionInputMode === "natural"}
+              onClick={() => chooseMotionInputMode("natural")}
+            />
+            <ThemeOption
+              label="Dropdown form"
+              icon={<ListChecks size={18} />}
+              active={motionInputMode === "dropdown"}
+              onClick={() => chooseMotionInputMode("dropdown")}
+            />
           </div>
         </div>
 
