@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -30,22 +30,35 @@ const Queue = forwardRef(function Queue({
     focusAddInput: () => inputRef.current?.focus(),
   }));
 
+  // A delegate already on the queue (speaking or waiting - queue includes
+  // both) can't be queued again. Matched by country code when the candidate
+  // has one (suggestions always do), else by name, so "France" typed twice
+  // is caught even without a code.
+  const isAlreadyQueued = useCallback(
+    ({ name, code }) =>
+      queue.some((speaker) =>
+        code ? speaker.countryCode === code : speaker.country.toLowerCase() === name.toLowerCase()
+      ),
+    [queue]
+  );
+
   const filtered = useMemo(() => {
     const query = newSpeaker.trim().toLowerCase();
     if (!query || suggestions.length === 0) return [];
     return suggestions
       .filter(
         (s) =>
-          s.name.toLowerCase().includes(query) ||
-          s.alias?.some((a) => a.toLowerCase().includes(query))
+          (s.name.toLowerCase().includes(query) ||
+            s.alias?.some((a) => a.toLowerCase().includes(query))) &&
+          !isAlreadyQueued(s)
       )
       .slice(0, MAX_SUGGESTIONS);
-  }, [newSpeaker, suggestions]);
+  }, [newSpeaker, suggestions, isAlreadyQueued]);
 
   function addSpeaker({ name, code = null }) {
     const trimmed = name.trim();
 
-    if (!trimmed) return;
+    if (!trimmed || isAlreadyQueued({ name: trimmed, code })) return;
 
     setQueue([
       ...queue,
