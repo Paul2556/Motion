@@ -37,10 +37,12 @@ export default function SessionBoard({
   const navigate = useNavigate();
   const timerRef = useRef(null);
   const queueRef = useRef(null);
-  // Single-slot "undo the last thing" - not a history stack. Overwritten by
-  // the next undoable action, same as a clipboard. A ref (not state) since
-  // it doesn't need to trigger a render on its own, only the undo/redo it
-  // drives does.
+  // Single-slot "undo the last thing" - not a history stack. Holds a plain
+  // { queue, history } snapshot taken right before the most recent mutation,
+  // from every mutation site (mouse or keyboard) - see nextSpeaker,
+  // removeSelected, and the Queue element's wrapped setQueue below. A ref
+  // (not state) since it doesn't need to trigger a render on its own, only
+  // the undo it drives does.
   const undoRef = useRef(null);
 
   // The Queue component renders the full queue - the current speaker is
@@ -58,56 +60,38 @@ export default function SessionBoard({
     LiveSessionService.publish(liveSessionId, { currentSpeaker, queue });
   }, [liveSessionId, currentSpeaker, queue]);
 
+  // The one function both the mouse "Next" button and the keyboard shortcut
+  // (via Timer's triggerNext) funnel through, so snapshotting here covers
+  // undo for both.
   const nextSpeaker = (elapsedSeconds = 0) => {
     if (queue.length === 0) return;
 
+    undoRef.current = { queue, history };
     ConferenceService.markSpoken(queue[0].id, Math.round(elapsedSeconds));
     setHistory((prev) => [...prev, queue[0]]);
     setQueue((prev) => prev.slice(1));
   };
 
-  // Snapshots pre-advance state for undo, then drives the advance through
-  // Timer's own nextSpeaker (via triggerNext) rather than calling the
-  // SessionBoard nextSpeaker above directly - that's the only path that
-  // computes real elapsed speaking time, same as the mouse "Next" button.
+  // Drives the advance through Timer's own nextSpeaker (via triggerNext)
+  // rather than calling the SessionBoard nextSpeaker above directly - that's
+  // the only path that computes real elapsed speaking time, same as the
+  // mouse "Next" button.
   function recognizeNext() {
-    if (queue.length === 0) return;
-    undoRef.current = { type: "advance", previousQueue: queue };
     timerRef.current?.triggerNext();
   }
 
   function removeSelected() {
     if (clampedQueueIndex < 0) return;
-    const removed = queue[clampedQueueIndex];
-    undoRef.current = { type: "remove", speaker: removed, index: clampedQueueIndex };
+    undoRef.current = { queue, history };
     setQueue((prev) => prev.filter((_, i) => i !== clampedQueueIndex));
   }
 
   function performUndo() {
-    const action = undoRef.current;
-    if (!action) return;
+    const snapshot = undoRef.current;
+    if (!snapshot) return;
     undoRef.current = null;
-
-    if (action.type === "remove") {
-      setQueue((prev) => {
-        // Same duplicate rule as Queue.jsx's add flow - if this delegate was
-        // manually re-added since the removal, undo shouldn't reinsert a
-        // second copy of them.
-        const alreadyQueued = prev.some((speaker) =>
-          action.speaker.countryCode
-            ? speaker.countryCode === action.speaker.countryCode
-            : speaker.country.toLowerCase() === action.speaker.country.toLowerCase()
-        );
-        if (alreadyQueued) return prev;
-
-        const next = [...prev];
-        next.splice(Math.min(action.index, next.length), 0, action.speaker);
-        return next;
-      });
-    } else if (action.type === "advance") {
-      setQueue(action.previousQueue);
-      setHistory((prev) => prev.slice(0, -1));
-    }
+    setQueue(snapshot.queue);
+    setHistory(snapshot.history);
   }
 
   useDaisShortcuts(
@@ -187,7 +171,10 @@ export default function SessionBoard({
         <Queue
           ref={queueRef}
           queue={queue}
-          setQueue={setQueue}
+          setQueue={(next) => {
+            undoRef.current = { queue, history };
+            setQueue(next);
+          }}
           suggestions={suggestions}
           selectedIndex={clampedQueueIndex}
           onSelectIndex={setSelectedQueueIndex}
