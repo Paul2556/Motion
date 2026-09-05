@@ -21,17 +21,25 @@ function formFromMotion(motion) {
   };
 }
 
+// query is already trimmed/lowercased by SettingsPage - an empty query
+// always matches, so every motion shows by default.
+function matchesQuery(query, motion) {
+  if (!query) return true;
+  return [motion.text, ...(motion.alias ?? [])].some((term) => term.toLowerCase().includes(query));
+}
+
 // Built-in and user-added motions are indistinguishable once persisted, so
 // every row gets the same controls. No local state mirrors the store: writes
 // go straight to localStorage and a `tick` bump forces the re-render.
-export default function MotionPresetManager() {
+export default function MotionPresetManager({ query = "" }) {
   const [, setTick] = useState(0);
   const [editingId, setEditingId] = useState(null); // motion.id, "new", or null
   const [form, setForm] = useState(emptyForm);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
-  const motions = getMotions();
+  const allMotions = getMotions();
+  const motions = allMotions.filter((motion) => matchesQuery(query, motion));
   const formOpen = editingId !== null;
 
   function startAdd() {
@@ -98,13 +106,19 @@ export default function MotionPresetManager() {
         one nearest the top of this list first. Use the arrows to re-rank a motion.
       </p>
 
+      {query && motions.length === 0 && (
+        <p className="text-sm text-[var(--app-text-faint)]">No motions match &quot;{query}&quot;.</p>
+      )}
+
       <div className="space-y-2">
-        {motions.map((motion, index) => (
+        {motions.map((motion) => {
+          const fullIndex = allMotions.findIndex((m) => m.id === motion.id);
+          return (
           <div key={motion.id} className="flex items-center justify-between gap-4 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2">
             <div className="flex shrink-0 flex-col">
               <button
                 onClick={() => handleMove(motion.id, -1)}
-                disabled={index === 0}
+                disabled={fullIndex === 0}
                 aria-label={`Move ${motion.text} up`}
                 className="text-[var(--app-text-muted)] transition hover:text-[var(--app-text-secondary)] disabled:opacity-20 disabled:hover:text-[var(--app-text-muted)]"
               >
@@ -112,7 +126,7 @@ export default function MotionPresetManager() {
               </button>
               <button
                 onClick={() => handleMove(motion.id, 1)}
-                disabled={index === motions.length - 1}
+                disabled={fullIndex === allMotions.length - 1}
                 aria-label={`Move ${motion.text} down`}
                 className="text-[var(--app-text-muted)] transition hover:text-[var(--app-text-secondary)] disabled:opacity-20 disabled:hover:text-[var(--app-text-muted)]"
               >
@@ -161,7 +175,8 @@ export default function MotionPresetManager() {
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {formOpen && (
