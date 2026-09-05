@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppTopBar from "../components/AppTopBar";
 import MotionInput from "../components/MotionInput";
+import MotionDropdownForm from "../components/MotionDropdownForm";
 import MotionLog from "../components/MotionLog";
 import VotingPanel from "../components/VotingPanel";
 import SpeakingTimeSelector from "../components/SpeakingTimeSelector";
@@ -12,6 +13,7 @@ import { buildInitialGroups, adjustVoteGroups, toggleAbstainGroups } from "../ut
 import ConferenceService from "../services/ConferenceService";
 import LiveSessionService from "../services/LiveSessionService";
 import { getMotions, canonicalLabel } from "../motionPresets";
+import { getMotionInputMode } from "../motionInputMode";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
 function voteStorageKey(committeeId) {
@@ -56,6 +58,10 @@ export default function MotionPage() {
   // Scope MotionInput's matching to delegations actually in this committee
   // (including non-country ones like press corps), not the full ISO list.
   const delegations = committee?.delegates.map((d) => ({ name: d.countryDisplay, code: d.countryCode })) ?? [];
+
+  // Read once at render time, same as getMotions() below - routes here fully
+  // remount on navigation, so no cross-mount reactivity is needed.
+  const inputMode = getMotionInputMode();
 
   // Read once per mount (see motionPresets.js) - used to rank the motion log
   // by precedence (array order = disruptiveness rank, see insertByPrecedence).
@@ -231,18 +237,29 @@ export default function MotionPage() {
 
         <div className={votingMotion ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]" : "flex justify-center"}>
           <div className={`border border-[var(--app-border)] bg-[var(--app-panel)] p-6 ${votingMotion ? "" : "w-full max-w-2xl"}`}>
-            <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">Motion text</p>
+            <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">
+              {inputMode === "natural" ? "Motion text" : "New motion"}
+            </p>
 
-            <MotionInput
-              ref={motionInputRef}
-              value={motionText}
-              onChange={setMotionText}
-              placeholder="You can type as naturally as you want"
-              rows={8}
-              className="mt-4"
-              delegations={delegations}
-              onSubmit={handleMotionSubmit}
-            />
+            {inputMode === "natural" ? (
+              <MotionInput
+                ref={motionInputRef}
+                value={motionText}
+                onChange={setMotionText}
+                placeholder="You can type as naturally as you want"
+                rows={8}
+                className="mt-4"
+                delegations={delegations}
+                onSubmit={handleMotionSubmit}
+              />
+            ) : (
+              <MotionDropdownForm
+                ref={motionInputRef}
+                delegations={delegations}
+                onSubmit={handleMotionSubmit}
+                className="mt-4"
+              />
+            )}
 
             <MotionLog
               entries={motionLog}
