@@ -164,6 +164,10 @@ from `window.location.hostname` (a plain client-rendered SPA, no per-domain serv
   speaking-time bar chart ranked descending.
 
 ### Settings (`/settings`)
+- A search box filters the page's sections by keyword. Each section shows if the query matches its
+  own label terms; for shortcuts and motion presets, it also shows if the query matches any
+  individual shortcut label or motion name/alias (`SettingsPage.jsx`'s `matches`/`anyMotionMatches`),
+  and that section's list itself narrows to only the matching rows.
 - Theme: Black / White / Brown choice (`appTheme.js`, see Theming below) — Black is the native
   dark palette, White flips it via `invert(1)`, and Brown is a real re-theme with its own
   hand-picked CSS custom property values rather than an inverted derivative of Black.
