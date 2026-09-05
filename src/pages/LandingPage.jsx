@@ -102,8 +102,9 @@ const FAQ_ITEMS = [
   ['What is Model United Nations?', 'MUN is an educational simulation where students act as country delegates, debating global issues and negotiating resolutions through the same procedures used at the real UN.'],
   ['Who is Motion for?', 'Chairs running an MUN committee: importing the delegate roster, running debate, managing votes, and keeping time, all from one screen.'],
   ['Do I need to install anything?', 'No. Motion runs in your browser. Upload a delegate roster and you are ready to chair.'],
-  ['Is our conference data stored anywhere?', 'No, at least not fully. Motion has backend to store conference ONLY when logged in this is for multi-day conferences, if not, a loaded conference lives only in your browser tab for that session, and closing the tab clears it completely. No traces, no worries.'],
+  ['Is our conference data stored anywhere?', 'No, at least not fully. Motion has backend to store conference ONLY when logged in this is for multi-day conferences. If not, a loaded conference lives only in your browser tab for that session, and closing the tab clears it completely. No traces, no worries.'],
   ['Is Motion open source?', 'Yes, the full source is public on GitHub.'],
+  ['What if I don’t know how to use the natural language motions?', 'No problem, you can switch to a dropdown-based form instead from Settings, no typing required.'],
 ]
 
 import Logo from "../components/Logo";
@@ -336,14 +337,16 @@ function LandingPage() {
 
       <main id="top">
         <section className="relative border-b border-black/10 pt-16">
-          <div className="hero-grid absolute inset-0 opacity-50" />
           <div className="page-container relative py-20 sm:py-28 lg:py-36">
             <div className="mx-auto max-w-5xl text-center">
+              <p className="fade-up text-sm text-black/45 sm:text-base">
+                Honorable chairs and esteemed delegates, I present to you <span className="font-medium text-black/70">MOTION MUN</span>
+              </p>
               <h1 className="fade-up-delay mt-7 text-[clamp(3.6rem,9vw,8.4rem)] font-medium leading-[0.86] tracking-[-0.075em]">
                 From motion<br />to <span className="accent-text display-serif">resolution.</span>
               </h1>
               <p className="fade-up-delay-2 mx-auto mt-8 max-w-xl text-lg leading-relaxed text-black/55 sm:text-xl">
-                Modern committee management for Model United Nations, the simulation where students debate and vote as country delegates. Built to keep chairs focused on the room, not the software.
+                A modern committee management for Model United Nations, the simulation where students debate and vote as country delegates. Built to keep chairs focused on the room, not the software.
               </p>
               <div className="fade-up-delay-2 mt-9 flex flex-col justify-center gap-3 sm:flex-row">
                 <a href="#waitlist" className="button-primary justify-center px-5 py-3.5">Join the waitlist <ArrowRight size={16} /></a>
@@ -370,7 +373,6 @@ function LandingPage() {
                 />
               </div>
             </div>
-            <p className="mt-4 text-center text-[10px] uppercase tracking-[0.18em] text-black/35">One room. One system. Full control.</p>
           </div>
         </section>
 
