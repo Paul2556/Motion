@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Check, Coffee, ListChecks, Moon, RotateCcw, Sun, Type } from "lucide-react";
+import { ArrowLeft, Check, Coffee, ListChecks, Moon, RotateCcw, Search, Sun, Type, X } from "lucide-react";
 
 import Logo from "../components/Logo";
 import MotionPresetManager from "../components/MotionPresetManager";
 import { getAppTheme, setAppTheme, getAppReducedMotion, setAppReducedMotion } from "../appTheme";
 import { getMotionInputMode, setMotionInputMode } from "../motionInputMode";
+import { getMotions, canonicalLabel } from "../motionPresets";
 import AuthService from "../services/AuthService";
 import { SHORTCUT_SCOPES, REMAPPABLE_SCOPES } from "../shortcuts";
 import { getShortcutOverride, setShortcutOverride, clearShortcutOverride, resolveKey, keyIdToDisplay } from "../shortcutPrefs";
@@ -32,7 +33,14 @@ function findCollision(actionId, keyId) {
   return hit ? { label: hit.label } : null;
 }
 
-function ShortcutRemapList() {
+// query is already trimmed/lowercased by the caller - an empty query always
+// matches, so every section shows by default.
+function matches(query, ...terms) {
+  if (!query) return true;
+  return terms.some((term) => term && term.toLowerCase().includes(query));
+}
+
+function ShortcutRemapList({ query }) {
   const [, setTick] = useState(0);
   const [capturingId, setCapturingId] = useState(null);
   const [collision, setCollision] = useState(null);
@@ -68,13 +76,24 @@ function ShortcutRemapList() {
     return () => window.removeEventListener("keydown", handleCapture, true);
   }, [capturingId]);
 
+  const visibleScopes = REMAPPABLE_SCOPES
+    .map((scope) => ({
+      scope,
+      actions: SHORTCUT_SCOPES[scope].filter((action) => matches(query, action.label)),
+    }))
+    .filter(({ actions }) => actions.length > 0);
+
+  if (query && visibleScopes.length === 0) {
+    return <p className="text-sm text-[var(--app-text-faint)]">No shortcuts match &quot;{query}&quot;.</p>;
+  }
+
   return (
     <div className="space-y-5">
-      {REMAPPABLE_SCOPES.map((scope) => (
+      {visibleScopes.map(({ scope, actions }) => (
         <div key={scope}>
           <p className="text-[11px] uppercase tracking-[0.2em] text-[var(--app-text-muted)]">{SCOPE_TITLES[scope]}</p>
           <div className="mt-2 space-y-1.5">
-            {SHORTCUT_SCOPES[scope].map((action) => {
+            {actions.map((action) => {
               const isCapturing = capturingId === action.id;
               const hasOverride = Boolean(getShortcutOverride(action.id));
 
@@ -152,6 +171,7 @@ export default function SettingsPage() {
   const [reducedMotion, setReducedMotion] = useState(getAppReducedMotion);
   const [motionInputMode, setMotionInputModeState] = useState(getMotionInputMode);
   const [user, setUser] = useState(() => AuthService.getCurrentUser());
+  const [query, setQuery] = useState("");
 
   useEffect(() => AuthService.subscribe(setUser), []);
 
@@ -170,6 +190,30 @@ export default function SettingsPage() {
     setReducedMotion(next);
     setAppReducedMotion(next);
   }
+
+  const q = query.trim().toLowerCase();
+
+  const showTheme = matches(q, "Theme", "appearance", "dark", "light", "black", "white", "brown", "color scheme");
+  const showReducedMotion = matches(q, "Reduced motion", "animation", "transitions", "accessibility");
+  const showAccount = matches(
+    q,
+    "Account",
+    "sign in",
+    "sign out",
+    "cloud",
+    "login",
+    "email",
+    user ? `Signed in as ${user.email ?? "cloud account"}` : "Not signed in"
+  );
+  const anyShortcutMatches = REMAPPABLE_SCOPES.some((scope) =>
+    SHORTCUT_SCOPES[scope].some((action) => matches(q, action.label))
+  );
+  const showShortcuts = matches(q, "Keyboard shortcuts", "keybind", "hotkeys") || anyShortcutMatches;
+  const showMotionInput = matches(q, "Motion input", "natural language", "dropdown", "form");
+  const anyMotionMatches = getMotions().some((motion) => matches(q, canonicalLabel(motion), motion.text, ...(motion.alias ?? [])));
+  const showMotionPresets = matches(q, "Motion presets", "presets", "custom motion", "built-in") || anyMotionMatches;
+
+  const noResults = Boolean(q) && !showTheme && !showReducedMotion && !showAccount && !showShortcuts && !showMotionInput && !showMotionPresets;
 
   return (
     <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
@@ -191,6 +235,32 @@ export default function SettingsPage() {
           </Link>
         </header>
 
+        <div className="relative mb-6">
+          <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)]" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search settings…"
+            className="w-full border border-[var(--app-border)] bg-[var(--app-chip)] py-3 pl-11 pr-11 text-sm text-[var(--app-text)] outline-none transition focus:border-[var(--app-border-focus)]"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--app-text-faint)] transition hover:text-[var(--app-text-secondary)]"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        {noResults && (
+          <p className="border border-dashed border-[var(--app-border)] py-10 text-center text-sm text-[var(--app-text-faint)]">
+            No settings match &quot;{query}&quot;.
+          </p>
+        )}
+
+        {showTheme && (
         <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Theme</p>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">Choose how Motion looks across the app.</p>
@@ -216,7 +286,9 @@ export default function SettingsPage() {
             />
           </div>
         </div>
+        )}
 
+        {showReducedMotion && (
         <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -228,6 +300,7 @@ export default function SettingsPage() {
               onClick={toggleReducedMotion}
               role="switch"
               aria-checked={reducedMotion}
+              aria-label="Reduced motion"
               className={`relative h-7 w-12 shrink-0 rounded-full border transition ${
                 reducedMotion ? "border-[var(--app-border-active)] bg-[var(--app-toggle-on)]" : "border-[var(--app-border)] bg-[var(--app-chip)]"
               }`}
@@ -241,7 +314,9 @@ export default function SettingsPage() {
             </button>
           </div>
         </div>
+        )}
 
+        {showAccount && (
         <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Account</p>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
@@ -270,7 +345,9 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+        )}
 
+        {showShortcuts && (
         <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Keyboard shortcuts</p>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
@@ -279,10 +356,12 @@ export default function SettingsPage() {
           </p>
 
           <div className="mt-5">
-            <ShortcutRemapList />
+            <ShortcutRemapList query={q} />
           </div>
         </div>
+        )}
 
+        {showMotionInput && (
         <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Motion input</p>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">Choose how you add new motions on the Motions page.</p>
@@ -302,7 +381,9 @@ export default function SettingsPage() {
             />
           </div>
         </div>
+        )}
 
+        {showMotionPresets && (
         <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--app-text-muted)]">Motion presets</p>
           <p className="mt-2 text-sm text-[var(--app-text-muted)]">
@@ -311,9 +392,10 @@ export default function SettingsPage() {
           </p>
 
           <div className="mt-5">
-            <MotionPresetManager />
+            <MotionPresetManager query={q} />
           </div>
         </div>
+        )}
 
       </div>
     </div>
