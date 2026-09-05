@@ -6,6 +6,7 @@ import Logo from "../components/Logo";
 import MotionPresetManager from "../components/MotionPresetManager";
 import { getAppTheme, setAppTheme, getAppReducedMotion, setAppReducedMotion } from "../appTheme";
 import { getMotionInputMode, setMotionInputMode } from "../motionInputMode";
+import { getMotions, canonicalLabel } from "../motionPresets";
 import AuthService from "../services/AuthService";
 import { SHORTCUT_SCOPES, REMAPPABLE_SCOPES } from "../shortcuts";
 import { getShortcutOverride, setShortcutOverride, clearShortcutOverride, resolveKey, keyIdToDisplay } from "../shortcutPrefs";
@@ -209,7 +210,8 @@ export default function SettingsPage() {
   );
   const showShortcuts = matches(q, "Keyboard shortcuts", "keybind", "hotkeys") || anyShortcutMatches;
   const showMotionInput = matches(q, "Motion input", "natural language", "dropdown", "form");
-  const showMotionPresets = matches(q, "Motion presets", "presets", "custom motion", "built-in");
+  const anyMotionMatches = getMotions().some((motion) => matches(q, canonicalLabel(motion), motion.text, ...(motion.alias ?? [])));
+  const showMotionPresets = matches(q, "Motion presets", "presets", "custom motion", "built-in") || anyMotionMatches;
 
   const noResults = Boolean(q) && !showTheme && !showReducedMotion && !showAccount && !showShortcuts && !showMotionInput && !showMotionPresets;
 
@@ -390,7 +392,7 @@ export default function SettingsPage() {
           </p>
 
           <div className="mt-5">
-            <MotionPresetManager />
+            <MotionPresetManager query={q} />
           </div>
         </div>
         )}
