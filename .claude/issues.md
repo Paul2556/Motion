@@ -1,11 +1,16 @@
 # Issues
 
-Findings from this repo's review subagents (`security-reviewer`, `design-reviewer`,
-`docs-sync-reviewer`, `verifier`), plus a standalone automated accessibility sweep. Maintained by
-the calling session — the four subagents are read-only and never write here themselves. Update
-status as items get fixed, and don't hand out a new ID for a re-finding of something already
-tracked below; reference the existing ID (`SEC-NNN` / `DES-NNN` / `ACC-NNN` / `DOC-NNN` /
-`VER-NNN`).
+Two kinds of content, kept in separate sections below:
+
+- **Review findings** (`## Security`, `## Design`, `## Accessibility`, `## Docs`, `## Verification`):
+  from this repo's review subagents (`security-reviewer`, `design-reviewer`, `docs-sync-reviewer`,
+  `verifier`), plus a standalone automated accessibility sweep. Maintained by the calling session —
+  the four subagents are read-only and never write here themselves. Update status as items get
+  fixed, and don't hand out a new ID for a re-finding of something already tracked below; reference
+  the existing ID (`SEC-NNN` / `DES-NNN` / `ACC-NNN` / `DOC-NNN` / `VER-NNN`).
+- **Tickets** (`## Tickets`): feature/bug work items for `/triage`, `/to-tickets`, `/to-spec`, and
+  `/wayfinder` (the `mattpocock-skills` plugin). Different format, different numbering — see that
+  section's own header for conventions.
 
 Personal email addresses are redacted from this file (see `SEC-001`) since `.claude/` is tracked
 in git and this repo is public — keep it that way for anything added here in the future.
@@ -334,3 +339,41 @@ Not security (`security-reviewer`), not visual (`design-reviewer`), not doc drif
 (`docs-sync-reviewer`).
 
 No sweeps run yet.
+
+## Tickets
+
+Feature/bug tickets for `/triage`, `/to-tickets`, `/to-spec`, and `/wayfinder`. Separate from the
+review-findings sections above: different format (`## <NN> — <Title>`, not `SEC-NNN` etc.),
+different purpose (planned/tracked work, not sweep output).
+
+### Conventions
+
+- Every ticket is a `## <NN> — <Title>` heading, numbered from `01` in dependency order (blockers
+  first).
+- Each heading is immediately followed by:
+
+  ```
+  **Status:** needs-triage | needs-info | ready-for-agent | ready-for-human | wontfix
+  **Category:** bug | enhancement
+  **Blocked by:** None | <NN>, <NN>
+  ```
+
+- Body: what to build or what's broken, from the user's perspective.
+- Comments/triage notes append under a `#### Comments` sub-heading at the bottom of the ticket's
+  section, oldest first.
+- Closed tickets stay with an updated `Status:` — history, not a scratch pad.
+
+### Wayfinding operations
+
+Used by `/wayfinder`, same section:
+
+- **Map**: a `## Map — <effort>` heading (Notes / Decisions-so-far / Fog).
+- **Child ticket**: a normal `## <NN> — <Title>` heading with `Type:` (`research` / `prototype` /
+  `grilling` / `task`) and `Status:` (`claimed` / `resolved`) alongside the usual metadata.
+- **Blocking**: the `Blocked by:` line; unblocked once every listed issue is `resolved`.
+- **Frontier**: scan for open, unblocked, unclaimed tickets; lowest number wins.
+- **Claim**: set `Status: claimed` before starting work.
+- **Resolve**: append the answer under `#### Answer`, set `Status: resolved`, then append a short
+  pointer to the map's Decisions-so-far.
+
+No tickets yet.
