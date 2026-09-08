@@ -52,3 +52,12 @@ Used by `/wayfinder`, same section:
 ## PRs as a request surface
 
 Off. Solo-maintained; `/triage` only ever looks at the `## Tickets` section.
+
+## Overriding `/to-tickets`'s built-in local-file template
+
+`/to-tickets`'s own `SKILL.md` hardcodes a different local-tracker convention — one file per ticket
+under `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, "never a single combined file" — which
+conflicts with the single-section convention above. That default does not apply here: publish
+`/to-tickets` output the same way as every other skill in this file, as `## <NN> — <Title>`
+headings appended to `.claude/issues.md`'s `## Tickets` section, using this file's ticket template
+(`**Status:**`/`**Category:**`/`**Blocked by:**`), not `to-tickets`'s own `<local-ticket-template>`.
