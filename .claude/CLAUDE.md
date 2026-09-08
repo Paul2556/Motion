@@ -151,3 +151,20 @@ be the one thing reduced motion silently breaks.
   line, not one seat later.
 - **`src/components/Queue.jsx`** is a plain controlled list (`queue`/`setQueue` props) — no
   internal fetch/service coupling, so it's reusable anywhere a reorderable speaker list is needed.
+
+## Agent skills
+
+### Issue tracker
+
+Feature/bug tickets live in the `## Tickets` section of `.claude/issues.md`, alongside (but
+formatted separately from) the review-subagent findings sections. See
+`docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary, used as-is. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context, but relocated to match this repo's `.claude/`-centralized convention:
+`.claude/CONTEXT.md` and `.claude/adr/`, not the repo root. See `docs/agents/domain.md`.
