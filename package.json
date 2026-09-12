@@ -17,7 +17,7 @@
   "dependencies": {
     "@vercel/analytics": "2.0.1",
     "@vercel/speed-insights": "2.0.0",
-    "@vitejs/plugin-react": "^6.0.3",
+    "@vitejs/plugin-react": "^6.1.1",
     "discord-interactions": "4.4.0",
     "exceljs": "^4.4.0",
     "firebase": "12.16.0",
