@@ -10,6 +10,9 @@ versa.
 `## Tickets` follows the mattpocock-skills local-file convention adapted to a single section
 (matching how `roadmap.md` and `issues.md` are each already one file, not one-file-per-item):
 
+`.claude/issues.md` is gitignored. This repo is public, so issues and review findings stay on this
+machine and never reach GitHub. Don't reference ticket numbers in commit messages or PR bodies.
+
 ## Conventions
 
 - Every ticket is a `## <NN>: <Title>` heading within the `## Tickets` section, numbered from `01`
