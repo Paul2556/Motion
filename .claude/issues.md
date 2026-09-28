@@ -343,12 +343,12 @@ No sweeps run yet.
 ## Tickets
 
 Feature/bug tickets for `/triage`, `/to-tickets`, `/to-spec`, and `/wayfinder`. Separate from the
-review-findings sections above: different format (`## <NN> — <Title>`, not `SEC-NNN` etc.),
+review-findings sections above: different format (`## <NN>: <Title>`, not `SEC-NNN` etc.),
 different purpose (planned/tracked work, not sweep output).
 
 ### Conventions
 
-- Every ticket is a `## <NN> — <Title>` heading, numbered from `01` in dependency order (blockers
+- Every ticket is a `## <NN>: <Title>` heading, numbered from `01` in dependency order (blockers
   first).
 - Each heading is immediately followed by:
 
@@ -361,14 +361,14 @@ different purpose (planned/tracked work, not sweep output).
 - Body: what to build or what's broken, from the user's perspective.
 - Comments/triage notes append under a `#### Comments` sub-heading at the bottom of the ticket's
   section, oldest first.
-- Closed tickets stay with an updated `Status:` — history, not a scratch pad.
+- Closed tickets stay with an updated `Status:`. History, not a scratch pad.
 
 ### Wayfinding operations
 
 Used by `/wayfinder`, same section:
 
-- **Map**: a `## Map — <effort>` heading (Notes / Decisions-so-far / Fog).
-- **Child ticket**: a normal `## <NN> — <Title>` heading with `Type:` (`research` / `prototype` /
+- **Map**: a `## Map: <effort>` heading (Notes / Decisions-so-far / Fog).
+- **Child ticket**: a normal `## <NN>: <Title>` heading with `Type:` (`research` / `prototype` /
   `grilling` / `task`) and `Status:` (`claimed` / `resolved`) alongside the usual metadata.
 - **Blocking**: the `Blocked by:` line; unblocked once every listed issue is `resolved`.
 - **Frontier**: scan for open, unblocked, unclaimed tickets; lowest number wins.
