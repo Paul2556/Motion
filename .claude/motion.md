@@ -39,7 +39,7 @@ from `window.location.hostname` (a plain client-rendered SPA, no per-domain serv
 
 | Host | What mounts | Notes |
 |---|---|---|
-| `motionmun.com` / `www.motionmun.com` | Marketing (`LandingPage`, `/licensing`) | Public. |
+| `motionmun.com` / `www.motionmun.com` | Marketing (`LandingPage`, `/licensing`, `/team`) | Public. |
 | `app.motionmun.com` | The full app | **Gated** — `OwnerGate` requires the `app` permission (owners implicitly have it; contributors get it via the Admin Panel's Permissions tab — see `src/services/permissions.js`), private early access. |
 | `demo.motionmun.com` | The full app, ungated | Public preview. Shows a fixed "EARLY ACCESS DEMO" badge (top-right) and a fixed "Intended for computers, laptops, or tablets only" disclaimer bar (bottom) on every page. Adds a "Try a Demo Conference" picker on Home so visitors without a real workbook can load a bundled sample conference (`src/data/demoConferences.js`) instead of uploading one. |
 | `debug.motionmun.com` | `DebugPage` + `ReferPage` + `AdminPanelPage` only | `DebugPage`/`ReferPage` gated on the `debug`/`refer` permissions respectively; `AdminPanelPage` remains owner-only (see Admin Panel below). |
@@ -316,6 +316,13 @@ from `window.location.hostname` (a plain client-rendered SPA, no per-domain serv
   redistributing Source Code; reconciling that with the repo now being public is a separate,
   not-yet-done license rewrite - the plain-language summary was updated to point at GitHub, but
   the legal text underneath it wasn't.
+
+### Team (`/team`)
+- `TeamPage.jsx`: a mission quote plus one card per co-founder, linked from the landing page
+  footer. It follows the landing page's `motion-theme`/`motion-reduced` settings (read-only, the
+  toggles stay on `LandingPage`) and shares its footer via `MarketingFooter.jsx`.
+- Marketing-only like `/licensing`: the app and debug hosts redirect `/team` to
+  `motionmun.com/team`.
 
 ### Dev tooling
 - `DebugPage.jsx` (`debug.motionmun.com`, gated on the `debug` permission — see Permissions tab

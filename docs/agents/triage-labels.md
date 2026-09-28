@@ -1,6 +1,6 @@
 # Triage Labels
 
-Default vocabulary, used as-is — no existing label system to reconcile against (the SEC-/DES-/ACC-/
+Default vocabulary, used as-is. No existing label system to reconcile against (the SEC-/DES-/ACC-/
 DOC-/VER- IDs in `.claude/issues.md`'s review-findings sections are a separate scheme for a
 separate purpose; see `docs/agents/issue-tracker.md`).
 

@@ -20,3 +20,11 @@ dist/
 Thumbs.db
 .vercel
 .env*
+
+# Added by Kit
+# show-me-your-work decision logs are working artifacts; commit one deliberately with `git add -f`
+decisions.tsv
+.audit/
+
+# Local issue tracker: issues stay on this machine
+/.claude/issues.md
