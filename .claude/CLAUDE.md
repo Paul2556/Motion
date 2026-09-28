@@ -164,8 +164,8 @@ be the one thing reduced motion silently breaks.
 ### Issue tracker
 
 Feature/bug tickets live in the `## Tickets` section of `.claude/issues.md`, alongside (but
-formatted separately from) the review-subagent findings sections. See
-`docs/agents/issue-tracker.md`.
+formatted separately from) the review-subagent findings sections. The file is gitignored, so it
+stays on this machine (the repo is public). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
