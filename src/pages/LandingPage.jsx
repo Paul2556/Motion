@@ -22,9 +22,11 @@ import {
   Sun,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import AllocationParser from "../services/AllocationParser"
 import DelegateRoster from "../components/DelegateRoster"
+import MarketingFooter from "../components/MarketingFooter"
 import MenuCard from "../components/MenuCard"
 import Queue from "../components/Queue"
 import Timer from "../components/Timer"
@@ -516,27 +518,15 @@ function LandingPage() {
         </section>
       </main>
 
-      <footer className="bg-[#101010] py-10 text-white">
-        <div className="page-container flex flex-col justify-between gap-8 sm:flex-row sm:items-end">
-          <div><Logo light /><p className="mt-4 text-sm text-white/40">From motion to resolution.</p></div> 
-          <div className="flex flex-col gap-3 text-sm text-white/50 sm:items-end">
-            <div className="flex gap-6">
-              <a className="hover:text-white" href="#features">Features</a>
-              <a className="hover:text-white" href="#how">Process</a>
-              <a className="hover:text-white" href="#faq">FAQ</a>
-              <a className="hover:text-white" href="#waitlist">Waitlist</a>
-            </div>
-            <a
-              href="https://github.com/Paul2556/Motion"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors hover:text-white/50"
-            >
-              Fully open source on GitHub. Licensed under the Motion Attribution License.
-            </a>
-          </div>
+      <MarketingFooter>
+        <div className="flex gap-6">
+          <a className="hover:text-white" href="#features">Features</a>
+          <a className="hover:text-white" href="#how">Process</a>
+          <a className="hover:text-white" href="#faq">FAQ</a>
+          <a className="hover:text-white" href="#waitlist">Waitlist</a>
+          <Link className="hover:text-white" to="/team">Team</Link>
         </div>
-      </footer>
+      </MarketingFooter>
     </div>
   )
 }

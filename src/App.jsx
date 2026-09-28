@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 
 import { APP_HOSTS, DEMO_HOSTS, DEBUG_HOSTS, DELEGATE_HOSTS, MARKETING_HOSTS, isLocalDevHost } from "./hosts";
 import LandingPage from "./pages/LandingPage";
+import TeamPage from "./pages/TeamPage";
 import PreviewLandingPage from "./pages/PreviewLandingPage";
 import HomePage from "./pages/HomePage";
 import SessionPage from "./pages/SessionPage";
@@ -26,7 +27,7 @@ import OwnerGate from "./components/OwnerGate";
 // from the hostname. Unrecognized hosts fall back to the combined table, gated
 // unless they're local dev (see isLocalDevHost below).
 
-// /licensing only exists on the marketing domain (see MarketingRoutes below)
+// /licensing and /team only exist on the marketing domain (see MarketingRoutes below)
 // - a full cross-origin redirect rather than <Navigate>, since that component
 // only handles same-app client-side navigation and these are a different
 // subdomain entirely.
@@ -42,6 +43,7 @@ function MarketingRoutes() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/licensing" element={<LicensePage />} />
+      <Route path="/team" element={<TeamPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
@@ -68,6 +70,7 @@ function AppRoutes({ includeFeedback = false } = {}) {
       <Route path="/stats" element={<StatsPage />} />
       {includeFeedback && <Route path="/feedback" element={<FeedbackPage />} />}
       <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
+      <Route path="/team" element={<RedirectToMarketing path="/team" />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
@@ -126,6 +129,7 @@ function DebugRoutes() {
       <Route path="/refer" element={<ReferPage />} />
       <Route path="/adminPanel" element={<AdminPanelPage />} />
       <Route path="/licensing" element={<RedirectToMarketing path="/licensing" />} />
+      <Route path="/team" element={<RedirectToMarketing path="/team" />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
@@ -145,6 +149,7 @@ function AllRoutes() {
       <Route path="/cloud" element={<CloudSessionsPage />} />
       <Route path="/stats" element={<StatsPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />
+      <Route path="/team" element={<TeamPage />} />
       <Route path="/debug" element={<DebugPage />} />
       <Route path="/debug/refer" element={<ReferPage />} />
       <Route path="/debug/adminPanel" element={<AdminPanelPage />} />
