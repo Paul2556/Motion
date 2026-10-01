@@ -6,7 +6,7 @@ codebase.
 ## Location override
 
 This repo keeps all agent-facing meta-docs under `.claude/` (`motion.md`, `roadmap.md`,
-`issues.md`, `repoMap.md`) rather than at the repo root; see `.claude/CLAUDE.md`'s "Agent memory"
+`issues.md`) rather than at the repo root; see `.claude/CLAUDE.md`'s "Agent memory"
 section. `CONTEXT.md` and ADRs follow that same convention instead of the skill's repo-root
 default:
 
