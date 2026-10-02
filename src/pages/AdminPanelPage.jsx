@@ -494,7 +494,7 @@ export default function AdminPanelPage() {
                         type="checkbox"
                         checked={Boolean(c[key])}
                         onChange={() => handleTogglePermission(c, key)}
-                        className="accent-[var(--app-text)]"
+                        className="accent-[var(--accent)]"
                       />
                       {PERMISSION_LABELS[key]}
                     </label>
