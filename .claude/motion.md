@@ -168,9 +168,10 @@ from `window.location.hostname` (a plain client-rendered SPA, no per-domain serv
   own label terms; for shortcuts and motion presets, it also shows if the query matches any
   individual shortcut label or motion name/alias (`SettingsPage.jsx`'s `matches`/`anyMotionMatches`),
   and that section's list itself narrows to only the matching rows.
-- Theme: Black / White / Brown choice (`appTheme.js`, see Theming below). Black is the native
-  dark palette; White and Brown are each a set of CSS custom property overrides on top of it
-  (White's values mirror Black's), with no invert filter.
+- Theme: Black / White / Brown choice (`appTheme.js`, see Theming below), White by default for
+  anyone who hasn't picked one. Black is the native dark palette; White and Brown are each a set
+  of CSS custom property overrides on top of it (White's values mirror Black's), with no invert
+  filter.
 - Reduced motion toggle (disables transitions/animations app-wide, with one carve-out for the
   toggle's own click feedback).
 - **Keyboard shortcut remapping** — click-to-rebind per action, scoped by view, with collision
