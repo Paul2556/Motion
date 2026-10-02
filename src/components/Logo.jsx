@@ -1,5 +1,7 @@
 function Logo({ compact = false, light = false, size }) {
-  const color = light ? "white" : "black";
+  // `light` follows the app theme's text color (white everywhere except the
+  // White app theme), so the mark stays visible without an invert filter.
+  const color = light ? "var(--app-text, white)" : "black";
 
   return (
     <div className="flex items-center gap-2.5" aria-label="Motion">

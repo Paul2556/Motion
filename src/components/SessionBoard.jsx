@@ -66,7 +66,15 @@ export default function SessionBoard({
   const nextSpeaker = (elapsedSeconds = 0) => {
     if (queue.length === 0) return;
 
-    undoRef.current = { queue, history };
+    // The speaker's prior record rides along so undo also un-counts the speech.
+    const delegate = ConferenceService.getDelegate(queue[0].id);
+    const speech = delegate && {
+      id: delegate.id,
+      hasSpoken: delegate.hasSpoken,
+      speakingTime: delegate.speakingTime,
+    };
+
+    undoRef.current = { queue, history, speech };
     ConferenceService.markSpoken(queue[0].id, Math.round(elapsedSeconds));
     setHistory((prev) => [...prev, queue[0]]);
     setQueue((prev) => prev.slice(1));
@@ -90,6 +98,7 @@ export default function SessionBoard({
     const snapshot = undoRef.current;
     if (!snapshot) return;
     undoRef.current = null;
+    if (snapshot.speech) ConferenceService.restoreSpeaking(snapshot.speech.id, snapshot.speech);
     setQueue(snapshot.queue);
     setHistory(snapshot.history);
   }

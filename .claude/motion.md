@@ -90,9 +90,14 @@ from `window.location.hostname` (a plain client-rendered SPA, no per-domain serv
   the loaded committee's actual delegates, and a countdown `Timer`.
 - `Timer.jsx` drives its ring via `requestAnimationFrame` + a wall-clock anchor, not `setInterval`,
   for a genuinely smooth countdown.
-- Speaking time is tracked per delegate as speakers are recognized, feeding Stats.
+- Speaking time is tracked per delegate as speakers are recognized, feeding Stats. Queue entries
+  added from the autosuggest carry the delegate's own id (not a random one), which is what lets
+  `ConferenceService.markSpoken` find them. The recorded time is how long the timer actually ran
+  (`src/utils/speechClock.js`), overtime included, so +15s/-15s and in-place edits don't skew it.
 - Estimated total remaining time, spoken count, and queued count shown live.
-- Single-slot undo for "recognize next" and "remove from queue."
+- Single-slot undo for "recognize next" and "remove from queue." Undoing "recognize next" also
+  takes the speech back out of Stats (`ConferenceService.restoreSpeaking`), so it can't be counted
+  twice.
 - Shows the `NoCommitteeModal` guard if reached with no conference loaded (same as every other
   committee-scoped page).
 - Timer duration comes from the active motion's speaking time, falling back to its **total**
@@ -168,9 +173,10 @@ from `window.location.hostname` (a plain client-rendered SPA, no per-domain serv
   own label terms; for shortcuts and motion presets, it also shows if the query matches any
   individual shortcut label or motion name/alias (`SettingsPage.jsx`'s `matches`/`anyMotionMatches`),
   and that section's list itself narrows to only the matching rows.
-- Theme: Black / White / Brown choice (`appTheme.js`, see Theming below) — Black is the native
-  dark palette, White flips it via `invert(1)`, and Brown is a real re-theme with its own
-  hand-picked CSS custom property values rather than an inverted derivative of Black.
+- Theme: Black / White / Brown choice (`appTheme.js`, see Theming below), White by default for
+  anyone who hasn't picked one. Black is the native dark palette; White and Brown are each a set
+  of CSS custom property overrides on top of it (White's values mirror Black's), with no invert
+  filter.
 - Reduced motion toggle (disables transitions/animations app-wide, with one carve-out for the
   toggle's own click feedback).
 - **Keyboard shortcut remapping** — click-to-rebind per action, scoped by view, with collision
@@ -342,8 +348,13 @@ from `window.location.hostname` (a plain client-rendered SPA, no per-domain serv
 
 ## Theming (two independent systems — see `CLAUDE.md` for the full mechanics)
 - `LandingPage` (natively light) manages its own light/dark state independently of the app.
-- Every other page (natively dark) uses `src/appTheme.js`. Both flip via `filter: invert(1)`, which
-  is why hand-picked hues need a pre-inverted CSS var pair rather than a JS conditional.
+- `LandingPage` still flips to dark via `filter: invert(1)`, so hand-picked hues there need a
+  pre-inverted CSS var pair rather than a JS conditional.
+- Every other page (natively dark) uses `src/appTheme.js`, with no filter: Black is the default
+  tokens in `themes.css`, and White and Brown only override the surface/border/text tokens
+  (`--app-*`, `--timer-track`, `--app-knob`). Accents are real colors defined once on `.app-shell`
+  and look the same in every theme. A new color inside `.app-shell` should be a token, never a
+  literal that only works on a dark background.
 
 ## Explicit non-features
 - No resolution/draft-resolution management — removed from scope (see `roadmap.md`). This also

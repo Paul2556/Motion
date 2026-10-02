@@ -722,7 +722,7 @@ const MotionInput = forwardRef(function MotionInput({ value, onChange, placehold
           onScroll={syncScroll}
           placeholder={placeholder}
           rows={rows}
-          className="relative w-full resize-none bg-transparent p-4 text-sm text-transparent caret-white outline-none placeholder:text-[var(--app-text-faint)]"
+          className="relative w-full resize-none bg-transparent p-4 text-sm text-transparent caret-[var(--app-text)] outline-none placeholder:text-[var(--app-text-faint)]"
         />
       </div>
 

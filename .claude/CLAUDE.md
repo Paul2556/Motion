@@ -6,7 +6,7 @@ Committee management platform for Model United Nations conferences: delegate imp
 
 - Install: `nub install` (nub mirrors the existing `package-lock.json`)
 - Dev: `nub run dev` (Vite dev server; start it after every message that changes the code)
-- Test: none yet, no test runner is configured
+- Test: `nub run test` (Vitest, `vitest run`; tests sit next to their source as `*.test.js`)
 - Check (lint): `nub run lint` (`eslint . --max-warnings 0`, zero warnings allowed)
 - Build: `nub run build` (outputs to `dist/`); `nub run preview` serves a production build
 
