@@ -264,7 +264,7 @@ const Timer = forwardRef(function Timer({
             cy="160"
             r={radius}
             fill="none"
-            stroke="#2a2a2a"
+            stroke="var(--timer-track)"
             strokeWidth="4"
           />
 

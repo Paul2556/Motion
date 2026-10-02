@@ -1,12 +1,13 @@
 // Kept separate from LandingPage's own theme keys because that page is
 // natively light and this shell is natively dark, so one shared flag would
-// double-invert one of them. A page opts in via the `.app-shell` class.
+// mean opposite things to each. A page opts in via the `.app-shell` class.
 const THEME_KEY = "app-theme";
 const REDUCED_MOTION_KEY = "app-reduced-motion";
 
+// White is the default; Black and Brown are opt-in from Settings.
 export function getAppTheme() {
   const stored = localStorage.getItem(THEME_KEY);
-  return stored === "light" || stored === "brown" ? stored : "dark";
+  return stored === "dark" || stored === "brown" ? stored : "light";
 }
 
 export function setAppTheme(theme) {
