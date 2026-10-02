@@ -90,9 +90,14 @@ from `window.location.hostname` (a plain client-rendered SPA, no per-domain serv
   the loaded committee's actual delegates, and a countdown `Timer`.
 - `Timer.jsx` drives its ring via `requestAnimationFrame` + a wall-clock anchor, not `setInterval`,
   for a genuinely smooth countdown.
-- Speaking time is tracked per delegate as speakers are recognized, feeding Stats.
+- Speaking time is tracked per delegate as speakers are recognized, feeding Stats. Queue entries
+  added from the autosuggest carry the delegate's own id (not a random one), which is what lets
+  `ConferenceService.markSpoken` find them. The recorded time is how long the timer actually ran
+  (`src/utils/speechClock.js`), overtime included, so +15s/-15s and in-place edits don't skew it.
 - Estimated total remaining time, spoken count, and queued count shown live.
-- Single-slot undo for "recognize next" and "remove from queue."
+- Single-slot undo for "recognize next" and "remove from queue." Undoing "recognize next" also
+  takes the speech back out of Stats (`ConferenceService.restoreSpeaking`), so it can't be counted
+  twice.
 - Shows the `NoCommitteeModal` guard if reached with no conference loaded (same as every other
   committee-scoped page).
 - Timer duration comes from the active motion's speaking time, falling back to its **total**

@@ -77,7 +77,7 @@ export default function StatsPage() {
 
                   <div className="h-2 flex-1 bg-[var(--app-chip)]">
                     <div
-                      className="h-2 bg-[rgba(var(--motion-accent-rgb),0.8)]"
+                      className="h-2 bg-[var(--accent)]"
                       style={{ width: `${(delegate.speakingTime / maxSpeakingTime) * 100}%` }}
                     />
                   </div>
