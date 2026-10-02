@@ -42,7 +42,7 @@ export default function TeamPage() {
         <section className="border-b border-black/10">
           <div className="page-container py-20 text-center sm:py-28">
             <p className="section-label">Meet the team</p>
-            <h1 className="section-title mx-auto mt-5 max-w-2xl">The people building <span className="accent-text display-serif">Motion.</span></h1>
+            <h1 className="section-title mx-auto mt-5 max-w-2xl">The people building <span className="accent-text">Motion.</span></h1>
           </div>
         </section>
 

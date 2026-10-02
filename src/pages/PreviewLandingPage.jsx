@@ -134,7 +134,7 @@ function Hero() {
         <div className="mx-auto max-w-2xl text-center">
           <span className="eyebrow mx-auto w-fit">A more dynamic take · concept</span>
           <h1 className="fade-up-delay mt-5 text-[clamp(2.8rem,7vw,6rem)] font-medium leading-[0.88] tracking-[-0.06em]">
-            From motion<br />to <span className="accent-text display-serif">resolution.</span>
+            From motion<br />to <span className="accent-text">resolution.</span>
           </h1>
           <p className="fade-up-delay-2 mx-auto mt-5 max-w-md text-base leading-relaxed text-black/55">
             One live screen for the room: roster, queue, timer, and votes, so a chair's
@@ -448,7 +448,7 @@ function ClosingCta() {
     <section className="py-14 sm:py-20" style={{ background: "linear-gradient(160deg, #101010 0%, #1c130a 100%)" }}>
       <div className="page-container text-center">
         <h2 className="mx-auto max-w-xl text-4xl font-medium leading-[1.05] tracking-[-0.03em] text-white sm:text-5xl">
-          Bring the room back into <span className="accent-text display-serif">focus.</span>
+          Bring the room back into <span className="accent-text">focus.</span>
         </h2>
         <p className="mx-auto mt-4 max-w-sm text-sm text-white/45">
           Same waitlist as the real site, just a preview of where the design could go.
