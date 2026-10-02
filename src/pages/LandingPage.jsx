@@ -345,7 +345,7 @@ function LandingPage() {
                 Honorable chairs and esteemed delegates, I present to you <span className="font-medium text-black/70">MOTION MUN</span>
               </p>
               <h1 className="fade-up-delay mt-7 text-[clamp(3.6rem,9vw,8.4rem)] font-medium leading-[0.86] tracking-[-0.075em]">
-                From motion<br />to <span className="accent-text display-serif">resolution.</span>
+                From motion<br />to <span className="accent-text">resolution.</span>
               </h1>
               <p className="fade-up-delay-2 mx-auto mt-8 max-w-xl text-lg leading-relaxed text-black/55 sm:text-xl">
                 A modern committee management for Model United Nations, the simulation where students debate and vote as country delegates. Built to keep chairs focused on the room, not the software.
