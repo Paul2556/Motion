@@ -344,6 +344,20 @@ class ConferenceService {
     return true;
   }
 
+  // Puts back a record snapshotted before markSpoken, so undoing a
+  // "next speaker" doesn't leave the speech counted.
+  restoreSpeaking(id, { hasSpoken, speakingTime }) {
+    const delegate = this.getDelegate(id);
+
+    if (!delegate) return false;
+
+    delegate.hasSpoken = hasSpoken;
+    delegate.speakingTime = speakingTime;
+    this.persist();
+
+    return true;
+  }
+
   resetSpeakingHistory() {
     this.getDelegates().forEach((delegate) => {
       delegate.hasSpoken = false;
