@@ -25,6 +25,7 @@ export default function SessionPage() {
     COUNTRY_BY_CODE.get(delegate.countryCode)?.name ?? delegate.countryDisplay ?? delegate.country;
 
   const suggestions = (committee?.delegates ?? []).map((delegate) => ({
+    id: delegate.id,
     name: compressedCountryName(delegate),
     code: delegate.countryCode,
     alias: (delegate.countryCode && COUNTRY_BY_CODE.get(delegate.countryCode)?.alias) || [],
