@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { formatTime } from "../utils/formatTime";
+import { createSpeechClock } from "../utils/speechClock";
 
 const MAX_MINUTES = 999;
 const MAX_SECONDS = 59;
@@ -54,6 +55,16 @@ const Timer = forwardRef(function Timer({
   useEffect(() => {
     onAnchorChangeRef.current = onAnchorChange;
   }, [onAnchorChange]);
+
+  // Time actually spoken, reported on "next" - the countdown can't answer
+  // that once +15s/-15s or an edit has moved it.
+  const speechClockRef = useRef(null);
+  if (speechClockRef.current === null) speechClockRef.current = createSpeechClock();
+
+  useEffect(() => {
+    if (running) speechClockRef.current.start(Date.now());
+    else speechClockRef.current.pause(Date.now());
+  }, [running]);
 
   const radius = 150;
   const circumference = 2 * Math.PI * radius;
@@ -167,6 +178,7 @@ const Timer = forwardRef(function Timer({
     setSeconds(initialTime);
     setMaxTime(initialTime);
     setOvertime(false);
+    speechClockRef.current.reset();
     publishAnchor(initialTime, { maxTime: initialTime, running: false, overtime: false });
   };
 
@@ -209,7 +221,7 @@ const Timer = forwardRef(function Timer({
   }
 
   const nextSpeaker = () => {
-    const elapsed = maxTime - seconds;
+    const elapsed = speechClockRef.current.elapsed(Date.now());
     reset();
     onNext(elapsed);
   };
