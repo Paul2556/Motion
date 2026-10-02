@@ -55,7 +55,9 @@ const Queue = forwardRef(function Queue({
       .slice(0, MAX_SUGGESTIONS);
   }, [newSpeaker, suggestions, isAlreadyQueued]);
 
-  function addSpeaker({ name, code = null }) {
+  // A suggestion's `id` is the delegate's own, which is what lets their
+  // speech be recorded for Stats; demo suggestions without one get a random id.
+  function addSpeaker({ id = null, name, code = null }) {
     const trimmed = name.trim();
 
     if (!trimmed || isAlreadyQueued({ name: trimmed, code })) return;
@@ -63,7 +65,7 @@ const Queue = forwardRef(function Queue({
     setQueue([
       ...queue,
       {
-        id: crypto.randomUUID(),
+        id: id ?? crypto.randomUUID(),
         country: trimmed,
         countryCode: code,
       },
