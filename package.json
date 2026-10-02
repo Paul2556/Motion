@@ -21,7 +21,7 @@
     "@vitejs/plugin-react": "^6.0.3",
     "discord-interactions": "4.4.0",
     "exceljs": "^4.4.0",
-    "firebase": "12.16.0",
+    "firebase": "12.19.0",
     "firebase-admin": "14.1.0",
     "lucide-react": "^1.21.0",
     "qrcode.react": "4.2.0",
