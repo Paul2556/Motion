@@ -228,7 +228,7 @@ export default function MotionPresetManager({ query = "" }) {
               type="checkbox"
               checked={form.topic}
               onChange={(e) => setForm((f) => ({ ...f, topic: e.target.checked }))}
-              className="h-4 w-4 border-[var(--app-border)] bg-[var(--app-input)] accent-white"
+              className="h-4 w-4 border-[var(--app-border)] bg-[var(--app-input)] accent-[var(--accent)]"
             />
             Requires a topic
           </label>
