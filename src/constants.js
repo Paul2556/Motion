@@ -6,6 +6,7 @@ export const MOTIONS = [
   { text: "Adjourn the Meeting", alias: ["Adjourn Meeting", "Adjourn"] },
   { text: "Suspend Debate" },
   { text: "Suspend the Meeting", alias: ["Suspend Meeting"] },
+  { text: "Adjourn the Debate", alias: ["Adjourn Debate"] },
   { text: "Motion to Divide the House", alias: ["Divide the House"] },
   { text: "Motion for Closure of Debate", alias: ["Closure of Debate", "Close Debate"] },
   { text: "Move into Voting Procedure", alias: ["Move to Voting Procedure", "Voting Procedure"] },

@@ -443,6 +443,9 @@ describe("motion parser: round four", () => {
     ["motion to extend the mod by 5 minutes", { motion: "Extend the Mod Caucus", totalTime: 5 }],
     ["motion to adjourn", { motion: "Adjourn Meeting" }],
     ["France moves to adjourn", { motion: "Adjourn Meeting", delegation: "France" }],
+    ["motion to adjourn debate", { motion: "Adjourn Debate" }],
+    ["Kenya moves to adjourn the debate", { motion: "Adjourn Debate", delegation: "Kenya" }],
+    ["motion to adjourn the meeting", { motion: "Adjourn Meeting" }],
     ["extend the gsl", { motion: "Extend the Speaker's List" }],
     ["open GSL 90 sec", { motion: "Open the GSL", speakingTime: 1.5 }],
 

@@ -22,6 +22,7 @@ const SEED_IDS = {
   "Move to Voting Procedure": "move-voting-procedure",
   "Suspend Meeting": "suspend-meeting",
   "Adjourn Meeting": "adjourn-meeting",
+  "Adjourn Debate": "adjourn-debate",
   // ThaiMUN RoP additions (see constants.js's MOTIONS comment).
   "Point of Order": "point-of-order",
   "Personal Privilege": "personal-privilege",
