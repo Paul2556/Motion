@@ -38,15 +38,15 @@ One message, three `Agent` calls, `subagent_type: general-purpose`, explicit `mo
 
 | Lens | `model` | Prompt template |
 |---|---|---|
-| Judgment | `opus` | `references/judgment-reviewer.md` |
-| Tooling | `opus` | `references/tooling-reviewer.md` |
-| Divergent | `sonnet` | `references/divergent-reviewer.md` |
+| Judgment | `sonnet` | `references/judgment-reviewer.md` |
+| Tooling | `sonnet` | `references/tooling-reviewer.md` |
+| Divergent | `opus` | `references/divergent-reviewer.md` |
 
 Pass each template verbatim, substituting the transcript path or digest where marked. Run them in the foreground (`run_in_background: false`), since synthesis needs all three.
 
 ### 3. Synthesize
 
-One `Agent` call, `subagent_type: general-purpose`, `model: opus`. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer spot-verifies citations and returns a structured Accepted / Rejected / Backlog list.
+One `Agent` call, `subagent_type: general-purpose`, `model: sonnet`. Use `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. The synthesizer spot-verifies citations and returns a structured Accepted / Rejected / Backlog list.
 
 ### 4. Structural enforcement check
 

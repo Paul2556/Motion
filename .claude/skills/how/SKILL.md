@@ -33,7 +33,7 @@ Each explorer gets the prompt in `references/explorer-prompt.md` with its angle 
 Spawn one subagent that explores and explains in one pass:
 
 - `subagent_type`: `general-purpose`, told not to edit files
-- `model`: `opus`
+- `model`: `sonnet`
 
 Build its prompt from `references/explainer-prompt.md` without the explorer-findings section. Go to Step 4.
 
@@ -42,7 +42,7 @@ Build its prompt from `references/explainer-prompt.md` without the explorer-find
 Once all explorers have returned, spawn one subagent to synthesize their findings into one explanation:
 
 - `subagent_type`: `general-purpose`, told not to edit files
-- `model`: `opus`
+- `model`: `sonnet`
 
 Build its prompt from `references/explainer-prompt.md` with every explorer's findings filled in.
 

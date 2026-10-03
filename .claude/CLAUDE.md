@@ -33,8 +33,8 @@ Use [`nub`](https://github.com/nubjs/nub) and `nubx` for all Node tooling, never
 ## Working here
 
 - If a task will require more than 3 changes (files touched, or distinct edits within a file), enter plan mode first rather than making the changes directly.
-- Use subagents only for heavy read-only tasks (broad codebase search/exploration, research). Don't delegate edits or writes to subagents in this repo, and minimize other uses where possible.
-- Before a big decision (a new feature, architecture, data model, library or stack choice, anything expensive to undo), run the `mattpocock-skills:grilling` skill (what `/mattpocock-skills:grill-me` runs) until you and the user agree on the plan. Skip it if told to. Use `/mattpocock-skills:grill-with-docs` when the terms and decisions should be written down.
+- Before a big decision (a new feature, architecture, data model, library or stack choice, anything expensive to undo), run the `mattpocock-skills:grilling` skill (what `/mattpocock-skills:grill-me` runs) until you and the user agree on the plan. Skip it if told to. When the user is away and can't answer, follow the `autonomous-building` skill instead. Use `/mattpocock-skills:grill-with-docs` when the terms and decisions should be written down.
+- Track a big task (three or more verifiable units, or a `/goal`) on the issue tracker with the `track-big-tasks` skill.
 - Build features and fix bugs test-first with the `mattpocock-skills:tdd` skill. Skip it for tiny tweaks, and for how UI looks, which the user judges by eye.
 - Before calling a task done, prove it works against the real artifact (`principle-prove-it-works`).
 - Write PR bodies with the `pr` skill.
@@ -42,6 +42,7 @@ Use [`nub`](https://github.com/nubjs/nub) and `nubx` for all Node tooling, never
 - Read a file before overwriting or rewriting it, and keep what's there unless told to remove it. This includes `CLAUDE.md`, `ROADMAP.md`, and issue files, which often hold far more than you expect.
 - Never write em dashes (U+2014) anywhere: code, comments, docs, UI copy, commit messages, PR bodies. Use a comma, colon, period, or parentheses.
 - Never use the `fable` model, including for subagents and skills that suggest it. Use `opus` or `sonnet`.
+- Default subagents to `sonnet` (Sonnet 5.5). Use `opus` only as the second model when a skill wants different models to cross-check each other.
 - Don't use the AskUserQuestion tool. Put choices in a normal message as a numbered list with your recommendation, so they can be answered by typing or dictating.
 
 ## What this is

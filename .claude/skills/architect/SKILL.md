@@ -30,7 +30,7 @@ Skip Phase A only when the work is genuinely greenfield with no surrounding syst
 
 Run `arena` (`.claude/skills/arena/SKILL.md`) with the design-sketch task and the Phase A grounding artifacts. Pass [`references/runner-prompt.md`](references/runner-prompt.md) as each runner's prompt. Each produces a design package shaped per [`references/rationale-template.md`](references/rationale-template.md): the caller's usage written first, then the type sketch, function signatures, module map, and prose rationale derived from it.
 
-Use arena's default runners (two `opus`, one `sonnet`). Add a runner with a forced constraint (for example "minimize the public surface to one entry point") when the design space is wide.
+Use arena's default runners (two `sonnet`, one `opus`). Add a runner with a forced constraint (for example "minimize the public surface to one entry point") when the design space is wide.
 
 Design it twice. Require at least two structurally distinct candidates before synthesis, even when the first looks sufficient. This is the **exhaust-the-design-space** principle skill made concrete. Whole-shape alternatives, not point fixes inside one shape. If two runners converge, re-run one with a constraint that forces a different shape.
 

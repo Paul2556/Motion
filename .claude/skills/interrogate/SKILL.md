@@ -37,11 +37,11 @@ Launch all reviewers in a single message with the Agent tool, one per row:
 
 | Subagent | Model |
 |----------|-------|
-| Reviewer A | `opus` |
-| Reviewer B | `opus` |
-| Reviewer C | `sonnet` |
+| Reviewer A | `sonnet` |
+| Reviewer B | `sonnet` |
+| Reviewer C | `opus` |
 
-For each reviewer, use `subagent_type: general-purpose` and tell it not to edit files. Never use `fable`. The two `opus` reviewers still diverge from run to run, and `sonnet` weighs things differently.
+For each reviewer, use `subagent_type: general-purpose` and tell it not to edit files. Never use `fable`. The two `sonnet` reviewers still diverge from run to run, and `opus` weighs things differently.
 
 Read `references/reviewer-prompt.md` and fill in the template with:
 1. The stated intent

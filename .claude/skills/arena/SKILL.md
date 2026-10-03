@@ -25,7 +25,7 @@ The N candidates will receive the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric. State what success looks like for *this* task, then turn it into 3-6 concrete gradeable criteria. The rubric is the picker's tool in Phase D. Candidates only see the task.
-3. Pick the runners. Default to one `opus`, one `sonnet`, and a second `opus` given a forced constraint so it doesn't converge on the first one's shape. Different models catch different things. Never use `fable`. Spawn more when the arena covers multiple design directions, or give a runner a forced constraint to push it toward a different shape. Use the same model N times when the work is generation-bound rather than judgment-sensitive.
+3. Pick the runners. Default to one `sonnet`, one `opus`, and a second `sonnet` given a forced constraint so it doesn't converge on the first one's shape. Different models catch different things. Never use `fable`. Spawn more when the arena covers multiple design directions, or give a runner a forced constraint to push it toward a different shape. Use the same model N times when the work is generation-bound rather than judgment-sensitive.
 4. Assign output paths. Each candidate writes to its own location so candidates never share state, per the **separate-before-serializing-shared-state** principle skill: spawn with `isolation: "worktree"` in a git repo, otherwise `/tmp/arena-<slug>/candidate-<n>/`.
 
 ## Phase B: Fan out

@@ -124,7 +124,7 @@ If your scope assessment suggests a single-commit trivial target where the PR de
 Spawn one synthesizer subagent:
 
 - `subagent_type`: `general-purpose` (its quality check spot-verifies citations, which can need MCP access)
-- `model`: `opus`
+- `model`: `sonnet`
 
 The synthesizer gets:
 1. The investigator findings, including any null results and any categories skipped with justification
