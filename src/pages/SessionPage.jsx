@@ -69,8 +69,9 @@ export default function SessionPage() {
 
   return (
     <div className="app-shell h-screen overflow-hidden bg-[var(--app-bg)] text-[var(--app-text)]">
-      <div className="flex h-full flex-col px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
+      <div className="flex h-full flex-col">
         <SessionBoard
+          contentClassName="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10"
           committeeLabel={committee?.committee ?? committee?.id ?? "No committee loaded"}
           activeMotion={activeMotion}
           speechLength={speechLength}

@@ -246,12 +246,12 @@ export default function MotionPage() {
   if (!committee) return <NoCommitteeModal />;
 
   return (
-    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
-      <div className="mx-auto max-w-5xl">
-        <AppTopBar
-          committeeLabel={committee?.committee ?? committee?.id}
-          onShowShortcuts={() => setLegendOpen(true)}
-        />
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
+      <AppTopBar
+        committeeLabel={committee?.committee ?? committee?.id}
+        onShowShortcuts={() => setLegendOpen(true)}
+      />
+      <div className="mx-auto max-w-5xl p-8">
 
         <div className={votingMotion ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]" : "flex justify-center"}>
           <div className={`border border-[var(--app-border)] bg-[var(--app-panel)] p-6 ${votingMotion ? "" : "w-full max-w-2xl"}`}>

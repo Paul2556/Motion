@@ -364,7 +364,7 @@ function LandingPage() {
                   --timer-remaining, --danger (Timer's overtime state), --motion-accent
                   (the Motion nav button's dot), and the base text-white it normally
                   inherits from that class are all supplied directly. */}
-              <div className="h-[860px] p-4 text-white sm:p-6" style={{ '--timer-remaining': '#b7774d', '--danger': '#ef4444', '--motion-accent': '#fbbf24' }}>
+              <div className="flex h-[860px] flex-col text-white" style={{ '--timer-remaining': '#b7774d', '--danger': '#ef4444', '--motion-accent': '#fbbf24' }}>
                 <SessionBoard
                   committeeLabel="DISEC"
                   initialSpeaker={HERO_SPEAKER}
@@ -372,6 +372,7 @@ function LandingPage() {
                   activeMotion="Moderated Caucus: 72s / speaker"
                   suggestions={HERO_SUGGESTIONS}
                   linked={false}
+                  contentClassName="p-4 sm:p-6"
                 />
               </div>
             </div>

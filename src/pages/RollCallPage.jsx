@@ -161,13 +161,12 @@ export default function RollCallPage() {
   const pendingLabel = pendingBulk && STATES.find((s) => s.key === pendingBulk.nextState)?.label;
 
   return (
-    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
-      <div className="mx-auto max-w-3xl">
-
-        <AppTopBar
-          committeeLabel={committee?.committee ?? committee?.id}
-          onShowShortcuts={() => setLegendOpen(true)}
-        />
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
+      <AppTopBar
+        committeeLabel={committee?.committee ?? committee?.id}
+        onShowShortcuts={() => setLegendOpen(true)}
+      />
+      <div className="mx-auto max-w-3xl p-8">
 
         <div className="mb-6 flex items-center gap-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <div>

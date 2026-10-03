@@ -78,12 +78,12 @@ export default function GeneralVotingPage() {
   if (!committee) return <NoCommitteeModal />;
 
   return (
-    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
-      <div className="mx-auto max-w-2xl">
-        <AppTopBar
-          committeeLabel={committee?.committee ?? committee?.id}
-          onShowShortcuts={() => setLegendOpen(true)}
-        />
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
+      <AppTopBar
+        committeeLabel={committee?.committee ?? committee?.id}
+        onShowShortcuts={() => setLegendOpen(true)}
+      />
+      <div className="mx-auto max-w-2xl p-8">
 
         <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">What's being voted on?</p>
