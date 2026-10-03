@@ -170,7 +170,7 @@ export default function SeatChart({
   }
 
   const majorityIndex = Math.floor(totalSeats / 2) + 1; // seats needed to win
-  const twoThirdsIndex = Math.floor((totalSeats * 2) / 3) + 1; // seats needed for a supermajority
+  const twoThirdsIndex = Math.ceil((totalSeats * 2) / 3); // seats needed for a supermajority: at least two-thirds
 
   const sidePadding = seatRadius + 4;
   const topPadding = seatRadius + 4;

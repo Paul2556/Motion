@@ -12,16 +12,20 @@ export function buildInitialGroups(presentCount, absentCount) {
     { name: "For", seats: 0, color: "var(--vote-for)" },
     { name: "Against", seats: presentCount, color: "var(--vote-against)" },
   ];
-  if (absentCount > 0) groups.push({ name: "Abstain", seats: absentCount, color: "var(--vote-abstain)" });
+  if (absentCount > 0) groups.push({ name: "Abstain", seats: absentCount, forced: absentCount, color: "var(--vote-abstain)" });
   return groups;
 }
 
 // Groups always sum to the same total, since a vote moves a delegate between
 // blocs rather than tallying independently. Against is the shared bucket both
-// For and Abstain exchange with, never directly with each other.
+// For and Abstain exchange with, never directly with each other. A stale
+// selection (Abstain after the group was folded away) is a no-op, and an
+// absent delegate's forced abstention never moves.
 export function adjustVoteGroups(groups, index, delta) {
+  if (!groups[index]) return groups;
   const partner = index === 1 ? 0 : 1;
-  const moved = delta > 0 ? Math.min(delta, groups[partner].seats) : Math.max(delta, -groups[index].seats);
+  const movable = groups[index].seats - (groups[index].forced ?? 0);
+  const moved = delta > 0 ? Math.min(delta, groups[partner].seats) : Math.max(delta, -movable);
   if (moved === 0) return groups;
   return groups.map((group, i) => {
     if (i === index) return { ...group, seats: group.seats + moved };
@@ -38,4 +42,12 @@ export function toggleAbstainGroups(groups) {
     return [groups[0], { ...groups[1], seats: groups[1].seats + groups[2].seats }];
   }
   return [...groups, { name: "Abstain", seats: 0, color: "var(--vote-abstain)" }];
+}
+
+// A saved tally is only reused for the same roster and the same attendance:
+// once roll call changes who is absent, the forced abstentions are wrong.
+export function isCachedVoteUsable(cached, delegateCount, absentCount) {
+  if (!cached || cached.absentCount !== absentCount) return false;
+  const total = (cached.groups ?? []).reduce((sum, group) => sum + (group.seats ?? 0), 0);
+  return total === delegateCount;
 }

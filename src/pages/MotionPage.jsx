@@ -9,7 +9,7 @@ import SpeakingTimeSelector from "../components/SpeakingTimeSelector";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
 import { formatMotionSummary } from "../utils/motionSummary";
-import { buildInitialGroups, adjustVoteGroups, toggleAbstainGroups } from "../utils/voteGroups";
+import { buildInitialGroups, adjustVoteGroups, isCachedVoteUsable, toggleAbstainGroups } from "../utils/voteGroups";
 import ConferenceService from "../services/ConferenceService";
 import LiveSessionService from "../services/LiveSessionService";
 import { getMotions, canonicalLabel } from "../motionPresets";
@@ -20,16 +20,12 @@ function voteStorageKey(committeeId) {
   return `motion-vote-${committeeId}`;
 }
 
-// sessionStorage so it survives a refresh but not the tab closing. Ignores a
-// cache whose seat count no longer matches the roster, and sums every group
-// present rather than hardcoding indices, since the count varies.
-function loadCachedVote(committeeId, delegateCount) {
+// sessionStorage so it survives a refresh but not the tab closing. Ignored
+// once the roster or attendance no longer matches (see isCachedVoteUsable).
+function loadCachedVote(committeeId, delegateCount, absentCount) {
   try {
-    const raw = sessionStorage.getItem(voteStorageKey(committeeId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const total = (parsed.groups ?? []).reduce((sum, group) => sum + (group.seats ?? 0), 0);
-    return total === delegateCount ? parsed : null;
+    const parsed = JSON.parse(sessionStorage.getItem(voteStorageKey(committeeId)));
+    return isCachedVoteUsable(parsed, delegateCount, absentCount) ? parsed : null;
   } catch {
     return null;
   }
@@ -53,7 +49,7 @@ export default function MotionPage() {
   const delegateCount = committee?.delegates.length ?? 0;
   const presentCount = committee?.delegates.filter((d) => d.present).length ?? 0;
   const absentCount = delegateCount - presentCount;
-  const cachedVote = committee ? loadCachedVote(committee.id, delegateCount) : null;
+  const cachedVote = committee ? loadCachedVote(committee.id, delegateCount, absentCount) : null;
 
   // Scope MotionInput's matching to delegations actually in this committee
   // (including non-country ones like press corps), not the full ISO list.
@@ -175,17 +171,19 @@ export default function MotionPage() {
   useEffect(() => {
     if (!committee) return;
     try {
-      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ motionText, groups, motionLog }));
+      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ motionText, groups, motionLog, absentCount }));
     } catch {
       // storage unavailable (private browsing, quota) - falls back to in-memory-only
     }
-  }, [committee, motionText, groups, motionLog]);
+  }, [committee, motionText, groups, motionLog, absentCount]);
 
   const adjustVotes = useCallback((index, delta) => {
     setGroups((prev) => adjustVoteGroups(prev, index, delta));
   }, []);
 
   const allowAbstain = groups.length > 2;
+  // Abstain can disappear (toggle off, new vote) while it's selected.
+  const activeIndex = selectedIndex < groups.length ? selectedIndex : 0;
 
   // Locked (a no-op) whenever anyone's absent - their seats are already
   // forced into Abstain (see voteGroups.js's buildInitialGroups) and folding
@@ -219,8 +217,8 @@ export default function MotionPage() {
         "voting.selectFor": () => setSelectedIndex(0),
         "voting.selectAgainst": () => setSelectedIndex(1),
         "voting.selectAbstain": () => allowAbstain && setSelectedIndex(2),
-        "voting.increment": () => adjustVotes(selectedIndex, 1),
-        "voting.decrement": () => adjustVotes(selectedIndex, -1),
+        "voting.increment": () => adjustVotes(activeIndex, 1),
+        "voting.decrement": () => adjustVotes(activeIndex, -1),
       },
     }
   );
@@ -275,7 +273,7 @@ export default function MotionPage() {
             <VotingPanel
               subtitle={formatMotionSummary(votingMotion)}
               groups={groups}
-              selectedIndex={selectedIndex}
+              selectedIndex={activeIndex}
               onSelect={setSelectedIndex}
               onIncrement={(index) => adjustVotes(index, 1)}
               onDecrement={(index) => adjustVotes(index, -1)}

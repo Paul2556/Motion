@@ -4,7 +4,7 @@ import AppTopBar from "../components/AppTopBar";
 import VotingPanel from "../components/VotingPanel";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
-import { buildInitialGroups, adjustVoteGroups, toggleAbstainGroups } from "../utils/voteGroups";
+import { buildInitialGroups, adjustVoteGroups, isCachedVoteUsable, toggleAbstainGroups } from "../utils/voteGroups";
 import ConferenceService from "../services/ConferenceService";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 
@@ -12,15 +12,11 @@ function voteStorageKey(committeeId) {
   return `general-vote-${committeeId}`;
 }
 
-// Same cache-validity reasoning as MotionPage.jsx's loadCachedVote - ignores
-// a cache whose total no longer matches the roster.
-function loadCachedVote(committeeId, delegateCount) {
+// Same cache-validity rule as MotionPage.jsx (see isCachedVoteUsable).
+function loadCachedVote(committeeId, delegateCount, absentCount) {
   try {
-    const raw = sessionStorage.getItem(voteStorageKey(committeeId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const total = (parsed.groups ?? []).reduce((sum, group) => sum + (group.seats ?? 0), 0);
-    return total === delegateCount ? parsed : null;
+    const parsed = JSON.parse(sessionStorage.getItem(voteStorageKey(committeeId)));
+    return isCachedVoteUsable(parsed, delegateCount, absentCount) ? parsed : null;
   } catch {
     return null;
   }
@@ -34,7 +30,7 @@ export default function GeneralVotingPage() {
   const delegateCount = committee?.delegates.length ?? 0;
   const presentCount = committee?.delegates.filter((d) => d.present).length ?? 0;
   const absentCount = delegateCount - presentCount;
-  const cachedVote = committee ? loadCachedVote(committee.id, delegateCount) : null;
+  const cachedVote = committee ? loadCachedVote(committee.id, delegateCount, absentCount) : null;
 
   const [label, setLabel] = useState(cachedVote?.label ?? "");
   const [groups, setGroups] = useState(cachedVote?.groups ?? buildInitialGroups(presentCount, absentCount));
@@ -44,17 +40,19 @@ export default function GeneralVotingPage() {
   useEffect(() => {
     if (!committee) return;
     try {
-      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ label, groups }));
+      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ label, groups, absentCount }));
     } catch {
       // storage unavailable (private browsing, quota) - falls back to in-memory-only
     }
-  }, [committee, label, groups]);
+  }, [committee, label, groups, absentCount]);
 
   const adjustVotes = useCallback((index, delta) => {
     setGroups((prev) => adjustVoteGroups(prev, index, delta));
   }, []);
 
   const allowAbstain = groups.length > 2;
+  // Abstain can disappear (toggle off, reset) while it's selected.
+  const activeIndex = selectedIndex < groups.length ? selectedIndex : 0;
 
   function toggleAbstain() {
     if (absentCount > 0) return;
@@ -74,8 +72,8 @@ export default function GeneralVotingPage() {
         "voting.selectFor": () => setSelectedIndex(0),
         "voting.selectAgainst": () => setSelectedIndex(1),
         "voting.selectAbstain": () => allowAbstain && setSelectedIndex(2),
-        "voting.increment": () => adjustVotes(selectedIndex, 1),
-        "voting.decrement": () => adjustVotes(selectedIndex, -1),
+        "voting.increment": () => adjustVotes(activeIndex, 1),
+        "voting.decrement": () => adjustVotes(activeIndex, -1),
       },
     }
   );
@@ -112,7 +110,7 @@ export default function GeneralVotingPage() {
           <VotingPanel
             subtitle={label}
             groups={groups}
-            selectedIndex={selectedIndex}
+            selectedIndex={activeIndex}
             onSelect={setSelectedIndex}
             onIncrement={(index) => adjustVotes(index, 1)}
             onDecrement={(index) => adjustVotes(index, -1)}
