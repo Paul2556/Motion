@@ -7,6 +7,7 @@ import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
 import ConferenceService from "../services/ConferenceService";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
+import { attendanceChanges, getDelegateState } from "../utils/attendance";
 
 const STATES = [
   { key: "absent", label: "Absent" },
@@ -21,11 +22,6 @@ const STATE_ORDER = STATES.map((s) => s.key);
 function cycleState(current, direction) {
   const next = STATE_ORDER.indexOf(current) + direction;
   return next < 0 || next >= STATE_ORDER.length ? current : STATE_ORDER[next];
-}
-
-function getDelegateState(delegate) {
-  if (!delegate.present) return "absent";
-  return delegate.voting ? "voting" : "present";
 }
 
 // Counts only rows that would actually flip, and a roster under 10 never
@@ -93,16 +89,15 @@ export default function RollCallPage() {
   }, [clampedIndex]);
 
   function applyToDelegate(id, state) {
-    const delegate = delegates.find((d) => d.id === id);
-    if (delegate) {
-      undoRef.current = { changes: [{ id, previousState: getDelegateState(delegate) }] };
-    }
+    const changes = attendanceChanges(delegates.filter((d) => d.id === id), state);
+    if (changes.length === 0) return;
+    undoRef.current = { changes };
     ConferenceService.setAttendanceState(id, state);
     setTick((t) => t + 1);
   }
 
   function requestEveryone(nextState) {
-    const changesCount = delegates.filter((d) => getDelegateState(d) !== nextState).length;
+    const changesCount = attendanceChanges(delegates, nextState).length;
 
     if (shouldConfirmBulkChange(delegates.length, changesCount)) {
       setPendingBulk({ nextState, changesCount });
@@ -155,9 +150,11 @@ export default function RollCallPage() {
   const everyoneState = everyoneUniform ? delegateStates[0] : null;
 
   function applyEveryone(nextState) {
-    undoRef.current = { changes: delegates.map((d) => ({ id: d.id, previousState: getDelegateState(d) })) };
-    ConferenceService.setAllAttendanceState(nextState);
+    const changes = attendanceChanges(delegates, nextState);
     setPendingBulk(null);
+    if (changes.length === 0) return;
+    undoRef.current = { changes };
+    ConferenceService.setAllAttendanceState(nextState);
     setTick((t) => t + 1);
   }
 
