@@ -31,6 +31,12 @@ function loadCachedVote(committeeId, delegateCount, absentCount) {
   }
 }
 
+// Every logged motion gets an id, so selection, voting, and deletion follow
+// the entry itself rather than its position (precedence inserts shift it).
+function withId(entry) {
+  return entry.id ? entry : { ...entry, id: crypto.randomUUID() };
+}
+
 // Inserts by precedence, so a Point of Order jumps to the top while same-rank
 // motions still read newest-first. Unrecognized text sinks to the bottom.
 function insertByPrecedence(list, entry, precedenceByLabel) {
@@ -68,23 +74,33 @@ export default function MotionPage() {
 
   const [motionText, setMotionText] = useState(cachedVote?.motionText ?? "");
   const [groups, setGroups] = useState(cachedVote?.groups ?? buildInitialGroups(presentCount, absentCount));
-  const [motionLog, setMotionLog] = useState(cachedVote?.motionLog ?? []);
+  const [motionLog, setMotionLog] = useState(() => (cachedVote?.motionLog ?? []).map(withId));
   const [selectedIndex, setSelectedIndex] = useState(0);
   // Hidden until a chair explicitly opens voting on a logged motion - null
-  // means hidden, an entry means "voting is open for this motion".
-  const [votingMotion, setVotingMotion] = useState(null);
+  // means hidden, an id means "voting is open for this motion". Saved with
+  // the tally, so a refresh mid-vote reopens the panel instead of hiding it.
+  const [votingMotionId, setVotingMotionId] = useState(cachedVote?.votingMotionId ?? null);
+  const votingMotion = motionLog.find((entry) => entry.id === votingMotionId) ?? null;
 
   // Distinct from the vote-bloc `selectedIndex` above (different concept:
   // this is "which logged motion the keyboard cursor is on", kept separate
   // rather than conflated with it).
-  const [selectedMotionIndex, setSelectedMotionIndex] = useState(0);
+  const [selectedMotionId, setSelectedMotionId] = useState(null);
   const [legendOpen, setLegendOpen] = useState(false);
   const motionInputRef = useRef(null);
   // Single-slot undo (not a history stack) - same pattern as SessionBoard.jsx
   // and RollCallPage.jsx. Covers the last deleted motion only.
   const undoRef = useRef(null);
 
-  const clampedMotionIndex = motionLog.length === 0 ? -1 : Math.min(selectedMotionIndex, motionLog.length - 1);
+  const selectedFound = motionLog.findIndex((entry) => entry.id === selectedMotionId);
+  const clampedMotionIndex = selectedFound >= 0 ? selectedFound : motionLog.length > 0 ? 0 : -1;
+  // Functional, so held-down arrow keys all count.
+  const moveMotionSelection = (step) =>
+    setSelectedMotionId((id) => {
+      const found = motionLog.findIndex((entry) => entry.id === id);
+      const index = found >= 0 ? found : 0;
+      return motionLog[Math.min(motionLog.length - 1, Math.max(0, index + step))]?.id ?? null;
+    });
   const selectedMotion = clampedMotionIndex >= 0 ? motionLog[clampedMotionIndex] : null;
 
   // Only set once the chair hits "Go Live" on /cloud - a purely local
@@ -99,8 +115,12 @@ export default function MotionPage() {
   // Opening voting starts a fresh tally rather than carrying one over, and
   // marks this as the active motion, since reopening an older motion means
   // bringing it back to the floor.
+  // A vote already open on this motion is left alone, so a stray Enter or V
+  // mid-count can't wipe the tally.
   function startVoting(entry) {
-    setVotingMotion(entry);
+    if (entry.id === votingMotionId) return;
+    setVotingMotionId(entry.id);
+    setSelectedMotionId(entry.id);
     setGroups(buildInitialGroups(presentCount, absentCount));
     ConferenceService.setActiveMotion(entry);
     publishActiveMotion(entry);
@@ -110,9 +130,10 @@ export default function MotionPage() {
   // govern the floor as soon as they're moved. Inserted by precedence, so a
   // Point of Order outranks whatever is already on the floor.
   function handleMotionSubmit(meta) {
-    setMotionLog((prev) => insertByPrecedence(prev, meta, precedenceByLabel));
-    ConferenceService.setActiveMotion(meta);
-    publishActiveMotion(meta);
+    const entry = withId(meta);
+    setMotionLog((prev) => insertByPrecedence(prev, entry, precedenceByLabel));
+    ConferenceService.setActiveMotion(entry);
+    publishActiveMotion(entry);
   }
 
   // votingMotion is already the committee's active motion (set in
@@ -139,7 +160,9 @@ export default function MotionPage() {
     navigate("/session", { state: { seedQueue: true } });
   }
 
+  // Deleting the motion under vote closes the vote too.
   function deleteMotion(index) {
+    if (motionLog[index]?.id === votingMotionId) setVotingMotionId(null);
     undoRef.current = { entry: motionLog[index], index };
     setMotionLog((prev) => prev.filter((_, i) => i !== index));
   }
@@ -171,11 +194,11 @@ export default function MotionPage() {
   useEffect(() => {
     if (!committee) return;
     try {
-      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ motionText, groups, motionLog, absentCount }));
+      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ motionText, groups, motionLog, absentCount, votingMotionId }));
     } catch {
       // storage unavailable (private browsing, quota) - falls back to in-memory-only
     }
-  }, [committee, motionText, groups, motionLog, absentCount]);
+  }, [committee, motionText, groups, motionLog, absentCount, votingMotionId]);
 
   const adjustVotes = useCallback((index, delta) => {
     setGroups((prev) => adjustVoteGroups(prev, index, delta));
@@ -203,8 +226,8 @@ export default function MotionPage() {
       "motions.second": () => selectedMotion && adjustSecond(clampedMotionIndex, 1),
       "motions.openVote": () => selectedMotion && startVoting(selectedMotion),
       "motions.confirm": () => selectedMotion && startVoting(selectedMotion),
-      "motions.moveUp": () => setSelectedMotionIndex((i) => Math.max(0, (i < 0 ? 0 : i) - 1)),
-      "motions.moveDown": () => setSelectedMotionIndex((i) => Math.min(motionLog.length - 1, (i < 0 ? -1 : i) + 1)),
+      "motions.moveUp": () => moveMotionSelection(-1),
+      "motions.moveDown": () => moveMotionSelection(1),
       "global.undo": performUndo,
       "global.legend": () => setLegendOpen((open) => !open),
       "global.viewSpeakerList": () => navigate("/session"),
