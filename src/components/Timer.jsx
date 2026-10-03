@@ -140,11 +140,13 @@ const Timer = forwardRef(function Timer({
         ringRef.current.style.strokeDashoffset = circumference * (1 - liveProgress);
       }
 
+      // Anchored at the true crossing value, not -1, so overtime reads 00:00
+      // for its first second and stays in step with the wall clock.
       if (!overtime && value <= 0) {
         setOvertime(true);
         onCompleteRef.current();
-        setSeconds(-1);
-        publishAnchorRef.current(-1, { overtime: true });
+        setSeconds(Math.ceil(value));
+        publishAnchorRef.current(value, { overtime: true });
       } else {
         const rounded = Math.ceil(value);
         setSeconds((prev) => (prev === rounded ? prev : rounded));
