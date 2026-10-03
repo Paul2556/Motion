@@ -340,7 +340,10 @@ function findDurations(tokens, fuzzyLevel) {
     const found = readDuration(tokens, i, fuzzyLevel);
     if (!found) continue;
     const label = trailingLabel(tokens, found, fuzzyLevel);
-    durations.push({ ...found, first: i, role: label?.role ?? null, end: label ? label.last : found.last });
+    // A zero-length duration still claims its words, so "with 0 seconds
+    // each" isn't read as a topic, but is never reported.
+    const zero = found.pair ? found.pair.total <= 0 || found.pair.speaking <= 0 : found.amount <= 0;
+    durations.push({ ...found, zero, first: i, role: label?.role ?? null, end: label ? label.last : found.last });
     i = label ? label.last : found.last;
   }
   return durations;
@@ -545,7 +548,7 @@ function parseLine(text, tokens, fuzzyLevel, phraseIndex) {
   const motion = { ...motionHit.phrase, last: motionHit.last };
 
   // Pairs only make sense for a caucus with both a total and a speaking time.
-  const usable = durations.filter((d) => (!d.pair || !motion.durationField) && !isTopicWording(d));
+  const usable = durations.filter((d) => !d.zero && (!d.pair || !motion.durationField) && !isTopicWording(d));
   if (usable.length === 0 && motion.durationField !== "speaking") {
     const bare = findBareMinutes(tokens, motion, blocked);
     if (bare) {

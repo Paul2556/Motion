@@ -358,3 +358,50 @@ describe("motion parser: partial motion names", () => {
     ["the speaking time", {}],
   ])("%s is not Extend Speaking Time", (text, expected) => expectMeta(text, expected));
 });
+
+describe("motion parser: invariants on random input", () => {
+  const PIECES = [
+    "mod", "unmod", "moderated caucus", "for", "with", "a", "the", "on", "about", "topic", "of", "10", "1", "1:30", "10/1",
+    "minutes", "min", "seconds", "sec", "90s", "each", "per", "speaker", "speaking", "time", "total", "France", "US", "us",
+    "U.S.", "China's", "raised", "by", "-", "(", ")", ",", ".", "'", "half", "and", "an", "hour", "Frnace", "extend",
+    "speaking time", "\n", "  ", "🙂", "é", "1,5", ".5", "0", "999999",
+  ];
+
+  // Seeded so a failure reproduces exactly.
+  function random(seed) {
+    let state = seed;
+    return () => {
+      state = (state * 1664525 + 1013904223) % 4294967296;
+      return state / 4294967296;
+    };
+  }
+
+  it("never throws, and keeps ranges in bounds, sorted, and non-overlapping", () => {
+    const next = random(42);
+    for (let run = 0; run < 3000; run++) {
+      const length = 1 + Math.floor(next() * 14);
+      const text = Array.from({ length }, () => PIECES[Math.floor(next() * PIECES.length)]).join(next() < 0.8 ? " " : "");
+      const { ranges, meta: m } = parse(text);
+      let cursor = 0;
+      for (const range of ranges) {
+        if (!(range.start >= cursor && range.end > range.start && range.end <= text.length)) {
+          throw new Error(`bad range ${JSON.stringify(range)} in ${JSON.stringify(text)}`);
+        }
+        cursor = range.end;
+      }
+      for (const field of ["speakingTime", "totalTime"]) {
+        if (m[field] !== null && !(Number.isFinite(m[field]) && m[field] > 0)) {
+          throw new Error(`bad ${field} ${m[field]} in ${JSON.stringify(text)}`);
+        }
+      }
+    }
+  });
+});
+
+describe("motion parser: zero durations", () => {
+  it.each([
+    ["unmod for 0 minutes", { motion: "Unmoderated Caucus" }],
+    ["mod caucus 0/0 on sanctions", { motion: "Moderated Caucus", topic: "sanctions" }],
+    ["mod caucus for 10 minutes with 0 seconds each", { motion: "Moderated Caucus", totalTime: 10 }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+});
