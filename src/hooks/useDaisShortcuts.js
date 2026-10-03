@@ -12,9 +12,10 @@ export function eventToKeyId(event) {
   return parts.join("+");
 }
 
-function isTextEditingTarget(target) {
+// A focused SELECT counts too: it uses the arrow keys to change its value.
+export function isTextEditingTarget(target) {
   const tag = target.tagName;
-  return tag === "TEXTAREA" || tag === "INPUT" || target.isContentEditable;
+  return tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT" || Boolean(target.isContentEditable);
 }
 
 // Global is merged into every view-scope first, so a view can't
