@@ -330,7 +330,7 @@ describe("motion parser: round three", () => {
     ["The U.K. motions for an unmod for 10 minutes", { motion: "Unmoderated Caucus", delegation: "UK", totalTime: 10 }],
     // Pinned: a duration right after the topic with no connective still ends it.
     ["mod caucus on sanctions 10 min 1 min", { motion: "Moderated Caucus", topic: "sanctions", speakingTime: 1, totalTime: 10 }],
-    ["mod caucus on sanctions — France", { motion: "Moderated Caucus", delegation: "France", topic: "sanctions" }],
+    ["mod caucus on sanctions \u2014 France", { motion: "Moderated Caucus", delegation: "France", topic: "sanctions" }],
     ["10 minute total time, 1 minute speaking time, mod caucus on sanctions", { motion: "Moderated Caucus", topic: "sanctions", speakingTime: 1, totalTime: 10 }],
     ["France motions, seconded by China, for an unmod for 10 minutes", { motion: "Unmoderated Caucus", delegation: "France", totalTime: 10 }],
   ])("%s", (text, expected) => expectMeta(text, expected));
