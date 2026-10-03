@@ -27,8 +27,9 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Once a workbook is parsed, this holds its committees so the picker
-  // modal can render - null means "no picker showing".
+  // Once a workbook is parsed, this holds it (not yet in use) so the picker
+  // modal can render - null means "no picker showing". It only replaces the
+  // loaded conference once a committee is picked, so Cancel loses nothing.
   const [pendingConference, setPendingConference] = useState(null);
 
   // demo.motionmun.com only - which bundled sample conference to pick from.
@@ -54,26 +55,26 @@ export default function HomePage() {
     setIsLoading(true);
 
     try {
-      const conference = await ConferenceService.loadConference(file);
-      const committees = ConferenceService.getCommittees();
+      const conference = await ConferenceService.parseConference(file);
 
-      if (committees.length === 0) {
+      if (Object.keys(conference.committees).length === 0) {
         setError("No committees found in that workbook.");
         return;
       }
 
-      setPendingConference({ name: conference.name, committees });
+      setPendingConference(conference);
     } catch (err) {
       console.error(err);
       setError("Failed to load workbook. Make sure it's a valid .xlsx allocation sheet.");
     } finally {
       setIsLoading(false);
+      // Lets the same file be picked again after a Cancel or a fix.
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
   function selectCommittee(id) {
-    ConferenceService.setActiveCommittee(id);
-    setLoadedConference(ConferenceService.getConference());
+    setLoadedConference(ConferenceService.commitConference(pendingConference, id));
     setPendingConference(null);
     navigate("/rollcall");
   }
@@ -81,11 +82,8 @@ export default function HomePage() {
   // Feeds a bundled sample conference into the same "which committee are you chairing?"
   // picker used for uploaded workbooks, so nothing about that flow needs to change.
   function loadDemoConference(demo) {
-    const conference = ConferenceService.loadDemoConference(demo);
-    const committees = ConferenceService.getCommittees();
-
     setShowDemoPicker(false);
-    setPendingConference({ name: conference.name, committees });
+    setPendingConference(ConferenceService.prepareConference(demo.name, demo.committees));
   }
 
   return (
@@ -317,7 +315,7 @@ export default function HomePage() {
             </div>
 
             <div className="mt-6 max-h-80 space-y-2 overflow-y-auto">
-              {pendingConference.committees.map((committee) => (
+              {Object.values(pendingConference.committees).map((committee) => (
                 <button
                   key={committee.id}
                   onClick={() => selectCommittee(committee.id)}

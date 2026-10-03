@@ -5,14 +5,11 @@ import NoCommitteeModal from "../components/NoCommitteeModal";
 import ConferenceService from "../services/ConferenceService";
 import { toWholeSeconds } from "../utils/duration";
 import { countryAliases, initialSpeakersQueue, restoreSavedSession, shortCountryName } from "../utils/speakersQueue";
-
-function sessionStorageKey(committeeId) {
-  return `motion-speakers-${committeeId}`;
-}
+import { speakersKey } from "../committeeCaches";
 
 function loadSavedSession(committee) {
   try {
-    return restoreSavedSession(JSON.parse(sessionStorage.getItem(sessionStorageKey(committee.id))), committee.delegates);
+    return restoreSavedSession(JSON.parse(sessionStorage.getItem(speakersKey(committee.id))), committee.delegates);
   } catch {
     return restoreSavedSession(null, committee.delegates);
   }
@@ -20,7 +17,7 @@ function loadSavedSession(committee) {
 
 function saveSession(committeeId, session) {
   try {
-    sessionStorage.setItem(sessionStorageKey(committeeId), JSON.stringify(session));
+    sessionStorage.setItem(speakersKey(committeeId), JSON.stringify(session));
   } catch {
     // storage unavailable (private browsing, quota) - the queue just won't survive a reload
   }

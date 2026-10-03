@@ -7,15 +7,12 @@ import ShortcutLegend from "../components/ShortcutLegend";
 import { buildInitialGroups, adjustVoteGroups, isCachedVoteUsable, toggleAbstainGroups } from "../utils/voteGroups";
 import ConferenceService from "../services/ConferenceService";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
-
-function voteStorageKey(committeeId) {
-  return `general-vote-${committeeId}`;
-}
+import { generalVoteKey } from "../committeeCaches";
 
 // Same cache-validity rule as MotionPage.jsx (see isCachedVoteUsable).
 function loadCachedVote(committeeId, delegateCount, absentCount) {
   try {
-    const parsed = JSON.parse(sessionStorage.getItem(voteStorageKey(committeeId)));
+    const parsed = JSON.parse(sessionStorage.getItem(generalVoteKey(committeeId)));
     return isCachedVoteUsable(parsed, delegateCount, absentCount) ? parsed : null;
   } catch {
     return null;
@@ -40,7 +37,7 @@ export default function GeneralVotingPage() {
   useEffect(() => {
     if (!committee) return;
     try {
-      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ label, groups, absentCount }));
+      sessionStorage.setItem(generalVoteKey(committee.id), JSON.stringify({ label, groups, absentCount }));
     } catch {
       // storage unavailable (private browsing, quota) - falls back to in-memory-only
     }

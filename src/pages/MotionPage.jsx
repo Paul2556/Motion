@@ -15,16 +15,13 @@ import LiveSessionService from "../services/LiveSessionService";
 import { getMotions, canonicalLabel } from "../motionPresets";
 import { getMotionInputMode } from "../motionInputMode";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
-
-function voteStorageKey(committeeId) {
-  return `motion-vote-${committeeId}`;
-}
+import { motionVoteKey } from "../committeeCaches";
 
 // sessionStorage so it survives a refresh but not the tab closing. Ignored
 // once the roster or attendance no longer matches (see isCachedVoteUsable).
 function loadCachedVote(committeeId, delegateCount, absentCount) {
   try {
-    const parsed = JSON.parse(sessionStorage.getItem(voteStorageKey(committeeId)));
+    const parsed = JSON.parse(sessionStorage.getItem(motionVoteKey(committeeId)));
     return isCachedVoteUsable(parsed, delegateCount, absentCount) ? parsed : null;
   } catch {
     return null;
@@ -194,7 +191,7 @@ export default function MotionPage() {
   useEffect(() => {
     if (!committee) return;
     try {
-      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ motionText, groups, motionLog, absentCount, votingMotionId }));
+      sessionStorage.setItem(motionVoteKey(committee.id), JSON.stringify({ motionText, groups, motionLog, absentCount, votingMotionId }));
     } catch {
       // storage unavailable (private browsing, quota) - falls back to in-memory-only
     }

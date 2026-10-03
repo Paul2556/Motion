@@ -1,4 +1,5 @@
 import AllocationParser from "./AllocationParser";
+import { clearCommitteeCaches } from "../committeeCaches";
 
 // sessionStorage (not localStorage) so a refresh or brief network hiccup
 // doesn't lose the loaded conference, but closing the tab still leaves no
@@ -50,30 +51,32 @@ class ConferenceService {
   }
 
   async loadConference(file) {
-    const parser = new AllocationParser();
-    const parsed = await parser.load(file);
-
-    return this.ingestCommittees(parsed.name, parsed.committees);
+    const conference = await this.parseConference(file);
+    return this.commitConference(conference);
   }
 
   // Bundled sample conferences (src/data/demoConferences.js) are already shaped exactly like
   // AllocationParser's output, so demo.motionmun.com can load one without a file or the parser.
   loadDemoConference(demo) {
-    return this.ingestCommittees(demo.name, demo.committees);
+    return this.commitConference(this.prepareConference(demo.name, demo.committees));
   }
 
-  // Shared by loadConference/loadDemoConference - `sheets` is a list of parsed committees
-  // (AllocationParser's shape: { id, title, topic, chairs, delegates, pages }).
-  ingestCommittees(name, sheets) {
-    this.reset();
+  async parseConference(file) {
+    const parsed = await new AllocationParser().load(file);
+    return this.prepareConference(parsed.name, parsed.committees);
+  }
 
-    this.conference.name = name;
+  // Builds a conference without touching the one in use, so HomePage can
+  // show its committee picker and a Cancel there loses nothing. `sheets` is
+  // AllocationParser's shape: { id, title, topic, chairs, delegates, pages }.
+  prepareConference(name, sheets) {
+    const committees = {};
 
     sheets.forEach((sheet) => {
       try {
         const committee = this.buildCommittee(sheet);
 
-        this.conference.committees[committee.id] = committee;
+        committees[committee.id] = committee;
       } catch (error) {
         console.warn(
           `Skipping sheet "${sheet.id}": ${error.message}`
@@ -81,15 +84,13 @@ class ConferenceService {
       }
     });
 
-    const committees =
-      Object.keys(this.conference.committees);
+    return { name, date: "", committees, activeCommittee: Object.keys(committees)[0] ?? null };
+  }
 
-    if (committees.length) {
-      this.conference.activeCommittee =
-        committees[0];
-    }
-
+  commitConference(conference, activeCommittee = conference.activeCommittee) {
+    this.conference = { ...conference, activeCommittee };
     this.loaded = true;
+    clearCommitteeCaches();
     this.persist();
 
     return this.conference;
