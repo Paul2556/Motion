@@ -432,6 +432,7 @@ describe("motion parser: round four", () => {
     ["unmod for twenty-five minutes", { motion: UNMOD, totalTime: 25 }],
     ["unmod for thirteen minutes", { motion: UNMOD, totalTime: 13 }],
     ["unmod for ten", { motion: UNMOD, totalTime: 10 }],
+    ["mod caucus one China policy", { motion: MOD, topic: "one China policy" }],
 
     // One duration in two parts, when it can't be a total and a speaking time.
     ["unmod 1 hr 30 min", { motion: UNMOD, totalTime: 90 }],
