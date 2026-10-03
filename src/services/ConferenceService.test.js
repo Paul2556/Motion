@@ -63,3 +63,34 @@ describe("ConferenceService loading a conference", () => {
     expect(sessionStorage.getItem(`motion-speakers-${id}`)).toBeNull();
   });
 });
+
+describe("ConferenceService statistics", () => {
+  beforeEach(() => {
+    vi.stubGlobal("sessionStorage", memoryStorage());
+    ConferenceService.loadDemoConference(demoConferences[0]);
+  });
+
+  it("doesn't count a delegate skipped before the timer ran as having spoken", () => {
+    const [first] = ConferenceService.getDelegates();
+
+    expect(ConferenceService.markSpoken(first.id, 0)).toBe(false);
+
+    const stats = ConferenceService.getStatistics();
+    expect(stats.spoken).toBe(0);
+    expect(ConferenceService.getDelegate(first.id).hasSpoken).toBe(false);
+  });
+
+  it("counts everyone as remaining before roll call", () => {
+    const stats = ConferenceService.getStatistics();
+    expect(stats.remaining).toBe(stats.delegates);
+  });
+
+  it("leaves absent delegates out of remaining once roll call is taken", () => {
+    const [absent, spoke, ...rest] = ConferenceService.getDelegates();
+    ConferenceService.setAttendanceState(absent.id, "absent");
+    for (const delegate of [spoke, ...rest]) ConferenceService.setAttendanceState(delegate.id, "present");
+    ConferenceService.markSpoken(spoke.id, 30);
+
+    expect(ConferenceService.getStatistics().remaining).toBe(rest.length);
+  });
+});

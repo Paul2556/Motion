@@ -333,10 +333,12 @@ class ConferenceService {
   // Speaking
   // ============================================================
 
+  // Next on a timer that never ran (under a second) skips the delegate
+  // rather than counting a 0-second speech.
   markSpoken(id, seconds = 0) {
     const delegate = this.getDelegate(id);
 
-    if (!delegate) return false;
+    if (!delegate || !(seconds >= 1)) return false;
 
     delegate.hasSpoken = true;
     delegate.speakingTime += seconds;
@@ -373,6 +375,9 @@ class ConferenceService {
 
   getStatistics() {
     const delegates = this.getDelegates();
+    // Same rule as the speakers' list: absent delegates drop out once roll
+    // call has marked anyone present.
+    const rollCallTaken = delegates.some((delegate) => delegate.present);
 
     return {
       delegates: delegates.length,
@@ -390,7 +395,7 @@ class ConferenceService {
       ).length,
 
       remaining: delegates.filter(
-        (delegate) => !delegate.hasSpoken
+        (delegate) => !delegate.hasSpoken && (!rollCallTaken || delegate.present)
       ).length,
 
       totalSpeakingTime: delegates.reduce(
