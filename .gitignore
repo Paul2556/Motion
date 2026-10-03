@@ -28,3 +28,7 @@ decisions.tsv
 
 # Local issue tracker: issues stay on this machine
 /.claude/issues.md
+
+# Agent config stays on this machine
+/.claude/
+/CODING_STANDARDS.md
