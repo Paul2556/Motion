@@ -16,8 +16,8 @@ export const MOTIONS = [
   { text: "Motion to Extend the Speaker's List", alias: ["Extend the Speaker's List", "Extend Speakers List"] },
   { text: "Open a Moderated Caucus", alias: ["Moderated Caucus", "Mod Caucus", "Mod", "Moderated"], topic: true },
   { text: "Open an Unmoderated Caucus", alias: ["Unmoderated Caucus", "Unmod Caucus", "Unmod", "Unmoderated"], durationField: "total" },
-  { text: "Open the General Speaker's List", alias: ["Open the GSL", "Open Speaker's List"] },
-  { text: "Close the General Speaker's List", alias: ["Close the GSL", "Close Speaker's List"] },
+  { text: "Open the General Speaker's List", alias: ["Open the GSL", "Open Speaker's List", "Open the Speaker's List", "Open GSL"] },
+  { text: "Close the General Speaker's List", alias: ["Close the GSL", "Close Speaker's List", "Close the Speaker's List", "Close GSL"] },
   { text: "Introduce a Draft Resolution", alias: ["Introduce Draft Resolution", "Introduce a Draft Res"] },
   { text: "Introduce an Amendment", alias: ["Introduce Amendment"] },
   { text: "Motion to Divide the Question", alias: ["Divide the Question"] },
@@ -446,6 +446,9 @@ export const MOVER_VERBS = new Set(["RAISED", "PROPOSED", "MOVED", "MOTIONED", "
 // Distinct from TOPIC_WORDS above, which is spreadsheet header vocab rather
 // than floor language.
 export const TOPIC_MARKER_PHRASE = [
+  "FOR THE PURPOSE OF DISCUSSING",
+  "TOPIC BEING",
+  "TOPIC IS",
   "ON THE TOPIC OF",
   "DISCUSSING",
   "FOR THE PURPOSE OF",

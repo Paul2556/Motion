@@ -257,3 +257,63 @@ describe("motion parser: highlighted ranges", () => {
     ]);
   });
 });
+
+const WS = "water security";
+
+describe("motion parser: round two", () => {
+  it.each([
+    ["Mod caucus - 10 min - 1 min each - climate change", { motion: "Moderated Caucus", topic: "climate change", speakingTime: 1, totalTime: 10 }],
+    ["mod caucus: climate change, 10 mins, 1 min", { motion: "Moderated Caucus", topic: "climate change", speakingTime: 1, totalTime: 10 }],
+    ["mod caucus nuclear disarmament 10 min 1 min", { motion: "Moderated Caucus", topic: ND, speakingTime: 1, totalTime: 10 }],
+    ["mod caucus on 'nuclear disarmament' for 10 min", { motion: "Moderated Caucus", topic: ND, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with .5 min speaking time on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 0.5, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with 1,5 minutes speaking time on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1.5, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with 1m30s speaking time on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1.5, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with 1 minute and 30 seconds speaking time on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1.5, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with one and a half minutes speaking time on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1.5, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with 1 min/speaker on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with 1min/speaker on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus for 10 minutes, speaking time 1 minute, on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus total time 10 minutes speaking time 1 minute topic water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1, totalTime: 10 }],
+    ["France's motion for an unmod for 10 minutes", { motion: "Unmoderated Caucus", delegation: "France", totalTime: 10 }],
+    ["Russia's delegation motions for an unmod for 10 minutes", { motion: "Unmoderated Caucus", delegation: "Russia", totalTime: 10 }],
+    ["mod caucus 10 min 1 min on piracy - Malta", { motion: "Moderated Caucus", delegation: "Malta", topic: "piracy", speakingTime: 1, totalTime: 10 }],
+    ["mod caucus 10 min 1 min on piracy (Malta)", { motion: "Moderated Caucus", delegation: "Malta", topic: "piracy", speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus with the topic being maritime security for 10 minutes", { motion: "Moderated Caucus", topic: "maritime security", totalTime: 10 }],
+    ["moderated caucus for the purpose of discussing maritime security for 10 minutes", { motion: "Moderated Caucus", topic: "maritime security", totalTime: 10 }],
+    ["mod caucus for 10 minutes on sanctions as suggested by Japn", { motion: "Moderated Caucus", delegation: "Japan", topic: "sanctions", totalTime: 10 }],
+    ["Motion to open the speakers list", { motion: "Open the GSL" }],
+    ["open GSL", { motion: "Open the GSL" }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+
+  it.each([
+    // Pinned so the round-two fixes can't undo them.
+    ["Moderated caucus (10 min, 1 min each) on climate change", { motion: "Moderated Caucus", topic: "climate change", speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus for 10:00 with 1:00 speaking time on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with half a minute each on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 0.5, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with 45 second speeches on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 0.75, totalTime: 10 }],
+    ["moderated caucus with individual speaking time of 45 seconds for 12 minutes on water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 0.75, totalTime: 12 }],
+    ["mod caucus 1 min 10 min water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1, totalTime: 10 }],
+    ["Motion to suspend the meeting for half an hour", { motion: "Suspend Meeting", totalTime: 30 }],
+    ["unmod for 2 hours", { motion: "Unmoderated Caucus", totalTime: 120 }],
+    ["fifteen minute unmod", { motion: "Unmoderated Caucus", totalTime: 15 }],
+    ["unmod for ten-minute", { motion: "Unmoderated Caucus", totalTime: 10 }],
+    ["Motion to extend the mod caucus by an additional 3 minutes", { motion: "Extend the Mod Caucus", totalTime: 3 }],
+    ["Motion to extend the speaking time to one minute", { motion: "Extend Speaking Time", speakingTime: 1 }],
+    ["Open a moderated caucus as proposed by France for 10 minutes on maritime security", { motion: "Moderated Caucus", delegation: "France", topic: "maritime security", totalTime: 10 }],
+    ["moderated caucus regarding the US-China trade war for 10 minutes", { motion: "Moderated Caucus", topic: "the US-China trade war", totalTime: 10 }],
+    ["moderated caucus on one china policy for 10 minutes", { motion: "Moderated Caucus", topic: "one china policy", totalTime: 10 }],
+    ["moderated caucus on 10 years of the Paris Agreement for 10 minutes", { motion: "Moderated Caucus", topic: "10 years of the Paris Agreement", totalTime: 10 }],
+    ["Is there a motion for a moderated caucus for 10 minutes on climate change?", { motion: "Moderated Caucus", topic: "climate change", totalTime: 10 }],
+    ["FRANCE MOTIONS FOR A MOD CAUCUS FOR 10 MINUTES WITH 1 MINUTE SPEAKING TIME ON CLIMATE CHANGE", { motion: "Moderated Caucus", delegation: "France", topic: "CLIMATE CHANGE", speakingTime: 1, totalTime: 10 }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+});
+
+describe("motion parser: bare numbers", () => {
+  it.each([
+    ["mod caucus 10 1 water security", { motion: "Moderated Caucus", topic: WS, speakingTime: 1, totalTime: 10 }],
+    ["unmod 15 10", { motion: "Unmoderated Caucus", totalTime: 15 }],
+    ["mod caucus on the 2030 agenda", { motion: "Moderated Caucus", topic: "the 2030 agenda" }],
+    ["unmod 2030", { motion: "Unmoderated Caucus" }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+});
