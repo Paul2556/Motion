@@ -251,7 +251,8 @@ describe("motion parser: highlighted ranges", () => {
 
   it("parses each line on its own", () => {
     const text = "unmod for 10 minutes\nChina motions for a mod caucus on sanctions for 5 min with 30 sec each";
-    expect(meta(text)).toEqual({ motion: "Unmoderated Caucus", delegation: "China", topic: "sanctions", speakingTime: 0.5, totalTime: 10 });
+    // The summary is the first motion's; the second's mover and times don't join it.
+    expect(meta(text)).toEqual({ motion: "Unmoderated Caucus", delegation: null, topic: null, speakingTime: null, totalTime: 10 });
     expect(highlights(text).map(([category]) => category)).toEqual([
       "motion", "total-time", "delegation", "motion", "topic", "total-time", "speaking-time",
     ]);
@@ -404,4 +405,61 @@ describe("motion parser: zero durations", () => {
     ["mod caucus 0/0 on sanctions", { motion: "Moderated Caucus", topic: "sanctions" }],
     ["mod caucus for 10 minutes with 0 seconds each", { motion: "Moderated Caucus", totalTime: 10 }],
   ])("%s", (text, expected) => expectMeta(text, expected));
+});
+
+describe("motion parser: round four", () => {
+  const MOD = "Moderated Caucus";
+  const UNMOD = "Unmoderated Caucus";
+
+  it.each([
+    // A labeled bare number, and a one-word topic at the end of the line.
+    ["motion for a mod on cyber security, total 15, speakers 1 min", { motion: MOD, topic: "cyber security", totalTime: 15, speakingTime: 1 }],
+    ["mod caucus 15/1 cybersecurity", { motion: MOD, topic: "cybersecurity", totalTime: 15, speakingTime: 1 }],
+    ["MOD CAUCUS 10 MIN 1 MIN NUCLEAR", { motion: MOD, topic: "NUCLEAR", totalTime: 10, speakingTime: 1 }],
+    ["mod caucus 10:00 total 1:00 speaking nuclear", { motion: MOD, topic: "nuclear", totalTime: 10, speakingTime: 1 }],
+    ["mod caucus for 10 mins, speakers time 1 min, nuclear", { motion: MOD, topic: "nuclear", totalTime: 10, speakingTime: 1 }],
+    ["mod caucus 10 1 France", { motion: MOD, delegation: "France", totalTime: 10, speakingTime: 1 }],
+    ["mod caucus 10 min 1 min please", { motion: MOD, totalTime: 10, speakingTime: 1 }],
+
+    // Quotes around the topic.
+    ["mod on 'women in peace processes' 10/1", { motion: MOD, topic: "women in peace processes", totalTime: 10, speakingTime: 1 }],
+    ["mod caucus 10 min 1 min on the topic “digital sovereignty”", { motion: MOD, topic: "digital sovereignty", totalTime: 10, speakingTime: 1 }],
+
+    // Durations written in words.
+    ["unmoderated caucus for a quarter of an hour", { motion: UNMOD, totalTime: 15 }],
+    ["unmod for a quarter hour", { motion: UNMOD, totalTime: 15 }],
+    ["mod caucus nuclear disarmament for ten mins with forty five second speeches", { motion: MOD, topic: "nuclear disarmament", totalTime: 10, speakingTime: 0.75 }],
+    ["unmod for twenty-five minutes", { motion: UNMOD, totalTime: 25 }],
+    ["unmod for thirteen minutes", { motion: UNMOD, totalTime: 13 }],
+    ["unmod for ten", { motion: UNMOD, totalTime: 10 }],
+
+    // One duration in two parts, when it can't be a total and a speaking time.
+    ["unmod 1 hr 30 min", { motion: UNMOD, totalTime: 90 }],
+    ["extend speaking time to 1 minute 30 seconds", { motion: "Extend Speaking Time", speakingTime: 1.5 }],
+    ["mod caucus 12 min 40 sec on peacekeeping", { motion: MOD, topic: "peacekeeping", totalTime: 12, speakingTime: 40 / 60 }],
+
+    // Motion names.
+    ["motion to extend the mod by 5 minutes", { motion: "Extend the Mod Caucus", totalTime: 5 }],
+    ["motion to adjourn", { motion: "Adjourn Meeting" }],
+    ["France moves to adjourn", { motion: "Adjourn Meeting", delegation: "France" }],
+    ["extend the gsl", { motion: "Extend the Speaker's List" }],
+    ["open GSL 90 sec", { motion: "Open the GSL", speakingTime: 1.5 }],
+
+    // Who moved it.
+    ["mod caucus 10 min 1 min speaking on nuclear weapons, seconded by France", { motion: MOD, topic: "nuclear weapons", totalTime: 10, speakingTime: 1 }],
+    ["France moves a mod caucus on nuclear weapons 10 min 1 min, seconded by Kenya", { motion: MOD, delegation: "France", topic: "nuclear weapons", totalTime: 10, speakingTime: 1 }],
+    ["mod caucus 10 min 1 min on digital sovereignty, france", { motion: MOD, delegation: "France", topic: "digital sovereignty", totalTime: 10, speakingTime: 1 }],
+    ["mod caucus on the impact of sanctions on India and China for 10 min 1 min", { motion: MOD, topic: "the impact of sanctions on India and China", totalTime: 10, speakingTime: 1 }],
+
+    // Bare numbers after the topic, and other shorthand.
+    ["Mod caucus nuclear weapons 10 1", { motion: MOD, topic: "nuclear weapons", totalTime: 10, speakingTime: 1 }],
+    ["mod caucus on article 51", { motion: MOD, topic: "article 51" }],
+    ["mod caucus 10 by 1 on digital sovereignty", { motion: MOD, topic: "digital sovereignty", totalTime: 10, speakingTime: 1 }],
+    ["mod caucus, 10 min, 1 min per, digital sovereignty", { motion: MOD, topic: "digital sovereignty", totalTime: 10, speakingTime: 1 }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+
+  it("doesn't mix a second motion's details into the first", () => {
+    expectMeta("unmod 15 min\nmod caucus 10 min 1 min on digital sovereignty", { motion: UNMOD, totalTime: 15 });
+    expectMeta("France\nmod caucus 10 min 1 min on digital sovereignty", { motion: MOD, delegation: "France", topic: "digital sovereignty", totalTime: 10, speakingTime: 1 });
+  });
 });

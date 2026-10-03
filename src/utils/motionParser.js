@@ -177,7 +177,15 @@ const DIGITS = /^(?:\d+(?:\.\d+|,\d{1,2})?|\.\d+)$/;
 
 function readAmount(word) {
   if (DIGITS.test(word)) return Number(word.replace(",", "."));
+  const compound = word.match(/^([A-Z]+)-([A-Z]+)$/);
+  if (compound) return compoundNumber(NUMBER_WORDS.get(compound[1]), NUMBER_WORDS.get(compound[2]));
   return NUMBER_WORDS.get(word) ?? null;
+}
+
+// "twenty-five", "forty five": a tens word, then a units word.
+function compoundNumber(tens, units) {
+  if (!tens || !units || tens < 20 || tens % 10 !== 0 || units >= 10 || !Number.isInteger(units)) return null;
+  return tens + units;
 }
 
 // A leading "." stays when it starts a number (".5 min"); a trailing
@@ -254,30 +262,47 @@ function readDuration(tokens, i, fuzzyLevel) {
     if (perUnit) return { amount: toMinutes(0.5, perUnit), last: i + 2 };
   }
 
-  const amount = readAmount(word);
-  if (amount === null || next === undefined) return null;
-
-  // "one and a half minutes"
-  if (next === "AND" && tokens[i + 2]?.word === "A" && tokens[i + 3]?.word === "HALF" && tokens[i + 4]) {
-    const perUnit = unitMinutes(tokens[i + 4].word, fuzzyLevel);
-    if (perUnit) return { amount: toMinutes(amount + 0.5, perUnit), last: i + 4 };
+  // "a quarter of an hour", "a quarter hour"
+  if (word === "QUARTER") {
+    const unitAt = next === "OF" && (tokens[i + 2]?.word === "A" || tokens[i + 2]?.word === "AN") ? i + 3 : i + 1;
+    if (tokens[unitAt] && unitMinutes(tokens[unitAt].word, fuzzyLevel) === 60) return { amount: 15, last: unitAt };
   }
 
-  const perUnit = unitMinutes(next, fuzzyLevel);
+  let amount = readAmount(word);
+  if (amount === null || next === undefined) return null;
+  // "forty five seconds": the amount spans two words.
+  let at = i;
+  const spelled = compoundNumber(NUMBER_WORDS.get(word), NUMBER_WORDS.get(next));
+  if (spelled !== null) {
+    amount = spelled;
+    at = i + 1;
+  }
+  const unitWord = tokens[at + 1]?.word;
+  if (unitWord === undefined) return null;
+
+  // "one and a half minutes"
+  if (unitWord === "AND" && tokens[at + 2]?.word === "A" && tokens[at + 3]?.word === "HALF" && tokens[at + 4]) {
+    const perUnit = unitMinutes(tokens[at + 4].word, fuzzyLevel);
+    if (perUnit) return { amount: toMinutes(amount + 0.5, perUnit), last: at + 4, unit: perUnit };
+  }
+
+  const perUnit = unitMinutes(unitWord, fuzzyLevel);
   // "for a second time" is not a one-second duration.
   if (!perUnit || ((word === "A" || word === "AN") && perUnit < 1)) return null;
   const minutes = toMinutes(amount, perUnit);
 
-  // "1 minute and 30 seconds" is one duration; without the "and", "10 min 30
-  // sec" stays two (a total and a speaking time).
-  if (perUnit === 1 && tokens[i + 2]?.word === "AND" && tokens[i + 3] && tokens[i + 4]) {
-    const seconds = readAmount(tokens[i + 3].word);
-    const secondUnit = unitMinutes(tokens[i + 4].word, fuzzyLevel);
-    if (seconds !== null && secondUnit !== null && secondUnit < 1) {
-      return { amount: minutes + seconds / 60, last: i + 4 };
+  // "1 minute and 30 seconds" and "1 hour 30 minutes" are one duration.
+  // Without the "and", "10 min 30 sec" stays two (a total and a speaking
+  // time), unless the motion only takes one (see mergeSplitDuration).
+  const smallerUnit = perUnit === 60 ? 1 : perUnit === 1 ? 1 / 60 : null;
+  if (smallerUnit !== null) {
+    const partAt = tokens[at + 2]?.word === "AND" ? at + 3 : perUnit === 60 ? at + 2 : null;
+    const part = partAt !== null && tokens[partAt + 1] ? readAmount(tokens[partAt].word) : null;
+    if (part !== null && unitMinutes(tokens[partAt + 1].word, fuzzyLevel) === smallerUnit) {
+      return { amount: minutes + toMinutes(part, smallerUnit), last: partAt + 1, unit: perUnit };
     }
   }
-  return { amount: minutes, last: i + 1 };
+  return { amount: minutes, last: at + 1, unit: perUnit };
 }
 
 // A label straight after a duration: "speaking time", "each", "per speaker",
@@ -334,9 +359,27 @@ function trailingLabel(tokens, found, fuzzyLevel) {
   return leadsIntoDuration ? null : label;
 }
 
+const isBareMinutes = (word) => /^\d+$/.test(word) && Number(word) > 0 && Number(word) <= 180;
+
+// "total 15", "total time: 20": a total label right before a unitless number
+// makes it minutes.
+function readLabeledTotal(tokens, i, fuzzyLevel) {
+  if (!TOTAL_LABEL_WORDS.has(tokens[i].word)) return null;
+  let k = i + 1;
+  while (k < tokens.length && LABEL_GAP_WORDS.has(tokens[k].word) && tokens[k].word !== "") k++;
+  if (!tokens[k] || !isBareMinutes(tokens[k].word) || readDuration(tokens, k, fuzzyLevel)) return null;
+  return { amount: Number(tokens[k].word), first: i, last: k, end: k, role: "total-time", zero: false };
+}
+
 function findDurations(tokens, fuzzyLevel) {
   const durations = [];
   for (let i = 0; i < tokens.length; i++) {
+    const labeledTotal = readLabeledTotal(tokens, i, fuzzyLevel);
+    if (labeledTotal) {
+      durations.push(labeledTotal);
+      i = labeledTotal.end;
+      continue;
+    }
     const found = readDuration(tokens, i, fuzzyLevel);
     if (!found) continue;
     const label = trailingLabel(tokens, found, fuzzyLevel);
@@ -446,24 +489,47 @@ function isMoverClause(tokens, i) {
   return MOVER_VERBS.has(tokens[i].word) && tokens[i + 1]?.word === "BY";
 }
 
-const LEADING_FILLER = new Set(["BEING", "IS", ""]);
-const TRAILING_FILLER = new Set(["FOR", "WITH", "AND", "OF", "A", "AN", "THE", "AT", "AS", "LASTING", "BY", ""]);
+// "seconded by France" ends the topic too, but names a seconder, not the mover.
+function isSeconderClause(tokens, i) {
+  return tokens[i].word === "SECONDED" && tokens[i + 1]?.word === "BY";
+}
 
-// A country set off at the end ("piracy - Malta", "piracy (Malta)") is the
-// mover, not part of the topic.
+const SECONDER_LEAD_WORDS = new Set(["BY", "THE", "DELEGATE", "DELEGATION", "OF"]);
+
+function isSeconder(tokens, hit) {
+  for (let k = hit.first - 1; k >= 0 && SECONDER_LEAD_WORDS.has(tokens[k].word); k--) {
+    if (tokens[k].word === "BY") return tokens[k - 1]?.word === "SECONDED";
+  }
+  return false;
+}
+
+const LEADING_FILLER = new Set(["BEING", "IS", ""]);
+// A label left over right after a duration ("1 min per, piracy").
+const DANGLING_LABELS = new Set(["PER", "EACH", "APIECE"]);
+const TRAILING_FILLER = new Set(["FOR", "WITH", "AND", "OF", "A", "AN", "THE", "AT", "AS", "LASTING", "BY", ""]);
+// Never a one-word topic on their own (see findUnmarkedTopic).
+const NOT_A_TOPIC = new Set(["PLEASE", "THANKS", "THANK", "YOU", "TOTAL", "OVERALL", "SPEAKING", "TIME", "MOTION", "CAUCUS", "NOW"]);
+const QUOTES = /^['"‘’“”«»]$/;
+
+// A country set off at the end ("piracy - Malta", "piracy (Malta)", "piracy,
+// Malta" ending the line) is the mover, not part of the topic.
 function trailingMover(text, tokens, last, hits) {
   const hit = hits.find((h) => h.phrase.category === "delegation" && h.last === last);
   if (!hit || hit.first === 0) return null;
-  return tokens[hit.first - 1].word === "" || text[tokens[hit.first].start] === "(" ? hit : null;
+  const afterComma = tokens[hit.first - 1].tail.includes(",") && hit.last === tokens.length - 1;
+  return tokens[hit.first - 1].word === "" || text[tokens[hit.first].start] === "(" || afterComma ? hit : null;
 }
 
 // The topic runs from `start` to the first duration, mover clause, or line
 // end, minus dangling filler ("on refugees for" reads as "refugees").
 // `stop` is where the scan ended, so a caller can look past it.
 function readTopic(text, tokens, start, blocked, hits, minWords) {
-  while (start < tokens.length && !blocked[start] && LEADING_FILLER.has(tokens[start].word)) start++;
+  while (
+    start < tokens.length && !blocked[start] &&
+    (LEADING_FILLER.has(tokens[start].word) || (DANGLING_LABELS.has(tokens[start].word) && blocked[start - 1]))
+  ) start++;
   let stop = start;
-  while (stop < tokens.length && !blocked[stop] && !isMoverClause(tokens, stop)) stop++;
+  while (stop < tokens.length && !blocked[stop] && !isMoverClause(tokens, stop) && !isSeconderClause(tokens, stop)) stop++;
 
   let last = stop - 1;
   while (last >= start && TRAILING_FILLER.has(tokens[last].word)) last--;
@@ -473,15 +539,20 @@ function readTopic(text, tokens, start, blocked, hits, minWords) {
     while (last >= start && TRAILING_FILLER.has(tokens[last].word)) last--;
   }
 
-  const atMover = stop < tokens.length && isMoverClause(tokens, stop);
+  const atMover = stop < tokens.length && (isMoverClause(tokens, stop) || isSeconderClause(tokens, stop));
   if (last < start || last - start + 1 < minWords) return { topic: null, stop, atMover };
-  const topic = { start: tokens[start].bareStart, end: tokens[last].bareEnd, text: text.slice(tokens[start].bareStart, tokens[last].bareEnd) };
+  let end = tokens[last].bareEnd;
+  // A quoted topic keeps no closing quote ("'peace processes'" reads as
+  // peace processes, though "processes'" alone stays possessive).
+  if (QUOTES.test(text[tokens[start].bareStart - 1] ?? "") && QUOTES.test(text[end - 1])) end--;
+  const topic = { start: tokens[start].bareStart, end, text: text.slice(tokens[start].bareStart, end) };
   return { topic, stop, atMover };
 }
 
 // With no marker, the topic is the first run of 2+ words after the motion,
 // so "mod caucus: climate change, 10 mins" and "mod 10 min climate change"
-// both work. Anything after a mover clause is the mover.
+// both work. Anything after a mover clause is the mover. Failing that, one
+// word ending the line after the times is the topic ("mod 10/1 cybersecurity").
 function findUnmarkedTopic(text, tokens, from, blocked, hits) {
   let position = from;
   while (position < tokens.length) {
@@ -493,26 +564,58 @@ function findUnmarkedTopic(text, tokens, from, blocked, hits) {
     if (topic || atMover) return topic;
     position = Math.max(stop, position + 1);
   }
-  return null;
+
+  const last = tokens.length - 1;
+  const word = tokens[last].word;
+  const loneWord = last >= from && !blocked[last] && blocked[last - 1] && /\p{L}/u.test(word);
+  const isDelegation = hits.some((hit) => hit.first <= last && hit.last >= last && hit.phrase.category === "delegation");
+  if (!loneWord || isDelegation || NOT_A_TOPIC.has(word) || TRAILING_FILLER.has(word) || DANGLING_LABELS.has(word)) return null;
+  return readTopic(text, tokens, last, blocked, hits, 1).topic;
 }
 
-// "unmod 15": a lone number shortly after the motion reads as minutes. Two
-// in a row after a caucus ("mod 10 1") are its total and speaking time, like "10/1".
+// "unmod 15" or "unmod for ten": a lone number shortly after the motion reads
+// as minutes. Two after a caucus ("mod 10 1", "mod 10 by 1", or ending the
+// line, "mod piracy 10 1") are its total and speaking time, like "10/1".
 function findBareMinutes(tokens, motion, blocked) {
-  const isMinutes = (k) => k < tokens.length && !blocked[k] && /^\d+$/.test(tokens[k].word) && Number(tokens[k].word) > 0 && Number(tokens[k].word) <= 180;
+  const amountAt = (k) => {
+    if (k >= tokens.length || blocked[k]) return null;
+    const word = tokens[k].word;
+    if (/^\d+$/.test(word)) return isBareMinutes(word) ? Number(word) : null;
+    // Spelled out, only with nothing after it, so "mod one China policy"
+    // stays a topic.
+    const ends = k === tokens.length - 1 || tokens[k].tail.includes(",") || blocked[k + 1];
+    const spelled = !ends || word === "A" || word === "AN" || word === "HALF" ? null : readAmount(word);
+    return spelled !== null && Number.isInteger(spelled) ? spelled : null;
+  };
+  const pairAt = (k) => {
+    if (motion.durationField) return null;
+    const total = amountAt(k);
+    const gap = tokens[k + 1]?.word === "BY" ? 1 : 0;
+    const speaking = amountAt(k + 1 + gap);
+    if (total === null || speaking === null || speaking > total) return null;
+    return { pair: { total, speaking }, first: k, last: k + 1 + gap, end: k + 1 + gap };
+  };
+
   for (let i = motion.last + 1; i < Math.min(tokens.length, motion.last + 4); i++) {
-    if (blocked[i]) return null;
-    const word = tokens[i].word;
-    if (/^\d+$/.test(word)) {
-      if (!isMinutes(i)) return null;
-      if (!motion.durationField && isMinutes(i + 1) && Number(tokens[i + 1].word) <= Number(word)) {
-        return { pair: { total: Number(word), speaking: Number(tokens[i + 1].word) }, first: i, last: i + 1, end: i + 1 };
-      }
-      return { amount: Number(word), first: i, last: i, end: i, role: "total-time" };
-    }
-    if (!CONNECTIVE_WORDS.has(word) && word !== "") return null;
+    if (blocked[i]) break;
+    const amount = amountAt(i);
+    if (amount !== null) return pairAt(i) ?? { amount, first: i, last: i, end: i, role: "total-time" };
+    if (/^\d/.test(tokens[i].word) || (!CONNECTIVE_WORDS.has(tokens[i].word) && tokens[i].word !== "")) break;
   }
-  return null;
+
+  const ending = tokens.length - 2;
+  const tail = ending > motion.last && /^\d+$/.test(tokens[ending].word) ? pairAt(ending) : null;
+  return tail?.last === tokens.length - 1 ? tail : null;
+}
+
+// "1 minute 30 seconds" is one duration when the motion only takes one, since
+// it can't be a total and a speaking time.
+function mergeSplitDuration(durations) {
+  for (let k = 0; k + 1 < durations.length; k++) {
+    const [a, b] = [durations[k], durations[k + 1]];
+    if (a.pair || b.pair || a.unit !== 1 || !(b.unit < 1) || b.first !== a.end + 1) continue;
+    durations.splice(k, 2, { ...a, amount: a.amount + b.amount, last: b.last, end: b.end, role: a.role ?? b.role });
+  }
 }
 
 const ARTICLES = new Set(["THE", "A", "AN"]);
@@ -556,6 +659,7 @@ function parseLine(text, tokens, fuzzyLevel, phraseIndex) {
       block(bare.first, bare.last);
     }
   }
+  if (motion.durationField) mergeSplitDuration(usable);
 
   // A leading label ("a speaking time of 1 minute") can only reach back to
   // the motion or the previous duration, never into them.
@@ -608,7 +712,7 @@ function parseLine(text, tokens, fuzzyLevel, phraseIndex) {
 
   // Countries named inside the topic are its subject, not the mover.
   const outsideTopic = hits.filter((hit) => !topic || tokens[hit.first].bareStart < topic.start || tokens[hit.first].bareStart >= topic.end);
-  meta.delegation = outsideTopic.find((hit) => hit.phrase.category === "delegation")?.phrase.canonical ?? null;
+  meta.delegation = outsideTopic.find((hit) => hit.phrase.category === "delegation" && !isSeconder(tokens, hit))?.phrase.canonical ?? null;
   ranges.push(...outsideTopic.map(phraseRange));
 
   return { ranges, meta };
@@ -625,10 +729,12 @@ function parseLine(text, tokens, fuzzyLevel, phraseIndex) {
 }
 
 // Each line is its own motion; `meta` keeps the first value of each field
-// across lines, for the summary below the input.
+// across lines, for the summary below the input, up to the line that starts
+// a second motion, so its details don't land on the first.
 export function findHighlightRanges(text, fuzzyLevel, phraseIndex) {
   const ranges = [];
   const meta = { motion: null, delegation: null, totalTime: null, speakingTime: null, topic: null };
+  let secondMotion = false;
 
   let lineStart = 0;
   while (lineStart <= text.length) {
@@ -638,7 +744,8 @@ export function findHighlightRanges(text, fuzzyLevel, phraseIndex) {
     if (tokens.length > 0) {
       const line = parseLine(text, tokens, fuzzyLevel, phraseIndex);
       ranges.push(...line.ranges);
-      for (const key of Object.keys(meta)) meta[key] ??= line.meta[key] ?? null;
+      secondMotion ||= meta.motion !== null && line.meta.motion != null;
+      if (!secondMotion) for (const key of Object.keys(meta)) meta[key] ??= line.meta[key] ?? null;
     }
     if (newline === -1) break;
     lineStart = newline + 1;

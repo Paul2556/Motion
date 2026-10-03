@@ -3,7 +3,7 @@
 // Robert's-Rules convention and is reorderable per-conference from Settings.
 export const MOTIONS = [
   { text: "Appeal the Decision of the Chair", alias: ["Appeal the Chair", "Appeal the Decision"] },
-  { text: "Adjourn the Meeting", alias: ["Adjourn Meeting"] },
+  { text: "Adjourn the Meeting", alias: ["Adjourn Meeting", "Adjourn"] },
   { text: "Suspend Debate" },
   { text: "Suspend the Meeting", alias: ["Suspend Meeting"] },
   { text: "Motion to Divide the House", alias: ["Divide the House"] },
@@ -12,11 +12,11 @@ export const MOTIONS = [
   { text: "Motion to Change the Agenda", alias: ["Change the Agenda"] },
   { text: "Tabling for Incompetence", alias: ["Table for Incompetence"] },
   { text: "Extend the Speaking Time", alias: ["Extend Speaking Time"], durationField: "speaking" },
-  { text: "Extend the Moderated Caucus", alias: ["Extend the Mod Caucus", "Extend Mod"], durationField: "total" },
-  { text: "Motion to Extend the Speaker's List", alias: ["Extend the Speaker's List", "Extend Speakers List"] },
+  { text: "Extend the Moderated Caucus", alias: ["Extend the Mod Caucus", "Extend Mod", "Extend the Mod"], durationField: "total" },
+  { text: "Motion to Extend the Speaker's List", alias: ["Extend the Speaker's List", "Extend Speakers List", "Extend the GSL", "Extend GSL"] },
   { text: "Open a Moderated Caucus", alias: ["Moderated Caucus", "Mod Caucus", "Mod", "Moderated"], topic: true },
   { text: "Open an Unmoderated Caucus", alias: ["Unmoderated Caucus", "Unmod Caucus", "Unmod", "Unmoderated"], durationField: "total" },
-  { text: "Open the General Speaker's List", alias: ["Open the GSL", "Open Speaker's List", "Open the Speaker's List", "Open GSL"] },
+  { text: "Open the General Speaker's List", alias: ["Open the GSL", "Open Speaker's List", "Open the Speaker's List", "Open GSL"], durationField: "speaking" },
   { text: "Close the General Speaker's List", alias: ["Close the GSL", "Close Speaker's List", "Close the Speaker's List", "Close GSL"] },
   { text: "Introduce a Draft Resolution", alias: ["Introduce Draft Resolution", "Introduce a Draft Res"] },
   { text: "Introduce an Amendment", alias: ["Introduce Amendment"] },
@@ -426,9 +426,10 @@ export const HOUR_WORDS = new Set([
 export const NUMBER_WORDS = new Map([
   ["A", 1], ["AN", 1], ["HALF", 0.5],
   ["ONE", 1], ["TWO", 2], ["THREE", 3], ["FOUR", 4], ["FIVE", 5], ["SIX", 6], ["SEVEN", 7],
-  ["EIGHT", 8], ["NINE", 9], ["TEN", 10], ["ELEVEN", 11], ["TWELVE", 12], ["FIFTEEN", 15],
-  ["TWENTY", 20], ["THIRTY", 30], ["FORTY", 40], ["FORTY-FIVE", 45], ["FIFTY", 50],
-  ["SIXTY", 60], ["NINETY", 90],
+  ["EIGHT", 8], ["NINE", 9], ["TEN", 10], ["ELEVEN", 11], ["TWELVE", 12], ["THIRTEEN", 13],
+  ["FOURTEEN", 14], ["FIFTEEN", 15], ["SIXTEEN", 16], ["SEVENTEEN", 17], ["EIGHTEEN", 18],
+  ["NINETEEN", 19], ["TWENTY", 20], ["THIRTY", 30], ["FORTY", 40], ["FIFTY", 50],
+  ["SIXTY", 60], ["SEVENTY", 70], ["EIGHTY", 80], ["NINETY", 90],
 ]);
 
 // A word right after a duration that marks it as per-speaker ("1 minute
@@ -450,6 +451,7 @@ export const TOPIC_MARKER_PHRASE = [
   "TOPIC BEING",
   "TOPIC IS",
   "ON THE TOPIC OF",
+  "ON THE TOPIC",
   "DISCUSSING",
   "FOR THE PURPOSE OF",
   "TOPIC OF",
