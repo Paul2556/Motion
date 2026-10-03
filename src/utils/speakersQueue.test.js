@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialSpeakersQueue } from "./speakersQueue";
+import { initialSpeakersQueue, restoreSavedSession } from "./speakersQueue";
 
 function delegate(country, countryCode, present) {
   return { id: countryCode, country, countryDisplay: country, countryCode, present };
@@ -44,5 +44,24 @@ describe("initialSpeakersQueue", () => {
   it("keeps a delegation with no country code", () => {
     const press = { id: "press", country: "Press Corps", countryDisplay: "Press Corps", countryCode: null, present: true };
     expect(initialSpeakersQueue([press], { seedProposer: "press corps" })).toEqual([{ id: "press", country: "Press Corps", countryCode: null }]);
+  });
+});
+
+describe("restoreSavedSession", () => {
+  const saved = {
+    queue: [{ id: "BRA", country: "Brazil" }, { id: "gone", country: "Atlantis" }],
+    history: [{ id: "USA", country: "United States" }],
+  };
+
+  it("restores the queue and spoken history for delegates still on the roster", () => {
+    expect(restoreSavedSession(saved, ROSTER)).toEqual({
+      queue: [{ id: "BRA", country: "Brazil" }],
+      history: [{ id: "USA", country: "United States" }],
+    });
+  });
+
+  it("starts empty when nothing was saved or the save is unreadable", () => {
+    expect(restoreSavedSession(null, ROSTER)).toEqual({ queue: [], history: [] });
+    expect(restoreSavedSession({ queue: "oops" }, ROSTER)).toEqual({ queue: [], history: [] });
   });
 });

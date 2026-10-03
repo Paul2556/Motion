@@ -16,6 +16,8 @@ export default function SessionBoard({
   committeeLabel,
   initialSpeaker = null,
   initialQueue = [],
+  initialHistory = [],
+  onSessionChange,
   speechLength = 72,
   activeMotion,
   suggestions = [],
@@ -30,8 +32,10 @@ export default function SessionBoard({
     initialSpeaker ? [initialSpeaker, ...initialQueue] : initialQueue
   );
   const currentSpeaker = queue[0] ?? null;
-  const [history, setHistory] = useState([]);
-  const [selectedQueueIndex, setSelectedQueueIndex] = useState(-1);
+  const [history, setHistory] = useState(initialHistory);
+  // Tracked by id, not position, so the selection follows the delegate when
+  // Next or a reorder shifts the queue under it.
+  const [selectedId, setSelectedId] = useState(null);
   const [legendOpen, setLegendOpen] = useState(false);
 
   const navigate = useNavigate();
@@ -49,7 +53,34 @@ export default function SessionBoard({
   // just whoever sits at index 0, so moving them (e.g. to the bottom) hands
   // "currently speaking" off to whoever ends up on top, same as any other
   // reorder.
-  const clampedQueueIndex = queue.length === 0 ? -1 : Math.min(selectedQueueIndex, queue.length - 1);
+  const clampedQueueIndex = queue.findIndex((entry) => entry.id === selectedId);
+  const selectAt = (index) => setSelectedId(queue[index]?.id ?? null);
+  // Functional, so held-down arrow keys (several presses before a render) all count.
+  const moveSelection = (step) =>
+    setSelectedId((id) => {
+      const index = queue.findIndex((entry) => entry.id === id);
+      const next = index < 0 ? 0 : Math.min(queue.length - 1, Math.max(0, index + step));
+      return queue[next]?.id ?? null;
+    });
+
+  // A new speaker at the front, by any route other than Next (remove, move,
+  // undo), gets a fresh timer, so one delegate's time is never credited to
+  // the next.
+  const currentId = currentSpeaker?.id ?? null;
+  const previousSpeakerRef = useRef(currentId);
+  useEffect(() => {
+    if (previousSpeakerRef.current === currentId) return;
+    previousSpeakerRef.current = currentId;
+    timerRef.current?.reset();
+  }, [currentId]);
+
+  const onSessionChangeRef = useRef(onSessionChange);
+  useEffect(() => {
+    onSessionChangeRef.current = onSessionChange;
+  });
+  useEffect(() => {
+    onSessionChangeRef.current?.({ queue, history });
+  }, [queue, history]);
 
   // Only set once the chair hits "Go Live" on /cloud - a purely local
   // session never reads this and never touches Firestore.
@@ -91,6 +122,7 @@ export default function SessionBoard({
   function removeSelected() {
     if (clampedQueueIndex < 0) return;
     undoRef.current = { queue, history };
+    setSelectedId(queue[clampedQueueIndex + 1]?.id ?? queue[clampedQueueIndex - 1]?.id ?? null);
     setQueue((prev) => prev.filter((_, i) => i !== clampedQueueIndex));
   }
 
@@ -111,9 +143,8 @@ export default function SessionBoard({
       "speakerList.resetTimer": () => timerRef.current?.reset(),
       "speakerList.removeSelected": removeSelected,
       "speakerList.addSpeaker": () => queueRef.current?.focusAddInput(),
-      "speakerList.moveUp": () => setSelectedQueueIndex((i) => Math.max(0, (i < 0 ? 0 : i) - 1)),
-      "speakerList.moveDown": () =>
-        setSelectedQueueIndex((i) => Math.min(queue.length - 1, (i < 0 ? -1 : i) + 1)),
+      "speakerList.moveUp": () => moveSelection(-1),
+      "speakerList.moveDown": () => moveSelection(1),
       "global.undo": performUndo,
       "global.legend": () => setLegendOpen((open) => !open),
       "global.viewRollCall": () => navigate("/rollcall"),
@@ -186,7 +217,7 @@ export default function SessionBoard({
           }}
           suggestions={suggestions}
           selectedIndex={clampedQueueIndex}
-          onSelectIndex={setSelectedQueueIndex}
+          onSelectIndex={selectAt}
         />
       </div>
 

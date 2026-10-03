@@ -41,3 +41,12 @@ export function initialSpeakersQueue(delegates, { seedQueue, seedProposer } = {}
   const mover = seedProposer ? findMover(delegates, seedProposer) : null;
   return mover ? [toQueueEntry(mover)] : [];
 }
+
+// A saved speakers' list only keeps delegates still in this committee, so a
+// reloaded workbook (fresh delegate ids) starts clean instead of showing
+// yesterday's queue.
+export function restoreSavedSession(saved, delegates) {
+  const ids = new Set(delegates.map((delegate) => delegate.id));
+  const keep = (list) => (Array.isArray(list) ? list.filter((entry) => ids.has(entry?.id)) : []);
+  return { queue: keep(saved?.queue), history: keep(saved?.history) };
+}

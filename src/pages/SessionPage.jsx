@@ -1,13 +1,42 @@
-import { useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import SessionBoard from "../components/SessionBoard";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ConferenceService from "../services/ConferenceService";
-import { countryAliases, initialSpeakersQueue, shortCountryName } from "../utils/speakersQueue";
+import { countryAliases, initialSpeakersQueue, restoreSavedSession, shortCountryName } from "../utils/speakersQueue";
+
+function sessionStorageKey(committeeId) {
+  return `motion-speakers-${committeeId}`;
+}
+
+function loadSavedSession(committee) {
+  try {
+    return restoreSavedSession(JSON.parse(sessionStorage.getItem(sessionStorageKey(committee.id))), committee.delegates);
+  } catch {
+    return restoreSavedSession(null, committee.delegates);
+  }
+}
+
+function saveSession(committeeId, session) {
+  try {
+    sessionStorage.setItem(sessionStorageKey(committeeId), JSON.stringify(session));
+  } catch {
+    // storage unavailable (private browsing, quota) - the queue just won't survive a reload
+  }
+}
 
 export default function SessionPage() {
 
   const committee = ConferenceService.getActiveCommittee();
   const location = useLocation();
+  const navigate = useNavigate();
+  const seed = location.state?.seedQueue || location.state?.seedProposer ? location.state : null;
+
+  // Router state survives a refresh, so the one-time seed is cleared once
+  // used; after that the saved queue is what comes back.
+  useEffect(() => {
+    if (seed) navigate(location.pathname, { replace: true, state: null });
+  }, [seed, navigate, location.pathname]);
 
   // Same guard as RollCallPage/MotionPage/StatsPage - "Resume Session" on the home
   // screen links straight here regardless of whether a conference is loaded, so
@@ -38,10 +67,12 @@ export default function SessionPage() {
       ? Math.round(motion.totalTime * 60)
       : undefined;
 
-  // One-time seed from MotionPage - router state, not persisted, so a later
-  // refresh of /session doesn't keep re-seeding over whatever the chair has
-  // done with the queue since.
-  const initialQueue = initialSpeakersQueue(committee.delegates, location.state ?? {});
+  // A fresh seed from MotionPage (a new speakers' list or a passed motion's
+  // mover) replaces the saved queue; otherwise the saved one comes back, so
+  // stepping over to roll call or voting doesn't lose the list.
+  const saved = seed ? null : loadSavedSession(committee);
+  const initialQueue = seed ? initialSpeakersQueue(committee.delegates, seed) : saved.queue;
+  const initialHistory = saved?.history ?? [];
 
   return (
     <div className="app-shell h-screen overflow-hidden bg-[var(--app-bg)] text-[var(--app-text)]">
@@ -52,6 +83,8 @@ export default function SessionPage() {
           speechLength={speechLength}
           suggestions={suggestions}
           initialQueue={initialQueue}
+          initialHistory={initialHistory}
+          onSessionChange={(session) => saveSession(committee.id, session)}
         />
       </div>
     </div>
