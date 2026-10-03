@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { createCountdown } from "../utils/countdown";
 import { Pause, Play } from "lucide-react";
 import { formatTime } from "../utils/formatTime";
 import { createSpeechClock } from "../utils/speechClock";
@@ -79,22 +80,19 @@ const Timer = forwardRef(function Timer({
 
   // Wall-clock anchor the animation recomputes from every frame: a
   // setInterval only updates once a second, so a CSS transition just
-  // interpolates stale snapshots and any jitter shows. Re-anchored when
-  // running or `seconds` changes, so it resumes correctly rather than drifting.
-  const anchorRef = useRef({ time: 0, value: initialTime });
-
-  useEffect(() => {
-    anchorRef.current = { time: Date.now(), value: seconds };
-  }, [seconds, running, maxTime, overtime]);
+  // interpolates stale snapshots and any jitter shows. Only user actions move
+  // it (see countdown.js), never the rounded per-second display, which used
+  // to add a frame back every second.
+  const countdownRef = useRef(null);
+  if (countdownRef.current === null) countdownRef.current = createCountdown(initialTime);
 
   // Publishes an anchor to the caller (SessionBoard forwards this to
   // LiveSessionService) only at genuine transition points - start/pause,
   // +-15s, edit, reset, overtime - not on every per-second RAF re-anchor
   // above, which would otherwise write to Firestore roughly once a second
   // for as long as any dais timer runs.
-  const publishAnchor = (value, overrides = {}) => {
-    const time = Date.now();
-    anchorRef.current = { time, value };
+  const broadcastAnchor = (overrides = {}) => {
+    const { time, value } = countdownRef.current.anchor();
     onAnchorChangeRef.current({
       time,
       value,
@@ -102,6 +100,18 @@ const Timer = forwardRef(function Timer({
       running: overrides.running ?? running,
       overtime: overrides.overtime ?? overtime,
     });
+  };
+
+  const publishAnchor = (value, overrides = {}) => {
+    countdownRef.current.set(value, Date.now());
+    broadcastAnchor(overrides);
+  };
+
+  // Stops the countdown at its exact remaining time, fractions included.
+  const pauseCountdown = () => {
+    if (!running) return;
+    countdownRef.current.pause(Date.now());
+    broadcastAnchor({ running: false });
   };
 
   // Same instability as onCompleteRef above - lets the tick effect below call
@@ -120,8 +130,7 @@ const Timer = forwardRef(function Timer({
     let frame;
 
     const tick = () => {
-      const elapsed = (Date.now() - anchorRef.current.time) / 1000;
-      const value = anchorRef.current.value - elapsed;
+      const value = countdownRef.current.remaining(Date.now());
 
       if (ringRef.current) {
         const liveProgress = overtime
@@ -157,23 +166,18 @@ const Timer = forwardRef(function Timer({
   }, [running, overtime, maxTime, circumference]);
 
   const addTime = (amount) => {
-    setSeconds((prev) => {
-      const next = Math.max(0, prev + amount);
-      const nextOvertime = next > 0 ? false : overtime;
-
-      if (next > 0) {
-        setOvertime(false);
-      }
-
-      publishAnchor(next, { overtime: nextOvertime });
-      return next;
-    });
+    const next = Math.max(0, countdownRef.current.remaining(Date.now()) + amount);
+    const nextOvertime = next > 0 ? false : overtime;
+    if (next > 0) setOvertime(false);
+    setSeconds(Math.ceil(next));
+    publishAnchor(next, { overtime: nextOvertime });
   };
 
   // Double-clicking the ring resets by default (SessionBoard's per-speaker
   // timer) - `editable` swaps that for typing a new time directly in place
   // (TimerPage) instead.
   const reset = () => {
+    countdownRef.current.pause(Date.now());
     setRunning(false);
     setSeconds(initialTime);
     setMaxTime(initialTime);
@@ -184,6 +188,7 @@ const Timer = forwardRef(function Timer({
 
   function startEditing() {
     const clamped = Math.max(seconds, 0);
+    pauseCountdown();
     setRunning(false);
     setEditMinutes(String(Math.min(MAX_MINUTES, Math.floor(clamped / 60))).padStart(2, "0"));
     setEditSeconds(String(clamped % 60).padStart(2, "0"));
@@ -198,6 +203,7 @@ const Timer = forwardRef(function Timer({
     const total = minutes * 60 + secs;
     if (total <= 0) return;
 
+    countdownRef.current.pause(Date.now());
     setRunning(false);
     setSeconds(total);
     setMaxTime(total);
@@ -226,17 +232,20 @@ const Timer = forwardRef(function Timer({
     onNext(elapsed);
   };
 
-  const toggleRunning = () => {
-    setRunning((prev) => {
-      const next = !prev;
-      publishAnchor(seconds, { running: next });
-      return next;
-    });
+  const start = () => {
+    if (running) return;
+    countdownRef.current.start(Date.now());
+    setRunning(true);
+    broadcastAnchor({ running: true });
   };
 
-  const start = () => {
-    setRunning(true);
-    publishAnchor(seconds, { running: true });
+  const toggleRunning = () => {
+    if (running) {
+      pauseCountdown();
+      setRunning(false);
+    } else {
+      start();
+    }
   };
 
   // Exposes only what the dais keyboard shortcuts need, keeping the timer's
