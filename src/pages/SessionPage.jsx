@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import SessionBoard from "../components/SessionBoard";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ConferenceService from "../services/ConferenceService";
+import { toWholeSeconds } from "../utils/duration";
 import { countryAliases, initialSpeakersQueue, restoreSavedSession, shortCountryName } from "../utils/speakersQueue";
 
 function sessionStorageKey(committeeId) {
@@ -59,13 +60,8 @@ export default function SessionPage() {
   const activeMotion = motion?.motion ?? "No motion active";
 
   // A passed motion's speaking time drives the timer, falling back to its
-  // total time and then SessionBoard's default. Rounded because a
-  // seconds-derived value can arrive as 19.999999999998.
-  const speechLength = motion?.speakingTime != null
-    ? Math.round(motion.speakingTime * 60)
-    : motion?.totalTime != null
-      ? Math.round(motion.totalTime * 60)
-      : undefined;
+  // total time and then SessionBoard's default.
+  const speechLength = toWholeSeconds(motion?.speakingTime) ?? toWholeSeconds(motion?.totalTime) ?? undefined;
 
   // A fresh seed from MotionPage (a new speakers' list or a passed motion's
   // mover) replaces the saved queue; otherwise the saved one comes back, so
