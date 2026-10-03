@@ -10,3 +10,14 @@ export function attendanceChanges(delegates, nextState) {
     .filter((delegate) => getDelegateState(delegate) !== nextState)
     .map((delegate) => ({ id: delegate.id, previousState: getDelegateState(delegate) }));
 }
+
+// Nobody marked present means the chair isn't using roll call, so the whole
+// roster counts (speakers' list, votes, Stats) rather than nobody.
+export function isRollCallTaken(delegates) {
+  return delegates.some((delegate) => delegate.present);
+}
+
+export function attendanceCounts(delegates) {
+  const present = isRollCallTaken(delegates) ? delegates.filter((delegate) => delegate.present).length : delegates.length;
+  return { present, absent: delegates.length - present };
+}

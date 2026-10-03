@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attendanceChanges, getDelegateState } from "./attendance";
+import { attendanceChanges, attendanceCounts, getDelegateState, isRollCallTaken } from "./attendance";
 
 const absent = { id: "a", present: false, voting: false };
 const present = { id: "p", present: true, voting: false };
@@ -22,5 +22,16 @@ describe("attendanceChanges", () => {
   it("is empty when the click wouldn't change anything", () => {
     expect(attendanceChanges([voting], "voting")).toEqual([]);
     expect(attendanceChanges([absent, absent], "absent")).toEqual([]);
+  });
+});
+
+describe("attendanceCounts", () => {
+  it("counts the roll call once anyone is marked present", () => {
+    expect(attendanceCounts([absent, present, voting])).toEqual({ present: 2, absent: 1 });
+  });
+
+  it("treats a committee with no roll call as everyone present", () => {
+    expect(isRollCallTaken([absent, absent])).toBe(false);
+    expect(attendanceCounts([absent, { ...absent, id: "b" }])).toEqual({ present: 2, absent: 0 });
   });
 });

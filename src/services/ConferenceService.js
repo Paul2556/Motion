@@ -1,5 +1,6 @@
 import AllocationParser from "./AllocationParser";
 import { clearCommitteeCaches } from "../committeeCaches";
+import { isRollCallTaken } from "../utils/attendance";
 
 // sessionStorage (not localStorage) so a refresh or brief network hiccup
 // doesn't lose the loaded conference, but closing the tab still leaves no
@@ -375,9 +376,7 @@ class ConferenceService {
 
   getStatistics() {
     const delegates = this.getDelegates();
-    // Same rule as the speakers' list: absent delegates drop out once roll
-    // call has marked anyone present.
-    const rollCallTaken = delegates.some((delegate) => delegate.present);
+    const rollCallTaken = isRollCallTaken(delegates);
 
     return {
       delegates: delegates.length,

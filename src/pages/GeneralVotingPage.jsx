@@ -8,6 +8,7 @@ import { buildInitialGroups, adjustVoteGroups, isCachedVoteUsable, toggleAbstain
 import ConferenceService from "../services/ConferenceService";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 import { generalVoteKey } from "../committeeCaches";
+import { attendanceCounts } from "../utils/attendance";
 
 // Same cache-validity rule as MotionPage.jsx (see isCachedVoteUsable).
 function loadCachedVote(committeeId, delegateCount, absentCount) {
@@ -25,8 +26,7 @@ function loadCachedVote(committeeId, delegateCount, absentCount) {
 export default function GeneralVotingPage() {
   const committee = ConferenceService.getActiveCommittee();
   const delegateCount = committee?.delegates.length ?? 0;
-  const presentCount = committee?.delegates.filter((d) => d.present).length ?? 0;
-  const absentCount = delegateCount - presentCount;
+  const { present: presentCount, absent: absentCount } = attendanceCounts(committee?.delegates ?? []);
   const cachedVote = committee ? loadCachedVote(committee.id, delegateCount, absentCount) : null;
 
   const [label, setLabel] = useState(cachedVote?.label ?? "");

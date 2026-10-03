@@ -16,6 +16,7 @@ import { getMotions, canonicalLabel } from "../motionPresets";
 import { getMotionInputMode } from "../motionInputMode";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 import { motionVoteKey } from "../committeeCaches";
+import { attendanceCounts } from "../utils/attendance";
 
 // sessionStorage so it survives a refresh but not the tab closing. Ignored
 // once the roster or attendance no longer matches (see isCachedVoteUsable).
@@ -50,8 +51,7 @@ export default function MotionPage() {
   const navigate = useNavigate();
   const committee = ConferenceService.getActiveCommittee();
   const delegateCount = committee?.delegates.length ?? 0;
-  const presentCount = committee?.delegates.filter((d) => d.present).length ?? 0;
-  const absentCount = delegateCount - presentCount;
+  const { present: presentCount, absent: absentCount } = attendanceCounts(committee?.delegates ?? []);
   const cachedVote = committee ? loadCachedVote(committee.id, delegateCount, absentCount) : null;
 
   // Scope MotionInput's matching to delegations actually in this committee

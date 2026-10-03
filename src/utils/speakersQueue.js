@@ -1,4 +1,5 @@
 import { countries, historicalCountries } from "../constants";
+import { isRollCallTaken } from "./attendance";
 
 const COUNTRY_BY_CODE = new Map([...countries, ...historicalCountries].map((c) => [c.code, c]));
 
@@ -28,11 +29,10 @@ function findMover(delegates, mover) {
 
 // The one-time seed MotionPage hands /session: the whole speakers' list
 // (seedQueue) or just a passed motion's mover (seedProposer). Absent
-// delegates are left out once roll call has marked anyone present; before
-// that, nobody is marked, so the full roster is the only sensible list.
+// delegates are left out once roll call has marked anyone present.
 export function initialSpeakersQueue(delegates, { seedQueue, seedProposer } = {}) {
   if (seedQueue) {
-    const rollCallTaken = delegates.some((delegate) => delegate.present);
+    const rollCallTaken = isRollCallTaken(delegates);
     return delegates
       .filter((delegate) => !rollCallTaken || delegate.present)
       .sort((a, b) => (a.countryDisplay || a.country).localeCompare(b.countryDisplay || b.country))
