@@ -317,3 +317,36 @@ describe("motion parser: bare numbers", () => {
     ["unmod 2030", { motion: "Unmoderated Caucus" }],
   ])("%s", (text, expected) => expectMeta(text, expected));
 });
+
+describe("motion parser: round three", () => {
+  it.each([
+    ["mod caucus on the 24 hour news cycle for 10 minutes", { motion: "Moderated Caucus", topic: "the 24 hour news cycle", totalTime: 10 }],
+    [
+      "mod caucus on the 2 minute rule for 10 minutes with 1 minute speaking time",
+      { motion: "Moderated Caucus", topic: "the 2 minute rule", speakingTime: 1, totalTime: 10 },
+    ],
+    ["U.S. motions for an unmod for 10 minutes", { motion: "Unmoderated Caucus", delegation: "US", totalTime: 10 }],
+    ["The U.K. motions for an unmod for 10 minutes", { motion: "Unmoderated Caucus", delegation: "UK", totalTime: 10 }],
+    // Pinned: a duration right after the topic with no connective still ends it.
+    ["mod caucus on sanctions 10 min 1 min", { motion: "Moderated Caucus", topic: "sanctions", speakingTime: 1, totalTime: 10 }],
+    ["mod caucus on sanctions — France", { motion: "Moderated Caucus", delegation: "France", topic: "sanctions" }],
+    ["10 minute total time, 1 minute speaking time, mod caucus on sanctions", { motion: "Moderated Caucus", topic: "sanctions", speakingTime: 1, totalTime: 10 }],
+    ["France motions, seconded by China, for an unmod for 10 minutes", { motion: "Unmoderated Caucus", delegation: "France", totalTime: 10 }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+
+  it("reads CRLF line endings like LF", () => {
+    expect(meta("mod caucus on sanctions for 10 minutes\r\nunmod for 5 minutes")).toEqual(meta("mod caucus on sanctions for 10 minutes\nunmod for 5 minutes"));
+  });
+
+  it("reads exact phrasing with fuzzy matching off, and drops typos", () => {
+    expectMeta("France motions for a mod caucus for 10 minutes on sanctions", { motion: "Moderated Caucus", delegation: "France", topic: "sanctions", totalTime: 10 }, { fuzzyLevel: 0 });
+    expectMeta("Frnace motions for a mdoerated caucus for 10 minuets", {}, { fuzzyLevel: 0 });
+  });
+
+  it("stays fast on a long paragraph with every country loaded", () => {
+    const text = Array.from({ length: 40 }, () => "France motions for a moderated caucus on the role of regional organisations for 10 minutes with 1 minute speaking time").join(" ");
+    const started = performance.now();
+    parse(text, { index: ALL_COUNTRIES_INDEX });
+    expect(performance.now() - started).toBeLessThan(1500);
+  });
+});

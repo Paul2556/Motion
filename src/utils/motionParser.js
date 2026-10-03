@@ -359,8 +359,9 @@ function matchPhraseAt(text, tokens, i, blocked, fuzzyLevel, phraseIndex) {
 
   for (let count = maxWindow; count >= 1; count--) {
     const window = windowText(text, tokens, i, i + count - 1);
-    // "France's motion" names France.
-    for (const original of new Set([window, window.replace(/'s$/i, "")])) {
+    // "France's motion" names France; "U.S." names the US.
+    const variants = [window, window.replace(/'s$/i, ""), /^(?:[A-Za-z]\.)+[A-Za-z]\.?$/.test(window) ? window.replace(/\./g, "") : window];
+    for (const original of new Set(variants)) {
       const lower = original.toLowerCase();
       const exact = (phraseIndex.byWordCount.get(count) ?? []).find((phrase) =>
         phrase.caseSensitive ? original === phrase.text : lower === phrase.lower
@@ -511,6 +512,8 @@ function findBareMinutes(tokens, motion, blocked) {
   return null;
 }
 
+const ARTICLES = new Set(["THE", "A", "AN"]);
+
 function parseLine(text, tokens, fuzzyLevel, phraseIndex) {
   const blocked = new Array(tokens.length).fill(false);
   const block = (from, to) => {
@@ -520,6 +523,20 @@ function parseLine(text, tokens, fuzzyLevel, phraseIndex) {
   const durations = findDurations(tokens, fuzzyLevel);
   for (const d of durations) block(d.first, d.end);
 
+  // After a topic marker, "the 24 hour news cycle" is topic wording, not a
+  // time: an article before the amount and more words after it.
+  let topicMarker;
+  function isTopicWording(d) {
+    topicMarker ??= motionHit?.phrase.requiresTopic ? findTopicMarker(tokens, motionHit.last + 1, tokens.length, blocked, fuzzyLevel) : null;
+    if (topicMarker === null || d.first < topicMarker || d.pair || d.role) return false;
+    const before = tokens[d.first - 1];
+    const after = tokens[d.end + 1];
+    const wordFollows = after && after.word !== "" && !tokens[d.end].tail.includes(",") && !CONNECTIVE_WORDS.has(after.word) && !readDuration(tokens, d.end + 1, fuzzyLevel);
+    if (!ARTICLES.has(before?.word) || !wordFollows) return false;
+    for (let k = d.first; k <= d.end; k++) blocked[k] = false;
+    return true;
+  }
+
   const hits = findPhrases(text, tokens, blocked, fuzzyLevel, phraseIndex);
   const motionHit = hits.find((hit) => hit.phrase.category === "motion");
   if (!motionHit) {
@@ -528,7 +545,7 @@ function parseLine(text, tokens, fuzzyLevel, phraseIndex) {
   const motion = { ...motionHit.phrase, last: motionHit.last };
 
   // Pairs only make sense for a caucus with both a total and a speaking time.
-  const usable = durations.filter((d) => !d.pair || !motion.durationField);
+  const usable = durations.filter((d) => (!d.pair || !motion.durationField) && !isTopicWording(d));
   if (usable.length === 0 && motion.durationField !== "speaking") {
     const bare = findBareMinutes(tokens, motion, blocked);
     if (bare) {
