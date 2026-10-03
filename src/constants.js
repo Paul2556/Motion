@@ -21,7 +21,7 @@ export const MOTIONS = [
   { text: "Introduce a Draft Resolution", alias: ["Introduce Draft Resolution", "Introduce a Draft Res"] },
   { text: "Introduce an Amendment", alias: ["Introduce Amendment"] },
   { text: "Motion to Divide the Question", alias: ["Divide the Question"] },
-  { text: "Right to Reply" },
+  { text: "Right to Reply", alias: ["Right to Reply", "Right of Reply"] },
   { text: "Explanation of the Vote", alias: ["Explanation of Vote", "Explain the Vote"] },
 ];
 
@@ -391,10 +391,9 @@ export const TOPIC_WORDS = new Set([
   "THEME",
 ]);
 
-// Used by MotionInput's duration-phrase detection (a motion followed by
-// "for <number> minute(s)", e.g. "Moderated Caucus for 10 minutes") to spot
-// the connective linking the motion to its duration, and the unit following
-// the number - not header/row classification vocab like the sets above.
+// Floor-language vocab for the motion parser (src/utils/motionParser.js), not
+// header/row classification vocab like the sets above. A connective is the
+// word linking a duration to the sentence ("for 10 minutes").
 export const CONNECTIVE_WORDS = new Set([
   "FOR",
   "WITH",
@@ -415,6 +414,34 @@ export const SECOND_WORDS = new Set([
   "SECS"
 ]);
 
+export const HOUR_WORDS = new Set([
+  "HOUR",
+  "HOURS",
+  "HR",
+  "HRS"
+]);
+
+// Spelled-out amounts, only ever read as a number when a time unit follows
+// ("one minute"), so "the one China policy" stays plain topic text.
+export const NUMBER_WORDS = new Map([
+  ["A", 1], ["AN", 1], ["HALF", 0.5],
+  ["ONE", 1], ["TWO", 2], ["THREE", 3], ["FOUR", 4], ["FIVE", 5], ["SIX", 6], ["SEVEN", 7],
+  ["EIGHT", 8], ["NINE", 9], ["TEN", 10], ["ELEVEN", 11], ["TWELVE", 12], ["FIFTEEN", 15],
+  ["TWENTY", 20], ["THIRTY", 30], ["FORTY", 40], ["FORTY-FIVE", 45], ["FIFTY", 50],
+  ["SIXTY", 60], ["NINETY", 90],
+]);
+
+// A word right after a duration that marks it as per-speaker ("1 minute
+// each") or as the whole caucus ("10 minutes total").
+export const SPEAKING_LABEL_WORDS = new Set(["SPEAKING", "SPEAKER", "SPEAKERS", "SPEAKER'S", "SPEAKERS'", "SPEECH", "EACH", "APIECE"]);
+export const TOTAL_LABEL_WORDS = new Set(["TOTAL", "OVERALL"]);
+
+// What can follow "per" in "1 minute per speaker".
+export const SPEAKER_NOUNS = new Set(["SPEAKER", "SPEECH", "DELEGATE", "DELEGATION", "PERSON", "COUNTRY", "STATE", "MEMBER"]);
+
+// "raised by Japan": names who moved the motion, so it ends the topic.
+export const MOVER_VERBS = new Set(["RAISED", "PROPOSED", "MOVED", "MOTIONED", "SUBMITTED", "SUGGESTED", "INTRODUCED", "SPONSORED", "REQUESTED"]);
+
 // The whole phrase that introduces a motion's subject, matched word-for-word.
 // Distinct from TOPIC_WORDS above, which is spreadsheet header vocab rather
 // than floor language.
@@ -426,6 +453,11 @@ export const TOPIC_MARKER_PHRASE = [
   "PURPOSE OF",
   "TOPIC",
   "TOPIC WERE TO BE ABOUT",
+  "TO DISCUSS",
+  "REGARDING",
+  "CONCERNING",
+  "ABOUT",
+  "ON",
 ];
 
 // Maps a committee's freeform title to an icon basename. Order matters:

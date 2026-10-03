@@ -1,4 +1,17 @@
-import { countries, historicalCountries, CONNECTIVE_WORDS, MEASUREMENT_WORDS, SECOND_WORDS, TOPIC_MARKER_PHRASE } from "../constants";
+import {
+  countries,
+  historicalCountries,
+  CONNECTIVE_WORDS,
+  MEASUREMENT_WORDS,
+  SECOND_WORDS,
+  HOUR_WORDS,
+  NUMBER_WORDS,
+  SPEAKING_LABEL_WORDS,
+  TOTAL_LABEL_WORDS,
+  SPEAKER_NOUNS,
+  MOVER_VERBS,
+  TOPIC_MARKER_PHRASE,
+} from "../constants";
 import { canonicalLabel } from "../motionPresets";
 
 export function buildMotionPhrases(motions) {
@@ -11,7 +24,6 @@ export function buildMotionPhrases(motions) {
       // status label elsewhere, so it shouldn't carry the "Open a" verb filler
       // that only reads well in the chair's own typed sentence.
       canonical: canonicalLabel(motion),
-      requireExactWordCount: motion.explicit === true,
       durationField: motion.durationField ?? null,
       requiresTopic: motion.topic === true,
     }))
@@ -21,13 +33,15 @@ const ALL_COUNTRIES = [...countries, ...historicalCountries];
 const COUNTRY_BY_CODE = new Map(ALL_COUNTRIES.map((c) => [c.code, c]));
 
 // canonical is each phrase's own text, not the country's primary name, so
-// "Hollnd" corrects to "Holland" rather than jumping to "Netherlands".
+// "Hollnd" corrects to "Holland" rather than jumping to "Netherlands". Short
+// codes like "US" only match when typed in capitals, so "let us" isn't a country.
 function countryPhrases(country) {
   return [country.name, ...(country.alias ?? [])].map((text) => ({
     text,
     lower: text.toLowerCase(),
     category: "delegation",
     canonical: text,
+    caseSensitive: text.length <= 3 && text === text.toUpperCase(),
   }));
 }
 
@@ -71,10 +85,6 @@ export function buildPhraseIndex(delegations, motionPhrases) {
   return { allPhrases, byWordCount, maxWords: Math.max(...[...byWordCount.keys()]) };
 }
 
-function isWordChar(ch) {
-  return ch !== undefined && /[a-z0-9]/i.test(ch);
-}
-
 // Edit distance counting an adjacent-letter swap as one edit (not two), since
 // that's the most common typo shape - makes "Frnace" register as one typo
 // away from "France" instead of two.
@@ -113,9 +123,8 @@ function wordBudget(length, fuzzyLevel) {
 }
 
 // Every word must be individually close to its counterpart, not just the
-// aggregate distance, or unrelated text of similar length and word count
-// ("12 minutes speaking time" vs "extend the speaking time") slips through
-// at high fuzzy levels.
+// aggregate distance, or a filler word can be absorbed into a typo ("a mod
+// caucus" is two edits from "unmod caucus").
 function perWordWithinBudget(windowLower, phraseLower, fuzzyLevel) {
   const windowWords = windowLower.split(" ");
   const phraseWords = phraseLower.split(" ");
@@ -123,73 +132,18 @@ function perWordWithinBudget(windowLower, phraseLower, fuzzyLevel) {
   return windowWords.every((word, k) => editDistance(word, phraseWords[k]) <= wordBudget(phraseWords[k].length, fuzzyLevel));
 }
 
-function tokenize(text) {
-  const tokens = [];
-  const re = /\S+/g;
-  let match;
-  while ((match = re.exec(text))) {
-    tokens.push({ start: match.index, end: match.index + match[0].length });
-  }
-  return tokens;
-}
-
-// Windows are checked against phrases up to 1 word shorter/longer, so a
-// dropped word still matches. requireExactWordCount phrases are the
-// exception, compared only against their own word count so a subset of their
-// words can't match.
-function findFuzzyMatch(tokens, tokenIndex, text, fuzzyLevel, phraseIndex) {
-  let best = null;
-  const maxWindow = phraseIndex.maxWords + 1;
-  for (let wordCount = 1; wordCount <= maxWindow && tokenIndex + wordCount <= tokens.length; wordCount++) {
-    const candidates = [wordCount - 1, wordCount, wordCount + 1]
-      .flatMap((count) => phraseIndex.byWordCount.get(count) ?? [])
-      .filter((phrase) => !phrase.requireExactWordCount || phrase.lower.split(" ").length === wordCount);
-    if (candidates.length === 0) continue;
-
-    const windowEnd = tokens[tokenIndex + wordCount - 1].end;
-    const windowStart = tokens[tokenIndex].start;
-    const windowLower = text.slice(windowStart, windowEnd).toLowerCase();
-
-    for (const phrase of candidates) {
-      const budget = fuzzyBudget(phrase.lower.length, fuzzyLevel);
-      if (budget === 0) continue;
-      if (Math.abs(windowLower.length - phrase.lower.length) > budget) continue;
-      if (phrase.requireExactWordCount && !perWordWithinBudget(windowLower, phrase.lower, fuzzyLevel)) continue;
-
-      const distance = editDistance(windowLower, phrase.lower);
-      if (distance === 0 || distance > budget) continue;
-
-      if (!best || distance < best.distance || (distance === best.distance && phrase.lower.length > best.phraseLength)) {
-        best = {
-          end: windowEnd,
-          category: phrase.category,
-          canonical: phrase.canonical,
-          durationField: phrase.durationField ?? null,
-          requiresTopic: phrase.requiresTopic === true,
-          distance,
-          phraseLength: phrase.lower.length,
-        };
-      }
-    }
-  }
-  return best;
-}
-
-const NUMBER_WORD = /^\d+$/;
 const TIGHT_TYPO_BUDGET = 1;
 
-// Tight per-word fuzzy match, separate from the country fuzzy system: 3-4
-// chars get a fixed 1-typo budget, 5+ scale with fuzzyLevel. Under 3 chars
-// stays exact, since nearly every 2-letter word is one typo from another
-// ("on" vs "of") and tolerance there broke "topic of" detection.
+// Tight per-word fuzzy match for vocabulary words: 3-4 chars get a fixed
+// 1-typo budget, 5+ scale with fuzzyLevel. Under 3 chars stays exact, since
+// nearly every 2-letter word is one typo from another ("on" vs "of").
 function isCloseToWord(word, target, fuzzyLevel) {
-  const upper = word.toUpperCase();
-  if (upper === target) return true;
+  if (word === target) return true;
   if (fuzzyLevel <= 0 || target.length < 3) return false;
 
   const budget = target.length < 5 ? TIGHT_TYPO_BUDGET : wordBudget(target.length, fuzzyLevel);
-  if (Math.abs(upper.length - target.length) > budget) return false;
-  return editDistance(upper, target) <= budget;
+  if (Math.abs(word.length - target.length) > budget) return false;
+  return editDistance(word, target) <= budget;
 }
 
 function isCloseToAny(word, wordSet, fuzzyLevel) {
@@ -199,384 +153,382 @@ function isCloseToAny(word, wordSet, fuzzyLevel) {
   return false;
 }
 
-const isConnectiveWord = (w, fuzzyLevel) => isCloseToAny(w, CONNECTIVE_WORDS, fuzzyLevel);
-const isMeasurementWord = (w, fuzzyLevel) => isCloseToAny(w, MEASUREMENT_WORDS, fuzzyLevel);
-const isSecondWord = (w, fuzzyLevel) => isCloseToAny(w, SECOND_WORDS, fuzzyLevel);
-
-// The unit a word represents, or null - checked in this order so a word close to both (shouldn't
-// normally happen given how distinct the two vocabularies are) prefers minutes.
-function matchedUnit(word, fuzzyLevel) {
-  if (isMeasurementWord(word, fuzzyLevel)) return "minute";
-  if (isSecondWord(word, fuzzyLevel)) return "second";
+// Minutes per unit word, or null. Durations are stored as minutes throughout
+// the app (see src/utils/duration.js). Single letters ("10m", "90s") are exact.
+function unitMinutes(word, fuzzyLevel) {
+  if (word === "M") return 1;
+  if (word === "S") return 1 / 60;
+  if (word === "H") return 60;
+  if (isCloseToAny(word, MEASUREMENT_WORDS, fuzzyLevel)) return 1;
+  if (isCloseToAny(word, SECOND_WORDS, fuzzyLevel)) return 1 / 60;
+  if (isCloseToAny(word, HOUR_WORDS, fuzzyLevel)) return 60;
   return null;
 }
 
-// Strips leading/trailing punctuation a token might carry from adjacent text
-// ("10," or "minutes.") so word matching isn't thrown off by it.
-function bareWord(text, token) {
-  return text.slice(token.start, token.end).replace(/^\W+|\W+$/g, "");
+// Division for seconds rather than multiplying by 1/60, so 40 seconds is
+// exactly 40 / 60.
+function toMinutes(amount, perUnit) {
+  return perUnit < 1 ? amount / Math.round(1 / perUnit) : amount * perUnit;
 }
 
-function findTokenWithin(tokens, text, startIndex, span, predicate) {
-  for (let i = startIndex; i < Math.min(startIndex + span, tokens.length); i++) {
-    if (predicate(bareWord(text, tokens[i]))) return i;
-  }
-  return -1;
+const DIGITS = /^\d+(?:\.\d+)?$/;
+
+function readAmount(word) {
+  if (DIGITS.test(word)) return Number(word);
+  return NUMBER_WORDS.get(word) ?? null;
 }
 
-function containsWord(tokens, text, fromIndex, toIndex, word) {
-  for (let i = fromIndex; i <= toIndex; i++) {
-    if (bareWord(text, tokens[i]).toUpperCase() === word) return true;
-  }
-  return false;
-}
-
-// Looks from fromIndex through toIndex (inclusive) for an explicit "speaking"
-// or "total" wording label - "speaking" wins if both somehow appear. Used to
-// tell "12 min speaking time" apart from "12 min total time" regardless of
-// which one happens to come first on the line.
-function explicitLabel(tokens, text, fromIndex, toIndex) {
-  const lo = Math.max(0, fromIndex);
-  const hi = Math.min(tokens.length - 1, toIndex);
-  if (containsWord(tokens, text, lo, hi, "SPEAKING")) return "speaking-time";
-  if (containsWord(tokens, text, lo, hi, "TOTAL")) return "total-time";
-  return null;
-}
-
-
-// Looks for a number's unit within 2 words either side. Shared by the narrow
-// motion-adjacent search and the wide search used when a topic phrase sits
-// between the motion and its number.
-function resolveDurationAt(tokens, text, numberIndex, connectiveIndex, motionStartIndex, fuzzyLevel) {
-  const minuteStart = Math.max(0, numberIndex - 2);
-  let minuteIndex = -1;
-  let unit = null;
-  for (let i = minuteStart; i <= Math.min(numberIndex + 2, tokens.length - 1); i++) {
-    if (i === numberIndex) continue;
-    const found = matchedUnit(bareWord(text, tokens[i]), fuzzyLevel);
-    if (found) {
-      minuteIndex = i;
-      unit = found;
-      break;
-    }
-  }
-  if (minuteIndex === -1) return null;
-
-  const endIndex = Math.max(numberIndex, minuteIndex);
-  const startIndex = connectiveIndex === -1 ? numberIndex : connectiveIndex;
-  const rawAmount = Number(bareWord(text, tokens[numberIndex]));
-  return {
-    start: tokens[startIndex].start,
-    end: tokens[endIndex].end,
-    // Stored as minutes throughout the app (see src/utils/duration.js) - a value given in
-    // seconds is converted here, at the point the unit was actually read.
-    amount: unit === "second" ? rawAmount / 60 : rawAmount,
-    label: explicitLabel(tokens, text, motionStartIndex, endIndex + 2),
-  };
-}
-
-// Extends the highlight over a trailing "for 10 minutes" so it covers the
-// whole duration phrase. The connective is optional, so "India mod 12 min"
-// still works.
-function extendWithDuration(tokens, text, motionStartIndex, afterIndex, fuzzyLevel) {
-  const forIndex = findTokenWithin(tokens, text, afterIndex, 2, (w) => isConnectiveWord(w, fuzzyLevel));
-  const numberSearchStart = forIndex === -1 ? afterIndex : forIndex + 1;
-
-  const numberIndex = findTokenWithin(tokens, text, numberSearchStart, 2, (w) => NUMBER_WORD.test(w));
-  if (numberIndex === -1) return null;
-
-  return resolveDurationAt(tokens, text, numberIndex, forIndex, motionStartIndex, fuzzyLevel);
-}
-
-// Same as extendWithDuration, but scans the whole [fromIndex, toIndex) range
-// for the first standalone number instead of just the 2 words right after
-// the motion - needed for topic motions, since "on the topic of X" can push
-// the actual duration arbitrarily far from the motion phrase itself.
-function findDurationInRange(tokens, text, fromIndex, toIndex, motionStartIndex, fuzzyLevel) {
-  for (let i = fromIndex; i < toIndex; i++) {
-    if (!NUMBER_WORD.test(bareWord(text, tokens[i]))) continue;
-    const connectiveIndex = i > fromIndex && isConnectiveWord(bareWord(text, tokens[i - 1]), fuzzyLevel) ? i - 1 : -1;
-    const result = resolveDurationAt(tokens, text, i, connectiveIndex, motionStartIndex, fuzzyLevel);
-    if (result) return result;
-  }
-  return null;
-}
-
-// A standalone "1 minute" with no motion nearby, i.e. the implicit
-// per-speaker time in "...Caucus for 10 minutes, 1 minute each". Stops at
-// `limit` so it never reaches into the next line.
-function findBareDuration(tokens, text, fromIndex, limit, fuzzyLevel) {
-  for (let i = fromIndex; i < tokens.length && tokens[i].start < limit; i++) {
-    const word = bareWord(text, tokens[i]);
-    if (!NUMBER_WORD.test(word)) continue;
-
-    for (let j = Math.max(fromIndex, i - 2); j <= Math.min(i + 2, tokens.length - 1); j++) {
-      if (j === i || tokens[j].start >= limit) continue;
-      const unit = matchedUnit(bareWord(text, tokens[j]), fuzzyLevel);
-      if (unit) {
-        const lo = Math.min(i, j);
-        const hi = Math.max(i, j);
-        return {
-          start: tokens[lo].start,
-          end: tokens[hi].end,
-          amount: unit === "second" ? Number(word) / 60 : Number(word),
-          label: explicitLabel(tokens, text, Math.max(fromIndex, lo - 2), hi + 2),
-        };
-      }
-    }
-  }
-  return null;
-}
-
-function tokenIndexAtOrAfter(tokens, pos) {
-  return tokens.findIndex((t) => t.start >= pos);
-}
-
-function lineIndexAt(text, pos) {
-  let count = 0;
-  for (let k = 0; k < pos; k++) if (text[k] === "\n") count++;
-  return count;
-}
-
-function lineEndAt(text, pos) {
-  const nl = text.indexOf("\n", pos);
-  return nl === -1 ? text.length : nl;
-}
-
-// If a "speaking"/"total (time)" label sits right after `pos`, skips past it
-// too - so the topic starts after the label, not in the middle of it.
-function skipTrailingLabel(tokens, text, pos, limit) {
-  const idx = tokenIndexAtOrAfter(tokens, pos);
-  if (idx === -1 || tokens[idx].start >= limit) return pos;
-
-  const word = bareWord(text, tokens[idx]).toUpperCase();
-  if (word !== "SPEAKING" && word !== "TOTAL") return pos;
-
-  let next = idx + 1;
-  if (next < tokens.length && tokens[next].start < limit && bareWord(text, tokens[next]).toUpperCase() === "TIME") next += 1;
-  return next < tokens.length && tokens[next - 1].start < limit ? tokens[next - 1].end : pos;
-}
-
-// Each alternative phrasing (constants.js's TOPIC_MARKER_PHRASE, e.g. "ON
-// THE TOPIC OF" or "DISCUSSING") split into its own word list.
-const TOPIC_MARKER_PHRASES = TOPIC_MARKER_PHRASE.map((phrase) => phrase.split(" "));
-
-// Finds any TOPIC_MARKER_PHRASE as a whole word-for-word sequence, each word
-// tight-fuzzy-tolerant ("on da tpoic of"). The caller decides what its
-// position implies.
-function findTopicOf(tokens, text, fromIndex, toIndex, fuzzyLevel) {
-  for (let i = fromIndex; i < toIndex; i++) {
-    for (const words of TOPIC_MARKER_PHRASES) {
-      const lastWordIndex = words.length - 1;
-      if (i + lastWordIndex >= toIndex) continue;
-      const matches = words.every(
-        (word, k) => isCloseToWord(bareWord(text, tokens[i + k]), word, fuzzyLevel)
-      );
-      if (matches) return i + lastWordIndex;
-    }
-  }
-  return null;
-}
-
-// An explicit "topic of" always wins wherever it falls, and the topic stops
-// at the next number+unit so a trailing duration isn't swallowed. Without
-// that marker it falls back to whatever trails the duration(s), requiring at
-// least 2 words so a stray "each" isn't mistaken for a topic.
-function finalizeTopic(text, rangeStart) {
-  const trimmed = text.trim();
-  if (!trimmed || trimmed.split(/\s+/).length <= 1) return null;
-  const start = rangeStart + (text.length - text.trimStart().length);
-  return { text: trimmed, start, end: start + trimmed.length };
-}
-
-// Returns secondDuration alongside topic because an unlabeled duration can
-// sit between the first duration and a "topic of" marker. The caller's cursor
-// jumps over that gap afterward, so nothing else would ever see it.
-function extractTopic(tokens, text, motionEndPos, lineEnd, motionStartIndex, duration, fuzzyLevel, needsSecondLookup) {
-  const fromIndex = tokenIndexAtOrAfter(tokens, motionEndPos);
-  if (fromIndex === -1) return { topic: null, secondDuration: null };
-  const lineEndIndex = tokenIndexAtOrAfter(tokens, lineEnd);
-  const endIndex = lineEndIndex === -1 ? tokens.length : lineEndIndex;
-
-  const ofIndex = findTopicOf(tokens, text, fromIndex, endIndex, fuzzyLevel);
-  if (ofIndex !== null) {
-    let secondDuration = null;
-    if (duration) {
-      const afterFirstIndex = tokenIndexAtOrAfter(tokens, duration.end);
-      if (afterFirstIndex !== -1 && afterFirstIndex < ofIndex) {
-        secondDuration = findBareDuration(tokens, text, afterFirstIndex, tokens[ofIndex].start, fuzzyLevel);
-      }
-    }
-
-    const boundaryDuration = findDurationInRange(tokens, text, ofIndex + 1, endIndex, motionStartIndex, fuzzyLevel);
-    const boundaryPos = boundaryDuration ? boundaryDuration.start : lineEnd;
-    const topic = finalizeTopic(text.slice(tokens[ofIndex].end, boundaryPos), tokens[ofIndex].end);
-    return { topic, secondDuration };
-  }
-
-  if (!duration) return { topic: null, secondDuration: null };
-
-  let trailStart = duration.end;
-  if (needsSecondLookup) {
-    const afterIndex = tokenIndexAtOrAfter(tokens, duration.end);
-    const second = afterIndex === -1 ? null : findBareDuration(tokens, text, afterIndex, lineEnd, fuzzyLevel);
-    if (second) trailStart = second.end;
-  }
-  trailStart = skipTrailingLabel(tokens, text, trailStart, lineEnd);
-
-  return { topic: finalizeTopic(text.slice(trailStart, lineEnd), trailStart), secondDuration: null };
-}
-
-// An explicit "speaking"/"total" label always wins. Otherwise the first
-// duration is the total and a second defaults to whichever role the first
-// one didn't take.
-function classifyDuration(lineState, label) {
-  if (label) return label;
-  if (!lineState.sawDuration) return "total-time";
-  return lineState.firstRole === "speaking-time" ? "total-time" : "speaking-time";
-}
-
-// Exact whole-word matches first (longest phrase wins), falling back to a
-// fuzzy word-window match where nothing exact fits. `meta` carries the first
-// of each kind detected, for the summary below the input.
-export function findHighlightRanges(text, fuzzyLevel, phraseIndex) {
-  const lower = text.toLowerCase();
-  const tokens = tokenize(text);
-  const tokenStarts = new Map(tokens.map((t, i) => [t.start, i]));
-  const ranges = [];
-  const meta = { motion: null, delegation: null, totalTime: null, speakingTime: null, topic: null };
-  const lineState = { lineIndex: -1, sawDuration: false, firstRole: null, secondFound: false };
-
-  let i = 0;
-  while (i < text.length) {
-    const currentLine = lineIndexAt(text, i);
-    if (currentLine !== lineState.lineIndex) {
-      lineState.lineIndex = currentLine;
-      lineState.sawDuration = false;
-      lineState.firstRole = null;
-      lineState.secondFound = false;
-    }
-
-    const exact = phraseIndex.allPhrases.find((phrase) => {
-      if (!lower.startsWith(phrase.lower, i)) return false;
-      const end = i + phrase.lower.length;
-      return !isWordChar(text[i - 1]) && !isWordChar(text[end]);
+// Each line splits into whitespace tokens. `word` is the uppercased token
+// without surrounding punctuation ("minutes," reads as MINUTES), and
+// bareStart/bareEnd are its offsets in the full text.
+function tokenizeLine(text, lineStart, lineEnd) {
+  const tokens = [];
+  const re = /\S+/g;
+  re.lastIndex = lineStart;
+  let match;
+  while ((match = re.exec(text)) && match.index < lineEnd) {
+    const raw = match[0];
+    const lead = raw.match(/^[^\p{L}\p{N}]*/u)[0].length;
+    const trail = lead === raw.length ? 0 : raw.match(/[^\p{L}\p{N}']*$/u)[0].length;
+    tokens.push({
+      start: match.index,
+      end: match.index + raw.length,
+      bareStart: match.index + lead,
+      bareEnd: match.index + raw.length - trail,
+      word: raw.slice(lead, raw.length - trail).toUpperCase(),
     });
-    const tokenIndex = tokenStarts.get(i);
-    const match = exact ?? (tokenIndex !== undefined ? findFuzzyMatch(tokens, tokenIndex, text, fuzzyLevel, phraseIndex) : null);
+  }
+  return tokens;
+}
 
-    if (match) {
-      let end = exact ? i + exact.lower.length : match.end;
-      const category = match.category;
+// A duration starting at token i: "10 minutes", "10min", "15-minute",
+// "a minute", "half a minute", "1:30", or the "10/1" total/speaking shorthand.
+// Returns its amount in minutes and the index of its last token.
+function readDuration(tokens, i, fuzzyLevel) {
+  const word = tokens[i].word;
+  const next = tokens[i + 1]?.word;
 
-      if (category === "delegation" && meta.delegation === null) meta.delegation = match.canonical;
+  const clock = word.match(/^(\d+):(\d{2})$/);
+  if (clock) {
+    const last = next !== undefined && unitMinutes(next, fuzzyLevel) === 1 ? i + 1 : i;
+    return { amount: Number(clock[1]) + Number(clock[2]) / 60, last };
+  }
 
-      if (category === "motion") {
-        if (meta.motion === null) meta.motion = match.canonical;
-        const motionEndPos = end;
-        const motionStartIndex = tokenIndex ?? tokenStarts.get(i);
-        const afterIndex = tokenIndexAtOrAfter(tokens, end);
-        let extended = null;
-        if (motionStartIndex !== undefined && afterIndex !== -1) {
-          if (match.requiresTopic) {
-            // A topic can push the duration arbitrarily far from the motion
-            // ("on the topic of X for 10 minutes"), so scan the whole line
-            // instead of just the 2 words right after the motion.
-            const lineEndIndex = tokenIndexAtOrAfter(tokens, lineEndAt(text, i));
-            const scanLimit = lineEndIndex === -1 ? tokens.length : lineEndIndex;
-            extended = findDurationInRange(tokens, text, afterIndex, scanLimit, motionStartIndex, fuzzyLevel);
-          } else {
-            extended = extendWithDuration(tokens, text, motionStartIndex, afterIndex, fuzzyLevel);
-          }
-        }
+  const pair = word.match(/^(\d+)\/(\d+)$/);
+  if (pair) return { pair: { total: Number(pair[1]), speaking: Number(pair[2]) }, last: i };
 
-        let durationCategory = null;
-        if (extended) {
-          end = extended.end;
+  // Digits can carry their unit ("10min", "90s"); a number word needs the
+  // hyphen ("fifteen-minute"), or "as" would read as "a" + "s".
+  const attached = word.match(/^(\d+(?:\.\d+)?)-?([A-Z]+)$/) ?? word.match(/^([A-Z]+)-([A-Z]+)$/);
+  if (attached && readAmount(attached[1]) !== null) {
+    const perUnit = unitMinutes(attached[2], fuzzyLevel);
+    if (perUnit) return { amount: toMinutes(readAmount(attached[1]), perUnit), last: i };
+  }
 
-          if (match.durationField) {
-            // Single-param motion (constants.js's durationField): always the
-            // one fixed field, no total/speaking classification, and no
-            // second-duration lookup - there's only ever one number to read.
-            durationCategory = match.durationField === "speaking" ? "speaking-time" : "total-time";
-            const field = match.durationField === "speaking" ? "speakingTime" : "totalTime";
-            if (meta[field] === null) meta[field] = extended.amount;
-          } else {
-            durationCategory = classifyDuration(lineState, extended.label);
-            if (durationCategory === "speaking-time" && meta.speakingTime === null) meta.speakingTime = extended.amount;
-            if (durationCategory === "total-time" && meta.totalTime === null) meta.totalTime = extended.amount;
-            if (!lineState.sawDuration) lineState.firstRole = durationCategory;
-            lineState.sawDuration = true;
-          }
-        }
+  if (word === "HALF" && (next === "A" || next === "AN") && tokens[i + 2]) {
+    const perUnit = unitMinutes(tokens[i + 2].word, fuzzyLevel);
+    if (perUnit) return { amount: toMinutes(0.5, perUnit), last: i + 2 };
+  }
 
-        // Pushed as separate ranges (motion phrase, duration, topic) rather
-        // than one continuous span, and sorted by position before pushing -
-        // a topic can land either before its duration ("on the topic of X
-        // for 10 min") or after it ("for 10 min on the topic of X").
-        const localRanges = [{ start: i, end: motionEndPos, category: "motion", canonical: match.canonical, fuzzy: !exact }];
-        if (extended) {
-          localRanges.push({ start: extended.start, end: extended.end, category: durationCategory, canonical: null, fuzzy: false });
-        }
+  const amount = readAmount(word);
+  if (amount !== null && next !== undefined) {
+    const perUnit = unitMinutes(next, fuzzyLevel);
+    // "for a second time" is not a one-second duration.
+    const articleSecond = (word === "A" || word === "AN") && perUnit < 1;
+    if (perUnit && !articleSecond) return { amount: toMinutes(amount, perUnit), last: i + 1 };
+  }
+  return null;
+}
 
-        if (match.requiresTopic && meta.topic === null) {
-          const duration = extended ? { start: extended.start, end: extended.end } : null;
-          const { topic, secondDuration } = extractTopic(
-            tokens, text, motionEndPos, lineEndAt(text, i), motionStartIndex, duration, fuzzyLevel, !match.durationField
-          );
+// A label straight after a duration: "speaking time", "each", "per speaker",
+// "for each delegate", "total", "in total". Returns the role and the index of
+// the label's last token.
+function readLabelAfter(tokens, i) {
+  const word = tokens[i]?.word;
+  if (word === undefined) return null;
+  const next = tokens[i + 1]?.word;
 
-          if (secondDuration) {
-            const secondCategory = classifyDuration(lineState, secondDuration.label);
-            const secondField = secondCategory === "speaking-time" ? "speakingTime" : "totalTime";
-            if (meta[secondField] === null) meta[secondField] = secondDuration.amount;
-            lineState.secondFound = true;
-            localRanges.push({ start: secondDuration.start, end: secondDuration.end, category: secondCategory, canonical: null, fuzzy: false });
-          }
+  if (SPEAKING_LABEL_WORDS.has(word)) {
+    let last = i;
+    if (next === "TIME") last = i + 1;
+    else if (word === "EACH" && SPEAKER_NOUNS.has(next)) last = i + 1;
+    return { role: "speaking-time", last };
+  }
+  if (word === "PER" && SPEAKER_NOUNS.has(next)) return { role: "speaking-time", last: i + 1 };
+  if (word === "FOR" && next === "EACH") {
+    return { role: "speaking-time", last: SPEAKER_NOUNS.has(tokens[i + 2]?.word) ? i + 2 : i + 1 };
+  }
+  if (TOTAL_LABEL_WORDS.has(word)) return { role: "total-time", last: next === "TIME" ? i + 1 : i };
+  if (word === "IN" && next === "TOTAL") return { role: "total-time", last: i + 1 };
+  return null;
+}
 
-          if (topic) {
-            meta.topic = topic.text;
-            localRanges.push({ start: topic.start, end: topic.end, category: "topic", canonical: null, fuzzy: false });
-            // Advance past the whole topic span too, not just the duration -
-            // otherwise the outer loop would keep scanning through free-form
-            // topic prose for further motion/delegation matches, which could
-            // land a second, overlapping range inside this one.
-            end = Math.max(end, topic.end);
-          }
-        }
+// Words allowed between a leading label and its number: "a speaking time of
+// 1 minute", "total time: 10 min".
+const LABEL_GAP_WORDS = new Set(["TIME", "OF", "IS", "FOR", "AT", "A", "AN", ""]);
 
-        localRanges.sort((a, b) => a.start - b.start);
-        ranges.push(...localRanges);
-        i = end;
-        continue;
+// A label just before a duration, walking back over gap words only, so "on
+// speaking rights for 10 minutes" stays unlabeled. Never looks past `floor`.
+function readLabelBefore(tokens, first, floor) {
+  for (let k = first - 1; k >= floor; k--) {
+    const word = tokens[k].word;
+    if (SPEAKING_LABEL_WORDS.has(word) && word !== "EACH" && word !== "APIECE") return { role: "speaking-time", first: k };
+    if (TOTAL_LABEL_WORDS.has(word)) return { role: "total-time", first: k };
+    if (!LABEL_GAP_WORDS.has(word)) return null;
+  }
+  return null;
+}
+
+// Every duration on the line, left to right, with any label right after it.
+function findDurations(tokens, fuzzyLevel) {
+  const durations = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const found = readDuration(tokens, i, fuzzyLevel);
+    if (!found) continue;
+    const label = found.pair ? null : readLabelAfter(tokens, found.last + 1);
+    durations.push({ ...found, first: i, role: label?.role ?? null, end: label ? label.last : found.last });
+    i = label ? label.last : found.last;
+  }
+  return durations;
+}
+
+function windowText(text, tokens, from, to) {
+  return text.slice(tokens[from].bareStart, tokens[to].bareEnd).replace(/\s+/g, " ");
+}
+
+// Exact phrases first (longest wins), then a typo-tolerant match whose every
+// word lines up with the phrase's words. Windows never cross a duration.
+function matchPhraseAt(text, tokens, i, blocked, fuzzyLevel, phraseIndex) {
+  let maxWindow = 0;
+  while (maxWindow < phraseIndex.maxWords && i + maxWindow < tokens.length && !blocked[i + maxWindow]) maxWindow++;
+  if (maxWindow === 0 || tokens[i].word === "") return null;
+
+  for (let count = maxWindow; count >= 1; count--) {
+    const original = windowText(text, tokens, i, i + count - 1);
+    const lower = original.toLowerCase();
+    const exact = (phraseIndex.byWordCount.get(count) ?? []).find((phrase) =>
+      phrase.caseSensitive ? original === phrase.text : lower === phrase.lower
+    );
+    if (exact) return { phrase: exact, last: i + count - 1, fuzzy: false };
+  }
+
+  let best = null;
+  for (let count = 1; count <= maxWindow; count++) {
+    const lower = windowText(text, tokens, i, i + count - 1).toLowerCase();
+    for (const phrase of phraseIndex.byWordCount.get(count) ?? []) {
+      const budget = fuzzyBudget(phrase.lower.length, fuzzyLevel);
+      if (budget === 0 || Math.abs(lower.length - phrase.lower.length) > budget) continue;
+      if (!perWordWithinBudget(lower, phrase.lower, fuzzyLevel)) continue;
+      const distance = editDistance(lower, phrase.lower);
+      if (distance > budget) continue;
+      if (!best || distance < best.distance || (distance === best.distance && phrase.lower.length > best.phrase.lower.length)) {
+        best = { phrase, last: i + count - 1, fuzzy: true, distance };
       }
+    }
+  }
+  return best;
+}
 
-      ranges.push({ start: i, end, category, canonical: match.canonical, fuzzy: !exact });
-      i = end;
+function findPhrases(text, tokens, blocked, fuzzyLevel, phraseIndex) {
+  const hits = [];
+  for (let i = 0; i < tokens.length; i++) {
+    if (blocked[i]) continue;
+    const hit = matchPhraseAt(text, tokens, i, blocked, fuzzyLevel, phraseIndex);
+    if (!hit) continue;
+    hits.push({ ...hit, first: i });
+    i = hit.last;
+  }
+  return hits;
+}
+
+// Explicit labels win. Otherwise one unlabeled duration takes whichever role
+// is still free, and two unlabeled ones split by size (bigger is the total).
+function classifyDurations(durations, motion) {
+  if (motion.durationField) {
+    const role = motion.durationField === "speaking" ? "speaking-time" : "total-time";
+    for (const d of durations) d.role = role;
+    return;
+  }
+
+  const unlabeled = durations.filter((d) => !d.role);
+  const taken = new Set(durations.map((d) => d.role).filter(Boolean));
+  if (unlabeled.length >= 2 && taken.size === 0) {
+    const [a, b] = unlabeled;
+    a.role = a.amount >= b.amount ? "total-time" : "speaking-time";
+    b.role = a.role === "total-time" ? "speaking-time" : "total-time";
+  }
+  for (const d of durations) {
+    if (d.role) continue;
+    d.role = taken.has("total-time") && !taken.has("speaking-time") ? "speaking-time" : "total-time";
+    taken.add(d.role);
+  }
+}
+
+// Longest marker first, so "on the topic of" wins over plain "on".
+const TOPIC_MARKERS = TOPIC_MARKER_PHRASE.map((phrase) => phrase.split(" ")).sort((a, b) => b.length - a.length);
+
+function findTopicMarker(tokens, from, to, blocked, fuzzyLevel) {
+  for (let i = from; i < to; i++) {
+    if (blocked[i]) continue;
+    for (const words of TOPIC_MARKERS) {
+      if (i + words.length > to) continue;
+      if (words.every((word, k) => !blocked[i + k] && isCloseToWord(tokens[i + k].word, word, fuzzyLevel))) {
+        return i + words.length;
+      }
+    }
+  }
+  return null;
+}
+
+// "raised by Japan", "proposed by China": names the mover, so the topic stops there.
+function isMoverClause(tokens, i) {
+  return MOVER_VERBS.has(tokens[i].word) && tokens[i + 1]?.word === "BY";
+}
+
+const TRAILING_FILLER = new Set(["FOR", "WITH", "AND", "OF", "A", "AN", "THE", "AT", "LASTING", "BY", ""]);
+
+// The topic runs from `start` to the first duration, mover clause, or line
+// end, minus any dangling filler ("on refugees for" reads as "refugees").
+function readTopic(text, tokens, start, blocked, minWords) {
+  let end = start;
+  while (end < tokens.length && !blocked[end] && !isMoverClause(tokens, end)) end++;
+  let last = end - 1;
+  while (last >= start && TRAILING_FILLER.has(tokens[last].word)) last--;
+  if (last < start || last - start + 1 < minWords) return null;
+  return { start: tokens[start].bareStart, end: tokens[last].bareEnd, text: text.slice(tokens[start].bareStart, tokens[last].bareEnd) };
+}
+
+// "unmod 15": a lone number shortly after a one-duration motion reads as minutes.
+function findBareMinutes(tokens, motion, blocked) {
+  for (let i = motion.last + 1; i < Math.min(tokens.length, motion.last + 4); i++) {
+    if (blocked[i]) return null;
+    const word = tokens[i].word;
+    if (/^\d+$/.test(word)) {
+      const amount = Number(word);
+      return amount > 0 && amount <= 180 ? { amount, first: i, last: i, end: i, role: "total-time" } : null;
+    }
+    if (!CONNECTIVE_WORDS.has(word) && word !== "") return null;
+  }
+  return null;
+}
+
+function parseLine(text, tokens, fuzzyLevel, phraseIndex) {
+  const blocked = new Array(tokens.length).fill(false);
+  const block = (from, to) => {
+    for (let k = from; k <= to; k++) blocked[k] = true;
+  };
+
+  const durations = findDurations(tokens, fuzzyLevel);
+  for (const d of durations) block(d.first, d.end);
+
+  const hits = findPhrases(text, tokens, blocked, fuzzyLevel, phraseIndex);
+  const motionHit = hits.find((hit) => hit.phrase.category === "motion");
+  if (!motionHit) {
+    return { ranges: hits.map(phraseRange), meta: { delegation: hits[0]?.phrase.canonical ?? null } };
+  }
+  const motion = { ...motionHit.phrase, last: motionHit.last };
+
+  // Pairs only make sense for a caucus with both a total and a speaking time.
+  const usable = durations.filter((d) => !d.pair || !motion.durationField);
+  if (usable.length === 0 && motion.durationField !== "speaking") {
+    const bare = findBareMinutes(tokens, motion, blocked);
+    if (bare) {
+      usable.push(bare);
+      block(bare.first, bare.last);
+    }
+  }
+
+  // A leading label ("a speaking time of 1 minute") can only reach back to
+  // the motion or the previous duration, never into them.
+  let floor = 0;
+  for (const d of usable) {
+    const motionFloor = motionHit.last < d.first ? motionHit.last + 1 : 0;
+    const leading = d.role || d.pair ? null : readLabelBefore(tokens, d.first, Math.max(floor, motionFloor));
+    if (leading) {
+      d.role = leading.role;
+      d.first = leading.first;
+      block(leading.first, d.end);
+    }
+    const connective = d.first - 1;
+    if (connective >= Math.max(floor, motionFloor) && CONNECTIVE_WORDS.has(tokens[connective].word) && !blocked[connective]) {
+      d.first = connective;
+      blocked[connective] = true;
+    }
+    floor = d.end + 1;
+  }
+
+  const timed = usable.filter((d) => !d.pair);
+  classifyDurations(timed, motion);
+
+  const meta = { motion: motion.canonical, speakingTime: null, totalTime: null, topic: null, delegation: null };
+  const ranges = [];
+  for (const d of usable) {
+    const range = { start: tokens[d.first].bareStart, end: tokens[d.end].bareEnd, canonical: null, fuzzy: false };
+    if (d.pair) {
+      meta.totalTime ??= d.pair.total;
+      meta.speakingTime ??= d.pair.speaking;
+      ranges.push({ ...range, category: "total-time" });
       continue;
     }
-
-    if (
-      tokenIndex !== undefined &&
-      lineState.sawDuration &&
-      !lineState.secondFound &&
-      (meta.totalTime === null || meta.speakingTime === null)
-    ) {
-      const bare = findBareDuration(tokens, text, tokenIndex, lineEndAt(text, i), fuzzyLevel);
-      if (bare && bare.start === i) {
-        const category = bare.label ?? (lineState.firstRole === "speaking-time" ? "total-time" : "speaking-time");
-        const field = category === "speaking-time" ? "speakingTime" : "totalTime";
-        lineState.secondFound = true;
-        if (meta[field] === null) {
-          meta[field] = bare.amount;
-          ranges.push({ start: bare.start, end: bare.end, category, canonical: null, fuzzy: false });
-          i = bare.end;
-          continue;
-        }
-      }
-    }
-
-    i += 1;
+    const field = d.role === "speaking-time" ? "speakingTime" : "totalTime";
+    meta[field] ??= d.amount;
+    ranges.push({ ...range, category: d.role });
   }
+
+  let topic = null;
+  if (motion.requiresTopic) {
+    const markerEnd = findTopicMarker(tokens, motion.last + 1, tokens.length, blocked, fuzzyLevel);
+    if (markerEnd !== null) {
+      topic = readTopic(text, tokens, markerEnd, blocked, 1);
+    } else {
+      const lastTimed = usable.filter((d) => d.end > motion.last).at(-1);
+      topic = readTopic(text, tokens, (lastTimed ? lastTimed.end : motion.last) + 1, blocked, 2);
+    }
+  }
+  if (topic) {
+    meta.topic = topic.text;
+    ranges.push({ start: topic.start, end: topic.end, category: "topic", canonical: null, fuzzy: false });
+  }
+
+  // Countries named inside the topic are its subject, not the mover.
+  const outsideTopic = hits.filter((hit) => !topic || tokens[hit.first].bareStart < topic.start || tokens[hit.first].bareStart >= topic.end);
+  meta.delegation = outsideTopic.find((hit) => hit.phrase.category === "delegation")?.phrase.canonical ?? null;
+  ranges.push(...outsideTopic.map(phraseRange));
+
+  return { ranges, meta };
+
+  function phraseRange(hit) {
+    return {
+      start: tokens[hit.first].bareStart,
+      end: tokens[hit.last].bareEnd,
+      category: hit.phrase.category,
+      canonical: hit.phrase.canonical,
+      fuzzy: hit.fuzzy,
+    };
+  }
+}
+
+// Each line is its own motion; `meta` keeps the first value of each field
+// across lines, for the summary below the input.
+export function findHighlightRanges(text, fuzzyLevel, phraseIndex) {
+  const ranges = [];
+  const meta = { motion: null, delegation: null, totalTime: null, speakingTime: null, topic: null };
+
+  let lineStart = 0;
+  while (lineStart <= text.length) {
+    const newline = text.indexOf("\n", lineStart);
+    const lineEnd = newline === -1 ? text.length : newline;
+    const tokens = tokenizeLine(text, lineStart, lineEnd);
+    if (tokens.length > 0) {
+      const line = parseLine(text, tokens, fuzzyLevel, phraseIndex);
+      ranges.push(...line.ranges);
+      for (const key of Object.keys(meta)) meta[key] ??= line.meta[key] ?? null;
+    }
+    if (newline === -1) break;
+    lineStart = newline + 1;
+  }
+
+  ranges.sort((a, b) => a.start - b.start);
   return { ranges, meta };
 }
 

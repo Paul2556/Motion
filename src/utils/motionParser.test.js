@@ -120,3 +120,140 @@ describe("motion parser: phrasings that already worked", () => {
 
   it.each(["hello", "10 minutes", ""])("finds nothing in %j", (text) => expectMeta(text, {}));
 });
+
+const ND = "nuclear disarmament";
+
+describe("motion parser: a short motion after a filler word", () => {
+  it.each([
+    ["UK motions for a mod caucus for 10 min on sanctions", { motion: "Moderated Caucus", delegation: "UK", topic: "sanctions", totalTime: 10 }],
+    ["Japn moves for a mod cacus for 10 min", { motion: "Moderated Caucus", delegation: "Japan", totalTime: 10 }],
+    ["Frnace motions for a moderatd caucus for 10 minuets on nuclear disarmament", { motion: "Moderated Caucus", delegation: "France", topic: ND, totalTime: 10 }],
+    ["France motions for an unmod for 10 minutes", { motion: "Unmoderated Caucus", delegation: "France", totalTime: 10 }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+});
+
+describe("motion parser: duration written before the motion", () => {
+  it.each([
+    [
+      "The delegate of France motions for a 10 minute moderated caucus with 1 minute speaking time on nuclear disarmament",
+      { motion: "Moderated Caucus", delegation: "France", topic: ND, speakingTime: 1, totalTime: 10 },
+    ],
+    [
+      "France motions for a 10 minute mod with 30 second speaking time on maritime security",
+      { motion: "Moderated Caucus", delegation: "France", topic: "maritime security", speakingTime: 0.5, totalTime: 10 },
+    ],
+    ["Motion for a 15 minute unmoderated caucus", { motion: "Unmoderated Caucus", totalTime: 15 }],
+    ["Brazil motions for a 15-minute unmod", { motion: "Unmoderated Caucus", delegation: "Brazil", totalTime: 15 }],
+    ["a 10 min mod with 30 sec each on cyber security", { motion: "Moderated Caucus", topic: "cyber security", speakingTime: 0.5, totalTime: 10 }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+});
+
+describe("motion parser: which duration is the speaking time", () => {
+  it.each([
+    [
+      "France motions for a moderated caucus on nuclear disarmament for 10 minutes with 1 minute speaking time",
+      { motion: "Moderated Caucus", delegation: "France", topic: ND, speakingTime: 1, totalTime: 10 },
+    ],
+    ["Moderated caucus of 15 minutes, 45 seconds per speaker, on climate finance", { motion: "Moderated Caucus", topic: "climate finance", speakingTime: 0.75, totalTime: 15 }],
+    ["mod caucus 12 min 60 sec speaking time on refugees", { motion: "Moderated Caucus", topic: "refugees", speakingTime: 1, totalTime: 12 }],
+    [
+      "Motion for a moderated caucus for a total time of 10 minutes and a speaking time of 1 minute on nuclear disarmament",
+      { motion: "Moderated Caucus", topic: ND, speakingTime: 1, totalTime: 10 },
+    ],
+    ["moderated caucus for 10 minutes with 1 minute per delegate about nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with 1 minute per speaker regarding nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus, topic: nuclear disarmament, 10 min total, 1 min speaking", { motion: "Moderated Caucus", topic: ND, speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with 30 seconds each on nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 0.5, totalTime: 10 }],
+    ["moderated caucus with 1 minute speaking time for 10 minutes on nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 1, totalTime: 10 }],
+    [
+      "moderated caucus for 1.5 minutes speaking time and 9 minutes total on nuclear disarmament",
+      { motion: "Moderated Caucus", topic: ND, speakingTime: 1.5, totalTime: 9 },
+    ],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+});
+
+describe("motion parser: duration formats", () => {
+  it.each([
+    ["mod 10min 1min nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus for 10 mins, 90s speaking time, on nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 1.5, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with 1:30 speaking time on nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 1.5, totalTime: 10 }],
+    ["moderated caucus for ten minutes with one minute speaking time on nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus for 10 minutes with a minute each on nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 1, totalTime: 10 }],
+    ["moderated caucus for fifteen minutes with forty-five seconds each on nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 0.75, totalTime: 15 }],
+    ["unmod for 10m", { motion: "Unmoderated Caucus", totalTime: 10 }],
+    ["Motion to suspend the meeting for 1 hour", { motion: "Suspend Meeting", totalTime: 60 }],
+    ["mod caucus 10/1 nuclear disarmament", { motion: "Moderated Caucus", topic: ND, speakingTime: 1, totalTime: 10 }],
+    ["unmod 15", { motion: "Unmoderated Caucus", totalTime: 15 }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+});
+
+describe("motion parser: topics", () => {
+  it.each([
+    ["Moderated caucus on nuclear disarmament", { motion: "Moderated Caucus", topic: ND }],
+    [
+      "moderated caucus for 10 minutes on how the US and the UK modernise their navies",
+      { motion: "Moderated Caucus", topic: "how the US and the UK modernise their navies", totalTime: 10 },
+    ],
+    ["moderated caucus 10 minutes 1 minute speaking time, raised by Japan", { motion: "Moderated Caucus", delegation: "Japan", speakingTime: 1, totalTime: 10 }],
+    ["mod caucus on sanctions for 10 minutes, proposed by China", { motion: "Moderated Caucus", delegation: "China", topic: "sanctions", totalTime: 10 }],
+    ["moderated caucus for 10 minutes concerning water scarcity.", { motion: "Moderated Caucus", topic: "water scarcity", totalTime: 10 }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+});
+
+describe("motion parser: everyday words that look like country codes", () => {
+  it.each([
+    ["let us discuss nuclear disarmament", {}],
+    ["France asks us for an unmod for 10 minutes", { motion: "Unmoderated Caucus", delegation: "France", totalTime: 10 }],
+  ])("%s", (text, expected) => expectMeta(text, expected));
+
+  it("still reads an uppercase code as the country", () => {
+    expectMeta("UK motions to adjourn the meeting", { motion: "Adjourn Meeting", delegation: "UK" });
+  });
+});
+
+// What the textarea backdrop colors, as [category, highlighted text] pairs.
+function highlights(text, options) {
+  return parse(text, options).ranges.map((r) => [r.category, text.slice(r.start, r.end)]);
+}
+
+describe("motion parser: highlighted ranges", () => {
+  it("colors each part of a full motion once, in reading order", () => {
+    expect(highlights("France motions for a moderated caucus on nuclear disarmament for 10 minutes with 1 minute speaking time")).toEqual([
+      ["delegation", "France"],
+      ["motion", "moderated caucus"],
+      ["topic", "nuclear disarmament"],
+      ["total-time", "for 10 minutes"],
+      ["speaking-time", "with 1 minute speaking time"],
+    ]);
+  });
+
+  it("colors a duration written before the motion", () => {
+    expect(highlights("a 10 minute mod with 30 seconds each on cyber security")).toEqual([
+      ["total-time", "10 minute"],
+      ["motion", "mod"],
+      ["speaking-time", "with 30 seconds each"],
+      ["topic", "cyber security"],
+    ]);
+  });
+
+  it("keeps a leading label with its duration", () => {
+    expect(highlights("mod caucus for a total time of 10 minutes and a speaking time of 1 minute")).toEqual([
+      ["motion", "mod caucus"],
+      ["total-time", "total time of 10 minutes"],
+      ["speaking-time", "speaking time of 1 minute"],
+    ]);
+  });
+
+  it("marks a typo-corrected phrase as fuzzy", () => {
+    const { ranges } = parse("Frnace motions to adjourn the meeting");
+    expect(ranges.map((r) => [r.canonical, r.fuzzy])).toEqual([["France", true], ["Adjourn Meeting", false]]);
+  });
+
+  it("parses each line on its own", () => {
+    const text = "unmod for 10 minutes\nChina motions for a mod caucus on sanctions for 5 min with 30 sec each";
+    expect(meta(text)).toEqual({ motion: "Unmoderated Caucus", delegation: "China", topic: "sanctions", speakingTime: 0.5, totalTime: 10 });
+    expect(highlights(text).map(([category]) => category)).toEqual([
+      "motion", "total-time", "delegation", "motion", "topic", "total-time", "speaking-time",
+    ]);
+  });
+});
