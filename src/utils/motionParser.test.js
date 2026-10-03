@@ -350,3 +350,11 @@ describe("motion parser: round three", () => {
     expect(performance.now() - started).toBeLessThan(1500);
   });
 });
+
+describe("motion parser: partial motion names", () => {
+  it.each([
+    ["speaking time 1 minute", {}],
+    ["12 minutes speaking time", {}],
+    ["the speaking time", {}],
+  ])("%s is not Extend Speaking Time", (text, expected) => expectMeta(text, expected));
+});

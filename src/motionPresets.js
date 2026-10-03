@@ -100,17 +100,12 @@ export function replaceMotions(list) {
   saveMotions(list);
 }
 
-// `explicit` is deliberately never part of the accepted patch shape, so the
-// merge below can't clobber it on an existing record.
 export function addMotion({ text, alias = [], topic = false, durationField = null }) {
   const motion = { id: crypto.randomUUID(), text, alias, topic, durationField };
   saveMotions([...getMotions(), motion]);
   return motion;
 }
 
-// Plain merge patch - callers (the editor form) must never include an
-// `explicit` key in patch, so any pre-existing `explicit: true` on a
-// built-in survives edits untouched.
 export function updateMotion(id, patch) {
   saveMotions(getMotions().map((m) => (m.id === id ? { ...m, ...patch } : m)));
 }

@@ -11,7 +11,7 @@ export const MOTIONS = [
   { text: "Move into Voting Procedure", alias: ["Move to Voting Procedure", "Voting Procedure"] },
   { text: "Motion to Change the Agenda", alias: ["Change the Agenda"] },
   { text: "Tabling for Incompetence", alias: ["Table for Incompetence"] },
-  { text: "Extend the Speaking Time", alias: ["Extend Speaking Time"], explicit: true, durationField: "speaking" },
+  { text: "Extend the Speaking Time", alias: ["Extend Speaking Time"], durationField: "speaking" },
   { text: "Extend the Moderated Caucus", alias: ["Extend the Mod Caucus", "Extend Mod"], durationField: "total" },
   { text: "Motion to Extend the Speaker's List", alias: ["Extend the Speaker's List", "Extend Speakers List"] },
   { text: "Open a Moderated Caucus", alias: ["Moderated Caucus", "Mod Caucus", "Mod", "Moderated"], topic: true },
