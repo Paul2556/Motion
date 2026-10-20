@@ -1,3 +1,5 @@
+import { local } from "./utils/storage";
+
 // Kept separate from LandingPage's own theme keys because that page is
 // natively light and this shell is natively dark, so one shared flag would
 // mean opposite things to each. A page opts in via the `.app-shell` class.
@@ -6,21 +8,21 @@ const REDUCED_MOTION_KEY = "app-reduced-motion";
 
 // White is the default; Black and Brown are opt-in from Settings.
 export function getAppTheme() {
-  const stored = localStorage.getItem(THEME_KEY);
+  const stored = local.get(THEME_KEY);
   return stored === "dark" || stored === "brown" ? stored : "light";
 }
 
 export function setAppTheme(theme) {
-  localStorage.setItem(THEME_KEY, theme);
+  local.set(THEME_KEY, theme);
   document.documentElement.setAttribute("data-app-theme", theme);
 }
 
 export function getAppReducedMotion() {
-  return localStorage.getItem(REDUCED_MOTION_KEY) === "true";
+  return local.get(REDUCED_MOTION_KEY) === "true";
 }
 
 export function setAppReducedMotion(value) {
-  localStorage.setItem(REDUCED_MOTION_KEY, String(value));
+  local.set(REDUCED_MOTION_KEY, String(value));
   document.documentElement.setAttribute("data-app-reduced-motion", String(value));
 }
 

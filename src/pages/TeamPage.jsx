@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../components/Logo";
+import { local } from "../utils/storage";
 import MarketingFooter from "../components/MarketingFooter";
 
 const TEAM = [
@@ -23,8 +24,8 @@ function TeamMember({ member, index }) {
 
 export default function TeamPage() {
   // Read-only: the toggles live on LandingPage, this just follows them.
-  const [darkMode] = useState(() => localStorage.getItem("motion-theme") === "dark");
-  const [reducedMotion] = useState(() => localStorage.getItem("motion-reduced") === "true");
+  const [darkMode] = useState(() => local.get("motion-theme") === "dark");
+  const [reducedMotion] = useState(() => local.get("motion-reduced") === "true");
 
   return (
     <div

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../components/Logo";
+import { local } from "../utils/storage";
 import { APP_HOSTS, DEBUG_HOSTS, DEMO_HOSTS, DELEGATE_HOSTS } from "../hosts";
 
 // Two variants matching the repo's two theme systems, so the 404 never
@@ -40,7 +41,7 @@ function AppShellNotFound() {
 }
 
 function ThemeShellNotFound() {
-  const [darkMode] = useState(() => localStorage.getItem("motion-theme") === "dark");
+  const [darkMode] = useState(() => local.get("motion-theme") === "dark");
 
   return (
     <div

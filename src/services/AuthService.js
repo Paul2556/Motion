@@ -8,9 +8,10 @@ import {
 } from "firebase/auth";
 
 import { getFirebaseAuth, isFirebaseConfigured } from "../firebase";
+import { randomId } from "../utils/randomId";
 
 function randomQuickLoginEmail() {
-  return `quick-${crypto.randomUUID()}@motion-quicklogin.local`;
+  return `quick-${randomId()}@motion-quicklogin.local`;
 }
 
 function randomQuickLoginPassword() {

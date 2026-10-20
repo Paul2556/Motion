@@ -32,6 +32,7 @@ import Queue from "../components/Queue"
 import Timer from "../components/Timer"
 import SeatChart from "../components/SeatChart"
 import { getVoteStatusLabel } from "../utils/voteStatus"
+import { local } from "../utils/storage"
 import MotionInput from "../components/MotionInput"
 import SessionBoard from "../components/SessionBoard"
 import { MOTIONS, countries } from "../constants"
@@ -229,13 +230,13 @@ function LandingPage() {
   }
 
   const [menuOpen, setMenuOpen] = useState(false)
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('motion-theme') === 'dark')
-  const [reducedMotion, setReducedMotion] = useState(() => localStorage.getItem('motion-reduced') === 'true')
+  const [darkMode, setDarkMode] = useState(() => local.get('motion-theme') === 'dark')
+  const [reducedMotion, setReducedMotion] = useState(() => local.get('motion-reduced') === 'true')
 
   const toggleTheme = () => {
     setDarkMode((current) => {
       const next = !current
-      localStorage.setItem('motion-theme', next ? 'dark' : 'light')
+      local.set('motion-theme', next ? 'dark' : 'light')
       return next
     })
   }
@@ -243,7 +244,7 @@ function LandingPage() {
   const toggleReducedMotion = () => {
     setReducedMotion((current) => {
       const next = !current
-      localStorage.setItem('motion-reduced', next ? 'true' : 'false')
+      local.set('motion-reduced', next ? 'true' : 'false')
       return next
     })
   }

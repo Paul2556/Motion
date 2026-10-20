@@ -8,6 +8,7 @@ import {
   ChevronsDown,
 } from "lucide-react";
 import Flag from "./Flag";
+import { randomId } from "../utils/randomId";
 
 const MAX_SUGGESTIONS = 6;
 
@@ -65,7 +66,7 @@ const Queue = forwardRef(function Queue({
     setQueue([
       ...queue,
       {
-        id: id ?? crypto.randomUUID(),
+        id: id ?? randomId(),
         country: trimmed,
         countryCode: code,
       },
