@@ -9,15 +9,16 @@ import ConferenceService from "../services/ConferenceService";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 import { generalVoteKey } from "../committeeCaches";
 import { attendanceCounts } from "../utils/attendance";
+import { session } from "../utils/storage";
 
-// Same cache-validity rule as MotionPage.jsx (see isCachedVoteUsable).
+// Same cache-validity rule as MotionPage.jsx (see isCachedVoteUsable): a
+// stale tally starts fresh, but the label the chair typed is kept.
 function loadCachedVote(committeeId, delegateCount, absentCount) {
-  try {
-    const parsed = JSON.parse(sessionStorage.getItem(generalVoteKey(committeeId)));
-    return isCachedVoteUsable(parsed, delegateCount, absentCount) ? parsed : null;
-  } catch {
-    return null;
-  }
+  const saved = session.getJSON(generalVoteKey(committeeId));
+  return {
+    label: typeof saved?.label === "string" ? saved.label : "",
+    groups: isCachedVoteUsable(saved, delegateCount, absentCount) ? saved.groups : null,
+  };
 }
 
 // A standalone vote for chairs who don't want to write a motion first,
@@ -27,20 +28,19 @@ export default function GeneralVotingPage() {
   const committee = ConferenceService.getActiveCommittee();
   const delegateCount = committee?.delegates.length ?? 0;
   const { present: presentCount, absent: absentCount } = attendanceCounts(committee?.delegates ?? []);
-  const cachedVote = committee ? loadCachedVote(committee.id, delegateCount, absentCount) : null;
+  const [cachedVote] = useState(() =>
+    committee ? loadCachedVote(committee.id, delegateCount, absentCount) : { label: "", groups: null }
+  );
 
-  const [label, setLabel] = useState(cachedVote?.label ?? "");
-  const [groups, setGroups] = useState(cachedVote?.groups ?? buildInitialGroups(presentCount, absentCount));
+  const [label, setLabel] = useState(cachedVote.label);
+  const [groups, setGroups] = useState(() => cachedVote.groups ?? buildInitialGroups(presentCount, absentCount));
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [legendOpen, setLegendOpen] = useState(false);
 
   useEffect(() => {
     if (!committee) return;
-    try {
-      sessionStorage.setItem(generalVoteKey(committee.id), JSON.stringify({ label, groups, absentCount }));
-    } catch {
-      // storage unavailable (private browsing, quota) - falls back to in-memory-only
-    }
+    // A failed write (private browsing, quota) just leaves this in memory only.
+    session.setJSON(generalVoteKey(committee.id), { label, groups, absentCount });
   }, [committee, label, groups, absentCount]);
 
   const adjustVotes = useCallback((index, delta) => {

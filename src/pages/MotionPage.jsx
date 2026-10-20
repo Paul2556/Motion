@@ -9,7 +9,7 @@ import SpeakingTimeSelector from "../components/SpeakingTimeSelector";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
 import { formatMotionSummary } from "../utils/motionSummary";
-import { buildInitialGroups, adjustVoteGroups, isCachedVoteUsable, toggleAbstainGroups } from "../utils/voteGroups";
+import { buildInitialGroups, adjustVoteGroups, restoreMotionWork, toggleAbstainGroups } from "../utils/voteGroups";
 import ConferenceService from "../services/ConferenceService";
 import LiveSessionService from "../services/LiveSessionService";
 import { getMotions, canonicalLabel } from "../motionPresets";
@@ -17,22 +17,20 @@ import { getMotionInputMode } from "../motionInputMode";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
 import { motionVoteKey } from "../committeeCaches";
 import { attendanceCounts } from "../utils/attendance";
+import { randomId } from "../utils/randomId";
+import { session } from "../utils/storage";
 
-// sessionStorage so it survives a refresh but not the tab closing. Ignored
-// once the roster or attendance no longer matches (see isCachedVoteUsable).
-function loadCachedVote(committeeId, delegateCount, absentCount) {
-  try {
-    const parsed = JSON.parse(sessionStorage.getItem(motionVoteKey(committeeId)));
-    return isCachedVoteUsable(parsed, delegateCount, absentCount) ? parsed : null;
-  } catch {
-    return null;
-  }
+// sessionStorage so it survives a refresh but not the tab closing. The tally
+// is dropped once attendance no longer matches; the log never is (see
+// restoreMotionWork).
+function loadMotionWork(committeeId, delegateCount, absentCount) {
+  return restoreMotionWork(session.getJSON(motionVoteKey(committeeId)), delegateCount, absentCount);
 }
 
 // Every logged motion gets an id, so selection, voting, and deletion follow
 // the entry itself rather than its position (precedence inserts shift it).
 function withId(entry) {
-  return entry.id ? entry : { ...entry, id: crypto.randomUUID() };
+  return entry.id ? entry : { ...entry, id: randomId() };
 }
 
 // Inserts by precedence, so a Point of Order jumps to the top while same-rank
@@ -52,7 +50,10 @@ export default function MotionPage() {
   const committee = ConferenceService.getActiveCommittee();
   const delegateCount = committee?.delegates.length ?? 0;
   const { present: presentCount, absent: absentCount } = attendanceCounts(committee?.delegates ?? []);
-  const cachedVote = committee ? loadCachedVote(committee.id, delegateCount, absentCount) : null;
+  // Read once per mount rather than re-parsed on every render.
+  const [saved] = useState(() =>
+    committee ? loadMotionWork(committee.id, delegateCount, absentCount) : restoreMotionWork(null, 0, 0)
+  );
 
   // Scope MotionInput's matching to delegations actually in this committee
   // (including non-country ones like press corps), not the full ISO list.
@@ -69,14 +70,14 @@ export default function MotionPage() {
     []
   );
 
-  const [motionText, setMotionText] = useState(cachedVote?.motionText ?? "");
-  const [groups, setGroups] = useState(cachedVote?.groups ?? buildInitialGroups(presentCount, absentCount));
-  const [motionLog, setMotionLog] = useState(() => (cachedVote?.motionLog ?? []).map(withId));
+  const [motionText, setMotionText] = useState(saved.motionText);
+  const [groups, setGroups] = useState(() => saved.groups ?? buildInitialGroups(presentCount, absentCount));
+  const [motionLog, setMotionLog] = useState(() => saved.motionLog.map(withId));
   const [selectedIndex, setSelectedIndex] = useState(0);
   // Hidden until a chair explicitly opens voting on a logged motion - null
   // means hidden, an id means "voting is open for this motion". Saved with
   // the tally, so a refresh mid-vote reopens the panel instead of hiding it.
-  const [votingMotionId, setVotingMotionId] = useState(cachedVote?.votingMotionId ?? null);
+  const [votingMotionId, setVotingMotionId] = useState(saved.votingMotionId);
   const votingMotion = motionLog.find((entry) => entry.id === votingMotionId) ?? null;
 
   // Distinct from the vote-bloc `selectedIndex` above (different concept:
@@ -190,11 +191,8 @@ export default function MotionPage() {
 
   useEffect(() => {
     if (!committee) return;
-    try {
-      sessionStorage.setItem(motionVoteKey(committee.id), JSON.stringify({ motionText, groups, motionLog, absentCount, votingMotionId }));
-    } catch {
-      // storage unavailable (private browsing, quota) - falls back to in-memory-only
-    }
+    // A failed write (private browsing, quota) just leaves this in memory only.
+    session.setJSON(motionVoteKey(committee.id), { motionText, groups, motionLog, absentCount, votingMotionId });
   }, [committee, motionText, groups, motionLog, absentCount, votingMotionId]);
 
   const adjustVotes = useCallback((index, delta) => {

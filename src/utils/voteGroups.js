@@ -46,8 +46,39 @@ export function toggleAbstainGroups(groups) {
 
 // A saved tally is only reused for the same roster and the same attendance:
 // once roll call changes who is absent, the forced abstentions are wrong.
+const isBloc = (group) => Boolean(group) && Number.isInteger(group.seats) && group.seats >= 0;
+
 export function isCachedVoteUsable(cached, delegateCount, absentCount) {
   if (!cached || cached.absentCount !== absentCount) return false;
-  const total = (cached.groups ?? []).reduce((sum, group) => sum + (group.seats ?? 0), 0);
-  return total === delegateCount;
+  const { groups } = cached;
+  if (!Array.isArray(groups) || groups.length < 2 || groups.length > 3 || !groups.every(isBloc)) return false;
+  return groups.reduce((sum, group) => sum + group.seats, 0) === delegateCount;
+}
+
+const isPlainObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const isOptionalText = (value) => value == null || typeof value === "string";
+const isOptionalNumber = (value) => value == null || Number.isFinite(value);
+
+// A logged motion is rendered field by field, so one wrong-typed field would
+// crash the page; such entries are dropped rather than shown.
+function isLoggedMotion(entry) {
+  return (
+    isPlainObject(entry) &&
+    ["motion", "delegation", "topic"].every((field) => isOptionalText(entry[field])) &&
+    ["totalTime", "speakingTime", "secondCount"].every((field) => isOptionalNumber(entry[field]))
+  );
+}
+
+// The motion log and draft belong to the committee, not the tally, so they
+// come back even when attendance has changed and only the tally is stale.
+// `groups` is null whenever the caller should start a fresh tally.
+export function restoreMotionWork(cached, delegateCount, absentCount) {
+  const saved = isPlainObject(cached) ? cached : {};
+  return {
+    motionText: typeof saved.motionText === "string" ? saved.motionText : "",
+    motionLog: Array.isArray(saved.motionLog) ? saved.motionLog.filter(isLoggedMotion) : [],
+    groups: isCachedVoteUsable(saved, delegateCount, absentCount) ? saved.groups : null,
+    votingMotionId: typeof saved.votingMotionId === "string" ? saved.votingMotionId : null,
+  };
 }
