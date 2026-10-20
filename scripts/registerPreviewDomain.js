@@ -27,7 +27,11 @@ async function main() {
   // (verified against firebase-admin 14.1.0) - it's only reachable via the
   // raw Identity Toolkit Admin API.
   const configUrl = `https://identitytoolkit.googleapis.com/admin/v2/projects/${serviceAccount.project_id}/config`;
-  const getRes = await fetch(configUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+  // Timeouts so a hung API call can't stall the whole build until Vercel kills it.
+  const getRes = await fetch(configUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(15_000),
+  });
   if (!getRes.ok) throw new Error(`Fetching Firebase auth config failed: ${getRes.status} ${await getRes.text()}`);
   const current = await getRes.json();
 
@@ -42,6 +46,7 @@ async function main() {
     method: "PATCH",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
     body: JSON.stringify({ authorizedDomains: [...domains] }),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!patchRes.ok) throw new Error(`Updating Firebase auth config failed: ${patchRes.status} ${await patchRes.text()}`);
   console.log(`[registerPreviewDomain] Authorized ${branchDomain}.`);

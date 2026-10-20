@@ -4,6 +4,8 @@ import { postFeedbackNotification } from "./_lib/postFeedbackNotification.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_MESSAGE_LENGTH = 2000;
+// RFC 5321's limit on a full address.
+const MAX_EMAIL_LENGTH = 254;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -23,7 +25,7 @@ export default async function handler(req, res) {
     res.status(400).json({ error: "invalid_message" });
     return;
   }
-  if (email && (typeof email !== "string" || !EMAIL_RE.test(email))) {
+  if (email && (typeof email !== "string" || email.length > MAX_EMAIL_LENGTH || !EMAIL_RE.test(email))) {
     res.status(400).json({ error: "invalid_email" });
     return;
   }
