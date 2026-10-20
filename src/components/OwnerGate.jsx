@@ -7,7 +7,7 @@ import Logo from "./Logo";
 // access. Shown as a sign-in screen rather than a redirect, since there's no
 // other page on this subdomain to send an unauthorized visitor to.
 export default function OwnerGate({ children }) {
-  const { allowed, ready } = usePagePermission("app");
+  const { allowed, ready, failed } = usePagePermission("app");
   const [signInError, setSignInError] = useState(null);
 
   if (!ready) return null;
@@ -49,7 +49,14 @@ export default function OwnerGate({ children }) {
           <p className="mt-3 text-xs text-[var(--danger)]">{signInError}</p>
         )}
 
-        {user && (
+        {user && failed && (
+          <p className="mt-4 text-xs text-[var(--app-text-faint)]">
+            Couldn't check access for {user.email}. Check your connection and{" "}
+            <button onClick={() => window.location.reload()} className="underline">reload</button>.
+          </p>
+        )}
+
+        {user && !failed && (
           <p className="mt-4 text-xs text-[var(--app-text-faint)]">
             Signed in as {user.email}. Not authorized.
           </p>
