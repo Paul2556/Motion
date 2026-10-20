@@ -4,7 +4,8 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist'] },
+  // .claude holds local, gitignored agent tooling (vendored skill scripts), not app code.
+  { ignores: ['dist', '.claude'] },
   {
     files: ['**/*.{js,jsx}'],
     ignores: ['api/**', 'scripts/**'],
