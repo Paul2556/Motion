@@ -65,3 +65,21 @@ describe("restoreSavedSession", () => {
     expect(restoreSavedSession({ queue: "oops" }, ROSTER)).toEqual({ queue: [], history: [] });
   });
 });
+
+describe("restoreSavedSession with damaged entries", () => {
+  it("drops queued speakers that can't be shown", () => {
+    const delegates = [{ id: "a" }, { id: "b" }, { id: "c" }];
+    const saved = {
+      queue: [
+        { id: "a", country: "France", countryCode: "FRA" },
+        { id: "b", country: { broken: true }, countryCode: null },
+        { id: "c", country: "Chile", countryCode: 5 },
+      ],
+      history: [{ id: "a", country: "France", countryCode: null }],
+    };
+    expect(restoreSavedSession(saved, delegates)).toEqual({
+      queue: [{ id: "a", country: "France", countryCode: "FRA" }],
+      history: [{ id: "a", country: "France", countryCode: null }],
+    });
+  });
+});

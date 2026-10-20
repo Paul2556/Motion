@@ -44,9 +44,11 @@ export function initialSpeakersQueue(delegates, { seedQueue, seedProposer } = {}
 
 // A saved speakers' list only keeps delegates still in this committee, so a
 // reloaded workbook (fresh delegate ids) starts clean instead of showing
-// yesterday's queue.
+// yesterday's queue. Entries the queue couldn't render are dropped too.
 export function restoreSavedSession(saved, delegates) {
   const ids = new Set(delegates.map((delegate) => delegate.id));
-  const keep = (list) => (Array.isArray(list) ? list.filter((entry) => ids.has(entry?.id)) : []);
+  const isShowable = (entry) =>
+    ids.has(entry?.id) && typeof entry.country === "string" && (entry.countryCode == null || typeof entry.countryCode === "string");
+  const keep = (list) => (Array.isArray(list) ? list.filter(isShowable) : []);
   return { queue: keep(saved?.queue), history: keep(saved?.history) };
 }

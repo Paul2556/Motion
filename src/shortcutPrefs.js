@@ -1,4 +1,5 @@
 import { findAction } from "./shortcuts";
+import { local } from "./utils/storage";
 
 // Remap overrides, same localStorage-backed get/set shape as appTheme.js -
 // one JSON blob of { [actionId]: "event.code-based key string" }, so a
@@ -6,13 +7,15 @@ import { findAction } from "./shortcuts";
 // action.
 const OVERRIDES_KEY = "app-shortcut-overrides";
 
+// Only string key ids survive, so a corrupt local or server copy reads as
+// "nothing remapped" instead of breaking every shortcut lookup.
+function sanitizeOverrides(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return Object.fromEntries(Object.entries(value).filter(([, key]) => typeof key === "string" && key));
+}
+
 function readOverrides() {
-  try {
-    const raw = localStorage.getItem(OVERRIDES_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+  return sanitizeOverrides(local.getJSON(OVERRIDES_KEY)) ?? {};
 }
 
 // Plain pub/sub so this module has no idea account sync exists, avoiding a
@@ -24,12 +27,9 @@ export function onShortcutsChange(callback) {
   return () => changeListeners.delete(callback);
 }
 
+// A failed write (private browsing, quota) just means the remap won't persist.
 function writeOverrides(overrides) {
-  try {
-    localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides));
-  } catch {
-    // storage unavailable (private browsing, quota) - remap just won't persist
-  }
+  local.setJSON(OVERRIDES_KEY, overrides);
   changeListeners.forEach((callback) => callback(overrides));
 }
 
@@ -40,9 +40,11 @@ export function getAllShortcutOverrides() {
 }
 
 // Wholesale replace, same write path as writeOverrides - used by
-// prefsSync.js to adopt a signed-in user's server copy.
+// prefsSync.js to adopt a signed-in user's server copy. Not an object at
+// all is ignored.
 export function replaceOverrides(overrides) {
-  writeOverrides(overrides);
+  const clean = sanitizeOverrides(overrides);
+  if (clean) writeOverrides(clean);
 }
 
 // Clears every remap at once (vs. clearShortcutOverride's one-at-a-time) -

@@ -94,3 +94,64 @@ describe("ConferenceService statistics", () => {
     expect(ConferenceService.getStatistics().remaining).toBe(rest.length);
   });
 });
+
+describe("ConferenceService restoring after a reload", () => {
+  const KEY = "motion-conference-session";
+
+  beforeEach(() => vi.stubGlobal("sessionStorage", memoryStorage()));
+
+  function reloadWith(raw) {
+    sessionStorage.setItem(KEY, raw);
+    ConferenceService.reset();
+    ConferenceService.restore();
+  }
+
+  it("brings back the conference that was in use", () => {
+    ConferenceService.loadDemoConference(demoConferences[0]);
+    const id = ConferenceService.getActiveCommittee().id;
+
+    ConferenceService.reset();
+    ConferenceService.restore();
+
+    expect(ConferenceService.isLoaded()).toBe(true);
+    expect(ConferenceService.getActiveCommittee().id).toBe(id);
+  });
+
+  // sessionStorage outlives a deploy, so a reload can hand new code an old or broken shape.
+  it("starts empty instead of crashing when the saved conference is unusable", () => {
+    for (const raw of ["null", "[]", '"x"', '{"committees":"x"}', '{"committees":{"A":{"id":"A"}}}', '{"committees":{"A":null}}']) {
+      reloadWith(raw);
+      expect(ConferenceService.isLoaded()).toBe(false);
+      expect(ConferenceService.getActiveCommittee()).toBeNull();
+      expect(ConferenceService.getDelegates()).toEqual([]);
+    }
+  });
+
+  it("restores delegate names as text even if the save holds something else", () => {
+    reloadWith(JSON.stringify({ name: "X", activeCommittee: "A", committees: { A: { id: "A", delegates: [{ id: "d1", country: "france", countryDisplay: { broken: true }, delegate: 7 }] } } }));
+    expect(ConferenceService.getDelegates()[0]).toMatchObject({ id: "d1", country: "france", countryDisplay: "", delegate: "7" });
+  });
+
+  it("falls back to the first committee when the saved active one is gone", () => {
+    reloadWith(JSON.stringify({ name: "X", committees: { A: { id: "A", delegates: [] } }, activeCommittee: "B" }));
+    expect(ConferenceService.getActiveCommittee().id).toBe("A");
+  });
+});
+
+describe("ConferenceService delegate records", () => {
+  it("stores every text field as text, whatever the spreadsheet cell held", () => {
+    const prepared = ConferenceService.prepareConference("X", [
+      {
+        id: "A",
+        title: "A",
+        chairs: [{ name: 7, email: { formula: "A1" } }],
+        pages: [],
+        delegates: [{ country: "france", countryDisplay: "France", name: 42, school: { error: "#REF!" }, email: null }],
+      },
+    ]);
+
+    const [delegate] = prepared.committees.A.delegates;
+    expect(delegate).toMatchObject({ country: "france", countryDisplay: "France", delegate: "42", school: "", email: "" });
+    expect(prepared.committees.A.chairs[0]).toMatchObject({ name: "7", email: "" });
+  });
+});

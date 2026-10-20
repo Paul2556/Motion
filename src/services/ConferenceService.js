@@ -1,11 +1,31 @@
 import AllocationParser from "./AllocationParser";
 import { clearCommitteeCaches } from "../committeeCaches";
 import { isRollCallTaken } from "../utils/attendance";
+import { randomId } from "../utils/randomId";
 
 // sessionStorage (not localStorage) so a refresh or brief network hiccup
 // doesn't lose the loaded conference, but closing the tab still leaves no
 // trace, matching this app's in-memory-only design.
 const STORAGE_KEY = "motion-conference-session";
+
+const isPlainObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+// sessionStorage outlives a deploy, so a reload can hand this code a shape
+// an older (or broken) build wrote. Anything unusable is treated as absent.
+function isRestorableConference(conference) {
+  if (!isPlainObject(conference) || !isPlainObject(conference.committees)) return false;
+  return Object.values(conference.committees).every(
+    (committee) => isPlainObject(committee) && Array.isArray(committee.delegates) && committee.delegates.every(isPlainObject)
+  );
+}
+
+// Spreadsheet cells can hold numbers, dates, or unresolved formula/error
+// objects; records only ever hold text, which every page can render and search.
+function toText(value) {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return "";
+}
 
 class ConferenceService {
   constructor() {
@@ -40,15 +60,42 @@ class ConferenceService {
   }
 
   restore() {
+    let saved = null;
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-
-      this.conference = JSON.parse(raw);
-      this.loaded = true;
+      saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY));
     } catch {
       // corrupted or unavailable - start fresh instead of throwing
     }
+    if (!isRestorableConference(saved)) return;
+
+    const ids = Object.keys(saved.committees);
+    const committees = Object.fromEntries(
+      Object.entries(saved.committees).map(([id, committee]) => [
+        id,
+        { ...committee, delegates: committee.delegates.map((delegate) => this.restoreDelegate(delegate)) },
+      ])
+    );
+    this.conference = {
+      ...saved,
+      committees,
+      name: toText(saved.name),
+      activeCommittee: ids.includes(saved.activeCommittee) ? saved.activeCommittee : (ids[0] ?? null),
+    };
+    this.loaded = true;
+  }
+
+  // Every rendered text field goes back through toText, so one bad value in
+  // an old save can't crash each page that lists delegates.
+  restoreDelegate(delegate) {
+    return {
+      ...delegate,
+      country: toText(delegate.country),
+      countryDisplay: toText(delegate.countryDisplay),
+      delegate: toText(delegate.delegate),
+      school: toText(delegate.school),
+      email: toText(delegate.email),
+      speakingTime: Number.isFinite(delegate.speakingTime) ? delegate.speakingTime : 0,
+    };
   }
 
   async loadConference(file) {
@@ -104,8 +151,8 @@ class ConferenceService {
     return {
       id: sheet.id,
       sheetName: sheet.id,
-      committee: sheet.title || sheet.id,
-      topic: sheet.topic || "",
+      committee: toText(sheet.title) || sheet.id,
+      topic: toText(sheet.topic),
       chairs: sheet.chairs.map((person) => this.toStaffRecord(person)),
       pages: sheet.pages.map((person) => this.toStaffRecord(person)),
       delegates: sheet.delegates.map((person) => this.toDelegateRecord(person)),
@@ -114,26 +161,26 @@ class ConferenceService {
 
   toStaffRecord(person) {
     return {
-      role: person.role ?? "",
-      name: person.name ?? "",
-      email: person.email ?? "",
-      school: person.school ?? "",
+      role: toText(person.role),
+      name: toText(person.name),
+      email: toText(person.email),
+      school: toText(person.school),
     };
   }
 
   toDelegateRecord(person) {
     return {
-      id: crypto.randomUUID(),
+      id: randomId(),
 
-      country: person.country ?? "",
-      countryDisplay: person.countryDisplay ?? person.country ?? "",
+      country: toText(person.country),
+      countryDisplay: toText(person.countryDisplay ?? person.country),
       countryCode: person.countryCode ?? null,
 
-      delegate: person.name ?? "",
+      delegate: toText(person.name),
 
-      school: person.school ?? "",
+      school: toText(person.school),
 
-      email: person.email ?? "",
+      email: toText(person.email),
 
       stance: person.stance ?? null,
 
