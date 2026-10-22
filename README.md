@@ -146,6 +146,14 @@ Currently focused on validating chair workflows and building the first functiona
 
 ---
 
+## License
+
+Motion is licensed under the [Common Public Attribution License 1.0](LICENSE) (CPAL-1.0). Attribution requirements are in Exhibit B of that file.
+
+Earlier versions of Motion were released under the Motion Attribution License v1.3. Its text is kept unchanged in [`licenses/archive`](licenses/archive/MAL-1.3.txt).
+
+---
+
 **Motion**
 
 *From motion to resolution.*

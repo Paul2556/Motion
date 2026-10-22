@@ -14,7 +14,7 @@ export default function MarketingFooter({ children }) {
             rel="noreferrer"
             className="inline-flex items-center gap-2 leading-none text-xs text-white/30 transition-colors hover:text-white/50"
           >
-            Fully open source on GitHub. Licensed under the Motion Attribution License.
+            Fully open source on GitHub. Licensed under the Common Public Attribution License 1.0.
           </a>
         </div>
       </div>
