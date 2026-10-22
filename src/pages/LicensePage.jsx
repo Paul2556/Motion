@@ -73,8 +73,23 @@ export default function LicensePage() {
           </p>
           <p>
             you can use, modify, and deploy Motion, even commercially, as long as your
-            product visibly displays "Powered by Motion" with a link back here. This summary
-            is informational only; the license text below governs.
+            product visibly displays "Powered by Motion" with a link back here, and you
+            make the source of your modifications available under this same license,
+            including when you let others use them over a network. This summary is
+            informational only; the license text below governs.
+          </p>
+          <p className="mt-2 text-xs text-[var(--app-text-muted)]">
+            Motion was previously released under the Motion Attribution License v1.3. The
+            text of that license is{" "}
+            <a
+              href="https://github.com/Paul2556/Motion/blob/main/licenses/archive/MAL-1.3.txt"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2 hover:text-[var(--app-text-secondary)]"
+            >
+              archived on GitHub
+            </a>
+            .
           </p>
         </div>
 

@@ -1,0 +1,251 @@
+Motion Attribution License, Version 1.3 ("MAL")
+
+Copyright (c) 2026 Paul Taechaaukarakul, developer of Motion. All Rights Reserved.
+
+This license is modeled on the structure of the Attribution Assurance License
+and borrows its attribution mechanics from the Common Public Attribution
+License (CPAL) v1.0, but removes CPAL's network-use source-disclosure
+requirement (CPAL Section 15) and its distribution-based source-disclosure
+requirement (CPAL Section 3.2). Modifications may be kept private; only
+attribution is required. This License does not permit redistribution of
+Source Code without the Copyright Holder's written permission.
+
+---
+
+## 1. Definitions
+
+1.1 "Software" means the source code, object code, and documentation of
+Motion, including any portion thereof.
+
+1.2 "Copyright Holder" means Paul Taechaaukarakul and his successors and
+assigns, including any legal entity to which the copyright in the Software
+is later transferred.
+
+1.3 "You" means any individual or legal entity exercising rights under this
+License.
+
+1.4 "Modifications" means any work that is based on, derived from, or
+incorporates the Software or any protectable portion thereof, within the
+meaning of applicable copyright law, subject to the de minimis exception in
+Section 1.9.
+
+1.5 "Source Code" means the preferred form of the Software or of
+Modifications for making modifications to them, including original,
+human-readable source files.
+
+1.6 "Object Form" means any form other than Source Code, including
+compiled, minified, bundled, transpiled, or otherwise transformed output,
+including code delivered to end users' devices in the ordinary operation of
+a web application.
+
+1.7 "Deploy" means to run, host, or otherwise make the Software or
+Modifications available to any third party as a network-accessible service
+(including software-as-a-service), or to distribute copies in Object Form.
+"Deploy" does not include distribution of Source Code.
+
+1.8 "Covered Product" means any product, service, application, or system
+that incorporates or is derived from the Software or Modifications,
+including any product in which the Software operates as a backend, library,
+API, or other non-user-facing component.
+
+1.9 **De minimis exception.** A product is not a Covered Product, and
+Section 4 does not apply to it, if the only material it takes from the
+Software is trivial in quantity and generic in nature (for example, isolated
+snippets, standard idioms, or code that lacks copyright protection under
+applicable law). This exception is to be construed narrowly: use of any
+substantial or distinctive portion of the Software's protectable expression
+brings a product within the definition of Covered Product regardless of the
+proportion of the resulting work that it represents.
+
+---
+
+## 2. Acceptance
+
+Exercising any right granted in Section 3 constitutes acceptance of this
+License and all of its terms. You may not exercise any such right except
+under this License.
+
+---
+
+## 3. Grant of Rights
+
+Subject to the conditions of this License, the Copyright Holder grants You a
+worldwide, royalty-free, non-exclusive license to:
+
+(a) use, reproduce, and privately modify the Software for any purpose,
+    including commercial purposes; and
+
+(b) create Modifications and Deploy the Software or Modifications, including
+    as a hosted or commercial service, without any obligation to disclose,
+    publish, or license back the source code of any Modifications.
+
+There is no copyleft obligation in this License. You may keep Modifications
+entirely private, even while Deploying them publicly.
+
+**Source Code restriction.** This License does not grant You any right to
+distribute, publish, sublicense, or otherwise disclose the Source Code of
+the Software, or the Source Code of any Modification, to any third party.
+Any such distribution requires the prior written permission of the
+Copyright Holder. For the avoidance of doubt, delivering Object Form to end
+users' devices in the ordinary operation of a Covered Product is a
+permitted Deployment, not a distribution of Source Code.
+
+Each recipient of a Covered Product in Object Form automatically receives a
+license directly from the Copyright Holder to use that Covered Product
+under the terms of this License; such rights are not conveyed through a
+chain of sublicenses, and the termination of this License as to any
+intermediate party does not terminate the license of any downstream
+recipient of a Covered Product who remains in compliance. Possession of
+Source Code does not by itself convey any rights under this License: rights
+with respect to Source Code arise only where the Source Code was received
+from the Copyright Holder or with the Copyright Holder's written
+permission.
+
+No trademark rights are granted except as stated in Section 5. No patent
+license is granted under this License.
+
+---
+
+## 4. Attribution Requirement
+
+As a condition of the rights granted in Section 3, any Deployment of a
+Covered Product must comply with all of the following:
+
+4.1 **Display.** If the Covered Product presents any graphical or visual
+user interface to end users, the following Attribution Information must be
+displayed within that interface:
+
+  (a) the copyright notice: "Copyright (c) 2026 Paul Taechaaukarakul,
+      developer of Motion. All Rights Reserved.";
+  (b) the exact phrase "Powered by Motion". A variant phrase may be used
+      only with the prior written approval of the Copyright Holder, and any
+      approved variant must include the word "Motion" and must not exceed
+      ten words; and
+  (c) the Attribution URL: https://motionmun.com/licensing, or any
+      successor URL that the Copyright Holder publicly designates. If the
+      designated URL permanently ceases to be publicly accessible and no
+      successor has been designated, this clause (c) is suspended until a
+      successor URL is designated, and such suspension is not a breach.
+
+4.2 **Prominence floor.** The Attribution Information must be:
+
+  (a) rendered in text no smaller than the smallest font size used for any
+      other legible informational text in the same interface;
+  (b) reachable by an end user without payment, registration, or more than
+      one interaction (e.g., visible directly, or one click/tap away via a
+      clearly labeled link such as "About" or "Credits"); and
+  (c) if displayed on a transient surface such as a splash or loading
+      screen, displayed for no fewer than two (2) seconds, in addition to,
+      not instead of, a persistent placement satisfying (a) and (b).
+
+  The Attribution Information must additionally be no less prominent than
+  any attribution or credit given to any other third party in the same
+  interface. This comparative requirement supplements and does not replace
+  the absolute requirements of (a) through (c).
+
+4.3 **Non-visual Deployments.** If the Covered Product presents no
+graphical or visual user interface to any end user (for example, a headless
+library or command-line tool), Section 4.1 and 4.2 do not apply to that
+Deployment, but the Attribution Information must be included in the Covered
+Product's documentation and retained in all source files of the Software in
+which it appears. For the avoidance of doubt, a Covered Product does not
+qualify as non-visual merely because the Software itself operates as a
+backend or non-user-facing component: if the Covered Product as a whole
+presents a user interface, Sections 4.1 and 4.2 apply to that interface.
+
+4.4 **Attribution graphic.** If the Copyright Holder later supplies an
+attribution graphic, the obligation to display it applies only to versions
+of the Software first obtained after the graphic is included in the
+Software's distribution, and only prospectively.
+
+4.5 **Downstream persistence.** The obligations of this Section 4 bind
+every recipient of the Software or any Covered Product, regardless of how
+many intermediate parties the Software has passed through and regardless of
+whether any intermediate party disclosed the Software's origin. The
+Attribution Information may not be removed, diminished, obscured, or hidden
+by You or by any downstream recipient.
+
+---
+
+## 5. Trademarks
+
+This License does not grant permission to use the name "Motion," any
+associated logos, or the name of the Copyright Holder to endorse or promote
+any Covered Product, or as or within the name of any Covered Product, beyond
+the display required by Section 4.
+
+---
+
+## 6. Disclaimer of Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. THE ENTIRE RISK AS TO
+THE QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH YOU.
+
+---
+
+## 7. Limitation of Liability
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE,
+ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+---
+
+## 8. Termination and Reinstatement
+
+8.1 This License and the rights granted under it terminate automatically if
+You fail to comply with any obligation in Section 4 (Attribution
+Requirement) or Section 5 (Trademarks) and do not cure the breach within
+thirty (30) days after receiving written notice of the breach from the
+Copyright Holder. Written notice is effective when sent to any contact
+address You have published or provided; if You have published or provided
+no contact address, notice is effective when sent by any reasonable means,
+including through any channel by which the Covered Product is offered,
+distributed, or supported.
+
+8.1.1 Notwithstanding Section 8.1, any distribution, publication, or
+disclosure of Source Code in violation of the Source Code restriction in
+Section 3 terminates this License automatically and immediately upon the
+violation, without notice or cure period.
+
+8.2 If You cure the breach within the thirty (30) day period, Your license
+is reinstated as of the date of cure. If the Copyright Holder does not give
+written notice of a given breach within sixty (60) days after first
+obtaining actual knowledge of it, Your license is provisionally reinstated
+with respect to that breach unless and until notice is given.
+
+8.3 Termination of Your license does not terminate the licenses of
+downstream recipients who remain in compliance (Section 3).
+
+8.4 Sections 5, 6, 7, 9, and 10 survive any termination of this License.
+
+---
+
+## 9. Versions of this License
+
+The Copyright Holder may publish revised or new versions of this License,
+each with a distinguishing version number. Once You have received the
+Software under a particular version of this License, You may continue to
+use it under that version indefinitely, or may elect to use it under any
+later version published by the Copyright Holder. No one other than the
+Copyright Holder may publish new versions of this License.
+
+---
+
+## 10. Governing Law; Severability; Entire Agreement
+
+10.1 This License shall be governed by the laws of the Kingdom of Thailand,
+excluding its conflict-of-law provisions. The courts of the Kingdom of
+Thailand shall have non-exclusive jurisdiction over any dispute arising
+under this License.
+
+10.2 If any provision of this License is held unenforceable, that provision
+shall be reformed only to the extent necessary to make it enforceable, and
+the remaining provisions shall remain in full effect.
+
+10.3 This License constitutes the entire agreement between the parties
+concerning the Software, superseding any prior understandings regarding its
+licensing.
