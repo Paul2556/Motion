@@ -1,9 +1,31 @@
 import AllocationParser from "./AllocationParser";
+import { clearCommitteeCaches } from "../committeeCaches";
+import { isRollCallTaken } from "../utils/attendance";
+import { randomId } from "../utils/randomId";
 
 // sessionStorage (not localStorage) so a refresh or brief network hiccup
 // doesn't lose the loaded conference, but closing the tab still leaves no
 // trace, matching this app's in-memory-only design.
 const STORAGE_KEY = "motion-conference-session";
+
+const isPlainObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+// sessionStorage outlives a deploy, so a reload can hand this code a shape
+// an older (or broken) build wrote. Anything unusable is treated as absent.
+function isRestorableConference(conference) {
+  if (!isPlainObject(conference) || !isPlainObject(conference.committees)) return false;
+  return Object.values(conference.committees).every(
+    (committee) => isPlainObject(committee) && Array.isArray(committee.delegates) && committee.delegates.every(isPlainObject)
+  );
+}
+
+// Spreadsheet cells can hold numbers, dates, or unresolved formula/error
+// objects; records only ever hold text, which every page can render and search.
+function toText(value) {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return "";
+}
 
 class ConferenceService {
   constructor() {
@@ -38,42 +60,71 @@ class ConferenceService {
   }
 
   restore() {
+    let saved = null;
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-
-      this.conference = JSON.parse(raw);
-      this.loaded = true;
+      saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY));
     } catch {
       // corrupted or unavailable - start fresh instead of throwing
     }
+    if (!isRestorableConference(saved)) return;
+
+    const ids = Object.keys(saved.committees);
+    const committees = Object.fromEntries(
+      Object.entries(saved.committees).map(([id, committee]) => [
+        id,
+        { ...committee, delegates: committee.delegates.map((delegate) => this.restoreDelegate(delegate)) },
+      ])
+    );
+    this.conference = {
+      ...saved,
+      committees,
+      name: toText(saved.name),
+      activeCommittee: ids.includes(saved.activeCommittee) ? saved.activeCommittee : (ids[0] ?? null),
+    };
+    this.loaded = true;
+  }
+
+  // Every rendered text field goes back through toText, so one bad value in
+  // an old save can't crash each page that lists delegates.
+  restoreDelegate(delegate) {
+    return {
+      ...delegate,
+      country: toText(delegate.country),
+      countryDisplay: toText(delegate.countryDisplay),
+      delegate: toText(delegate.delegate),
+      school: toText(delegate.school),
+      email: toText(delegate.email),
+      speakingTime: Number.isFinite(delegate.speakingTime) ? delegate.speakingTime : 0,
+    };
   }
 
   async loadConference(file) {
-    const parser = new AllocationParser();
-    const parsed = await parser.load(file);
-
-    return this.ingestCommittees(parsed.name, parsed.committees);
+    const conference = await this.parseConference(file);
+    return this.commitConference(conference);
   }
 
   // Bundled sample conferences (src/data/demoConferences.js) are already shaped exactly like
   // AllocationParser's output, so demo.motionmun.com can load one without a file or the parser.
   loadDemoConference(demo) {
-    return this.ingestCommittees(demo.name, demo.committees);
+    return this.commitConference(this.prepareConference(demo.name, demo.committees));
   }
 
-  // Shared by loadConference/loadDemoConference - `sheets` is a list of parsed committees
-  // (AllocationParser's shape: { id, title, topic, chairs, delegates, pages }).
-  ingestCommittees(name, sheets) {
-    this.reset();
+  async parseConference(file) {
+    const parsed = await new AllocationParser().load(file);
+    return this.prepareConference(parsed.name, parsed.committees);
+  }
 
-    this.conference.name = name;
+  // Builds a conference without touching the one in use, so HomePage can
+  // show its committee picker and a Cancel there loses nothing. `sheets` is
+  // AllocationParser's shape: { id, title, topic, chairs, delegates, pages }.
+  prepareConference(name, sheets) {
+    const committees = {};
 
     sheets.forEach((sheet) => {
       try {
         const committee = this.buildCommittee(sheet);
 
-        this.conference.committees[committee.id] = committee;
+        committees[committee.id] = committee;
       } catch (error) {
         console.warn(
           `Skipping sheet "${sheet.id}": ${error.message}`
@@ -81,15 +132,13 @@ class ConferenceService {
       }
     });
 
-    const committees =
-      Object.keys(this.conference.committees);
+    return { name, date: "", committees, activeCommittee: Object.keys(committees)[0] ?? null };
+  }
 
-    if (committees.length) {
-      this.conference.activeCommittee =
-        committees[0];
-    }
-
+  commitConference(conference, activeCommittee = conference.activeCommittee) {
+    this.conference = { ...conference, activeCommittee };
     this.loaded = true;
+    clearCommitteeCaches();
     this.persist();
 
     return this.conference;
@@ -102,8 +151,8 @@ class ConferenceService {
     return {
       id: sheet.id,
       sheetName: sheet.id,
-      committee: sheet.title || sheet.id,
-      topic: sheet.topic || "",
+      committee: toText(sheet.title) || sheet.id,
+      topic: toText(sheet.topic),
       chairs: sheet.chairs.map((person) => this.toStaffRecord(person)),
       pages: sheet.pages.map((person) => this.toStaffRecord(person)),
       delegates: sheet.delegates.map((person) => this.toDelegateRecord(person)),
@@ -112,26 +161,26 @@ class ConferenceService {
 
   toStaffRecord(person) {
     return {
-      role: person.role ?? "",
-      name: person.name ?? "",
-      email: person.email ?? "",
-      school: person.school ?? "",
+      role: toText(person.role),
+      name: toText(person.name),
+      email: toText(person.email),
+      school: toText(person.school),
     };
   }
 
   toDelegateRecord(person) {
     return {
-      id: crypto.randomUUID(),
+      id: randomId(),
 
-      country: person.country ?? "",
-      countryDisplay: person.countryDisplay ?? person.country ?? "",
+      country: toText(person.country),
+      countryDisplay: toText(person.countryDisplay ?? person.country),
       countryCode: person.countryCode ?? null,
 
-      delegate: person.name ?? "",
+      delegate: toText(person.name),
 
-      school: person.school ?? "",
+      school: toText(person.school),
 
-      email: person.email ?? "",
+      email: toText(person.email),
 
       stance: person.stance ?? null,
 
@@ -332,10 +381,12 @@ class ConferenceService {
   // Speaking
   // ============================================================
 
+  // Next on a timer that never ran (under a second) skips the delegate
+  // rather than counting a 0-second speech.
   markSpoken(id, seconds = 0) {
     const delegate = this.getDelegate(id);
 
-    if (!delegate) return false;
+    if (!delegate || !(seconds >= 1)) return false;
 
     delegate.hasSpoken = true;
     delegate.speakingTime += seconds;
@@ -372,6 +423,7 @@ class ConferenceService {
 
   getStatistics() {
     const delegates = this.getDelegates();
+    const rollCallTaken = isRollCallTaken(delegates);
 
     return {
       delegates: delegates.length,
@@ -389,7 +441,7 @@ class ConferenceService {
       ).length,
 
       remaining: delegates.filter(
-        (delegate) => !delegate.hasSpoken
+        (delegate) => !delegate.hasSpoken && (!rollCallTaken || delegate.present)
       ).length,
 
       totalSpeakingTime: delegates.reduce(

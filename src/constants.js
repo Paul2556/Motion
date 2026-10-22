@@ -3,25 +3,26 @@
 // Robert's-Rules convention and is reorderable per-conference from Settings.
 export const MOTIONS = [
   { text: "Appeal the Decision of the Chair", alias: ["Appeal the Chair", "Appeal the Decision"] },
-  { text: "Adjourn the Meeting", alias: ["Adjourn Meeting"] },
+  { text: "Adjourn the Meeting", alias: ["Adjourn Meeting", "Adjourn"] },
   { text: "Suspend Debate" },
   { text: "Suspend the Meeting", alias: ["Suspend Meeting"] },
+  { text: "Adjourn the Debate", alias: ["Adjourn Debate"] },
   { text: "Motion to Divide the House", alias: ["Divide the House"] },
   { text: "Motion for Closure of Debate", alias: ["Closure of Debate", "Close Debate"] },
   { text: "Move into Voting Procedure", alias: ["Move to Voting Procedure", "Voting Procedure"] },
   { text: "Motion to Change the Agenda", alias: ["Change the Agenda"] },
   { text: "Tabling for Incompetence", alias: ["Table for Incompetence"] },
-  { text: "Extend the Speaking Time", alias: ["Extend Speaking Time"], explicit: true, durationField: "speaking" },
-  { text: "Extend the Moderated Caucus", alias: ["Extend the Mod Caucus", "Extend Mod"], durationField: "total" },
-  { text: "Motion to Extend the Speaker's List", alias: ["Extend the Speaker's List", "Extend Speakers List"] },
+  { text: "Extend the Speaking Time", alias: ["Extend Speaking Time"], durationField: "speaking" },
+  { text: "Extend the Moderated Caucus", alias: ["Extend the Mod Caucus", "Extend Mod", "Extend the Mod"], durationField: "total" },
+  { text: "Motion to Extend the Speaker's List", alias: ["Extend the Speaker's List", "Extend Speakers List", "Extend the GSL", "Extend GSL"] },
   { text: "Open a Moderated Caucus", alias: ["Moderated Caucus", "Mod Caucus", "Mod", "Moderated"], topic: true },
   { text: "Open an Unmoderated Caucus", alias: ["Unmoderated Caucus", "Unmod Caucus", "Unmod", "Unmoderated"], durationField: "total" },
-  { text: "Open the General Speaker's List", alias: ["Open the GSL", "Open Speaker's List"] },
-  { text: "Close the General Speaker's List", alias: ["Close the GSL", "Close Speaker's List"] },
+  { text: "Open the General Speaker's List", alias: ["Open the GSL", "Open Speaker's List", "Open the Speaker's List", "Open GSL"], durationField: "speaking" },
+  { text: "Close the General Speaker's List", alias: ["Close the GSL", "Close Speaker's List", "Close the Speaker's List", "Close GSL"] },
   { text: "Introduce a Draft Resolution", alias: ["Introduce Draft Resolution", "Introduce a Draft Res"] },
   { text: "Introduce an Amendment", alias: ["Introduce Amendment"] },
   { text: "Motion to Divide the Question", alias: ["Divide the Question"] },
-  { text: "Right to Reply" },
+  { text: "Right to Reply", alias: ["Right to Reply", "Right of Reply"] },
   { text: "Explanation of the Vote", alias: ["Explanation of Vote", "Explain the Vote"] },
 ];
 
@@ -391,10 +392,9 @@ export const TOPIC_WORDS = new Set([
   "THEME",
 ]);
 
-// Used by MotionInput's duration-phrase detection (a motion followed by
-// "for <number> minute(s)", e.g. "Moderated Caucus for 10 minutes") to spot
-// the connective linking the motion to its duration, and the unit following
-// the number - not header/row classification vocab like the sets above.
+// Floor-language vocab for the motion parser (src/utils/motionParser.js), not
+// header/row classification vocab like the sets above. A connective is the
+// word linking a duration to the sentence ("for 10 minutes").
 export const CONNECTIVE_WORDS = new Set([
   "FOR",
   "WITH",
@@ -415,17 +415,55 @@ export const SECOND_WORDS = new Set([
   "SECS"
 ]);
 
+export const HOUR_WORDS = new Set([
+  "HOUR",
+  "HOURS",
+  "HR",
+  "HRS"
+]);
+
+// Spelled-out amounts, only ever read as a number when a time unit follows
+// ("one minute"), so "the one China policy" stays plain topic text.
+export const NUMBER_WORDS = new Map([
+  ["A", 1], ["AN", 1], ["HALF", 0.5],
+  ["ONE", 1], ["TWO", 2], ["THREE", 3], ["FOUR", 4], ["FIVE", 5], ["SIX", 6], ["SEVEN", 7],
+  ["EIGHT", 8], ["NINE", 9], ["TEN", 10], ["ELEVEN", 11], ["TWELVE", 12], ["THIRTEEN", 13],
+  ["FOURTEEN", 14], ["FIFTEEN", 15], ["SIXTEEN", 16], ["SEVENTEEN", 17], ["EIGHTEEN", 18],
+  ["NINETEEN", 19], ["TWENTY", 20], ["THIRTY", 30], ["FORTY", 40], ["FIFTY", 50],
+  ["SIXTY", 60], ["SEVENTY", 70], ["EIGHTY", 80], ["NINETY", 90],
+]);
+
+// A word right after a duration that marks it as per-speaker ("1 minute
+// each") or as the whole caucus ("10 minutes total").
+export const SPEAKING_LABEL_WORDS = new Set(["SPEAKING", "SPEAKER", "SPEAKERS", "SPEAKER'S", "SPEAKERS'", "SPEECH", "EACH", "APIECE"]);
+export const TOTAL_LABEL_WORDS = new Set(["TOTAL", "OVERALL"]);
+
+// What can follow "per" in "1 minute per speaker".
+export const SPEAKER_NOUNS = new Set(["SPEAKER", "SPEECH", "DELEGATE", "DELEGATION", "PERSON", "COUNTRY", "STATE", "MEMBER"]);
+
+// "raised by Japan": names who moved the motion, so it ends the topic.
+export const MOVER_VERBS = new Set(["RAISED", "PROPOSED", "MOVED", "MOTIONED", "SUBMITTED", "SUGGESTED", "INTRODUCED", "SPONSORED", "REQUESTED"]);
+
 // The whole phrase that introduces a motion's subject, matched word-for-word.
 // Distinct from TOPIC_WORDS above, which is spreadsheet header vocab rather
 // than floor language.
 export const TOPIC_MARKER_PHRASE = [
+  "FOR THE PURPOSE OF DISCUSSING",
+  "TOPIC BEING",
+  "TOPIC IS",
   "ON THE TOPIC OF",
+  "ON THE TOPIC",
   "DISCUSSING",
   "FOR THE PURPOSE OF",
   "TOPIC OF",
   "PURPOSE OF",
   "TOPIC",
   "TOPIC WERE TO BE ABOUT",
+  "TO DISCUSS",
+  "REGARDING",
+  "CONCERNING",
+  "ABOUT",
+  "ON",
 ];
 
 // Maps a committee's freeform title to an icon basename. Order matters:

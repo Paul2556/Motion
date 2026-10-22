@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 
 // Reading import.meta.env.VITE_* is always safe (undefined if unset, e.g. in
 // CI which never injects these) - only *using* an incomplete config throws,
@@ -43,7 +43,16 @@ export function getFirebaseAuth() {
   return authInstance;
 }
 
+// Skips `undefined` fields rather than throwing on the whole write, so one
+// missing optional value can't drop a live-session update. initializeFirestore
+// throws if a hot reload already initialized it, hence the fallback.
 export function getFirebaseDb() {
-  if (!dbInstance) dbInstance = getFirestore(getApp());
+  if (!dbInstance) {
+    try {
+      dbInstance = initializeFirestore(getApp(), { ignoreUndefinedProperties: true });
+    } catch {
+      dbInstance = getFirestore(getApp());
+    }
+  }
   return dbInstance;
 }

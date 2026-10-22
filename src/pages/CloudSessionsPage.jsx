@@ -58,9 +58,18 @@ export default function CloudSessionsPage() {
     CloudSessionService.listMySessions(user.uid).then(setSessions).catch((err) => setError(err.message));
   }, [user]);
 
+  // Cleared on every switch and guarded against late replies, so a slow
+  // fetch for the previous session can't show (or be edited as) this one's.
   useEffect(() => {
-    if (!activeSessionId) return;
-    CloudSessionService.listAttendance(activeSessionId).then(setAttendance).catch((err) => setError(err.message));
+    setAttendance({});
+    if (!activeSessionId) return undefined;
+    let cancelled = false;
+    CloudSessionService.listAttendance(activeSessionId)
+      .then((next) => !cancelled && setAttendance(next))
+      .catch((err) => !cancelled && setError(err.message));
+    return () => {
+      cancelled = true;
+    };
   }, [activeSessionId]);
 
   async function handleGoogleSignIn() {
@@ -129,6 +138,10 @@ export default function CloudSessionsPage() {
     try {
       setError(null);
       await CloudSessionService.deleteSession(pendingDeleteSessionId);
+      if (liveSessionId === pendingDeleteSessionId) {
+        LiveSessionService.setActiveSessionId(null);
+        setLiveSessionId(null);
+      }
       if (activeSessionId === pendingDeleteSessionId) {
         setActiveSessionId(null);
         setAttendance({});
@@ -382,7 +395,7 @@ export default function CloudSessionsPage() {
                     const key = stableDelegateKey(delegate.country);
                     const status = attendance[key] ?? "absent";
                     return (
-                      <button key={key} onClick={() => handleCycleAttendance(key)} className={ROW}>
+                      <button key={delegate.id} onClick={() => handleCycleAttendance(key)} className={ROW}>
                         <span className="font-medium">{delegate.countryDisplay || delegate.country}</span>
                         <span className="shrink-0 whitespace-nowrap pl-4 text-xs uppercase tracking-[0.16em] text-[var(--app-text-muted)]">
                           {status.replace(/_/g, " ")}

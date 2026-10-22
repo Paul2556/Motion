@@ -47,13 +47,17 @@ function DelegateTimerDisplay({ timer }) {
 export default function DelegateSessionPage() {
   const { sessionId } = useParams();
   const [state, setState] = useState(null);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => LiveSessionService.subscribe(sessionId, setState), [sessionId]);
+  useEffect(() => {
+    setFailed(false);
+    return LiveSessionService.subscribe(sessionId, setState, () => setFailed(true));
+  }, [sessionId]);
 
   if (!state) {
     return (
       <div className="app-shell flex min-h-screen items-center justify-center bg-[var(--app-bg)] p-6 text-center text-[var(--app-text-muted)]">
-        Waiting for the chair to go live&hellip;
+        {failed ? "Couldn't reach this session. Check the link and reload." : <>Waiting for the chair to go live&hellip;</>}
       </div>
     );
   }

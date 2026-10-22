@@ -1,6 +1,4 @@
-import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
-import Logo from "../components/Logo";
+import AppTopBar from "../components/AppTopBar";
 import Flag from "../components/Flag";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ConferenceService from "../services/ConferenceService";
@@ -35,23 +33,9 @@ export default function StatsPage() {
   const hasAnySpeeches = maxSpeakingTime > 0;
 
   return (
-    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
-      <div className="mx-auto max-w-3xl">
-        <header className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/home" className="flex items-center gap-3">
-              <Logo compact light />
-            </Link>
-            <span className="text-xs uppercase tracking-[0.18em] text-[var(--app-text-muted)]">Stats</span>
-          </div>
-
-          <Link
-            to="/home"
-            className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--app-text-secondary)] transition hover:bg-[var(--app-chip-active)]"
-          >
-            <ArrowLeft size={14} /> Back
-          </Link>
-        </header>
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
+      <AppTopBar committeeLabel={committee?.committee ?? committee?.id} />
+      <div className="mx-auto max-w-3xl p-8">
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatCard label="Delegates" value={stats.delegates} />

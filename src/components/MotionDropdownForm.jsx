@@ -1,12 +1,6 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { getMotions, canonicalLabel } from "../motionPresets";
-
-function toMinutes(amount, unit) {
-  if (amount === "") return null;
-  const value = Number(amount);
-  if (Number.isNaN(value)) return null;
-  return unit === "sec" ? value / 60 : value;
-}
+import { durationToMinutes } from "../utils/duration";
 
 function DurationField({ label, amount, unit, onAmount, onUnit }) {
   return (
@@ -60,6 +54,11 @@ const MotionDropdownForm = forwardRef(function MotionDropdownForm({ delegations,
   const showsTopicGroup = selectedMotion?.topic === true;
   const showsTotal = showsTopicGroup || selectedMotion?.durationField === "total";
   const showsSpeaking = showsTopicGroup || selectedMotion?.durationField === "speaking";
+  const totalTime = showsTotal ? durationToMinutes(totalAmount, totalUnit) : null;
+  const speakingTime = showsSpeaking ? durationToMinutes(speakingAmount, speakingUnit) : null;
+  // Same rule MotionInput enforces on typed motions.
+  const speakingTooLong = totalTime != null && speakingTime != null && speakingTime > totalTime;
+  const canSubmit = Boolean(selectedMotion) && !(showsTopicGroup && !topic.trim()) && !speakingTooLong;
 
   function reset() {
     setMotionId("");
@@ -73,13 +72,13 @@ const MotionDropdownForm = forwardRef(function MotionDropdownForm({ delegations,
 
   function handleSubmit(event) {
     event.preventDefault();
-    if (!selectedMotion || (showsTopicGroup && !topic.trim())) return;
+    if (!canSubmit) return;
 
     onSubmit({
       motion: canonicalLabel(selectedMotion),
       delegation: delegationName || null,
-      totalTime: showsTotal ? toMinutes(totalAmount, totalUnit) : null,
-      speakingTime: showsSpeaking ? toMinutes(speakingAmount, speakingUnit) : null,
+      totalTime,
+      speakingTime,
       topic: showsTopicGroup ? topic.trim() : null,
     });
     reset();
@@ -156,9 +155,13 @@ const MotionDropdownForm = forwardRef(function MotionDropdownForm({ delegations,
           />
         )}
 
+        {speakingTooLong && (
+          <p className="text-sm text-[var(--app-text-muted)]">Speaking time can't be longer than the caucus.</p>
+        )}
+
         <button
           type="submit"
-          disabled={!motionId || (showsTopicGroup && !topic.trim())}
+          disabled={!canSubmit}
           className="w-full border border-[var(--app-border)] bg-[var(--app-chip)] px-4 py-3 text-sm font-medium uppercase tracking-[0.14em] transition hover:border-[var(--app-border-hover)] hover:bg-[var(--app-chip-active)] disabled:cursor-not-allowed disabled:opacity-40"
         >
           Add motion

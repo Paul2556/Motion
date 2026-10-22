@@ -52,6 +52,22 @@ function lookupCountry(raw) {
   return { name, display: cleaned, code: match ? match.code : null };
 }
 
+// Resolves an ExcelJS cell value to plain text or a number. Rich text,
+// hyperlinks, and formulas carry their text inside an object; errors and
+// formulas with no cached result read as empty rather than "[object Object]".
+export function cellValue(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number") return value;
+  if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+  if (typeof value !== "object") return null;
+  if (Array.isArray(value.richText)) return value.richText.map((run) => run?.text ?? "").join("").trim();
+  if ("text" in value) return cellValue(value.text);
+  if ("result" in value) return cellValue(value.result);
+  return null;
+}
+
 export default class AllocationParser {
   // `file` is a browser File object (e.g. from an <input type="file">
   // onChange event), matching ConferenceService.loadConference()'s signature.
@@ -237,17 +253,7 @@ export default class AllocationParser {
       for (let c=1;c<=row.cellCount;c++) {
         const cell = row.getCell(c);
 
-        let v = cell.master !== cell ? cell.master.value : cell.value;
-
-        if (v && typeof v === "object") {
-          if (v.text) v = v.text;
-          else if (v.richText) v = v.richText.map(x=>x.text).join("");
-          else if ("result" in v) v = v.result;
-        }
-
-        if (typeof v === "string") v = v.trim();
-
-        out.push(v ?? null);
+        out.push(cellValue(cell.master !== cell ? cell.master.value : cell.value));
       }
 
       while (out.length && (out[out.length-1]===null || out[out.length-1]===""))
