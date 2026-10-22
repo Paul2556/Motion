@@ -16,14 +16,25 @@ export async function fetchMyPermissions(user) {
   return snap.exists() ? { ...DEFAULT_PERMISSIONS, ...snap.data() } : DEFAULT_PERMISSIONS;
 }
 
-// `ready` flips true only once both auth state and the permission fetch have
-// resolved, so a page never briefly renders as unauthorized before its real
+// Always settles: a failed lookup (offline, Firestore error) denies access
+// but is flagged, so a gate can say so instead of waiting forever.
+export async function checkPermission(user, key) {
+  try {
+    const permissions = await fetchMyPermissions(user);
+    return { allowed: Boolean(permissions[key]), failed: false };
+  } catch (error) {
+    console.warn("Couldn't check access:", error);
+    return { allowed: false, failed: true };
+  }
+}
+
+// `ready` flips true only once both auth state and the permission check have
+// settled, so a page never briefly renders as unauthorized before its real
 // permission is known.
 export function usePagePermission(key) {
   const [user, setUser] = useState(() => AuthService.getCurrentUser());
   const [authReady, setAuthReady] = useState(() => AuthService.isReady());
-  const [allowed, setAllowed] = useState(false);
-  const [checked, setChecked] = useState(false);
+  const [result, setResult] = useState(null);
 
   useEffect(() => AuthService.subscribe((nextUser) => {
     setUser(nextUser);
@@ -33,19 +44,14 @@ export function usePagePermission(key) {
   useEffect(() => {
     if (!authReady) return;
 
-    // fetchMyPermissions resolves all-false for a null user, keeping one code
-    // path for signed-out and signed-in, with setState only ever inside the
-    // .then() rather than synchronously in the effect body.
     let cancelled = false;
-    fetchMyPermissions(user).then((permissions) => {
-      if (cancelled) return;
-      setAllowed(Boolean(permissions[key]));
-      setChecked(true);
+    checkPermission(user, key).then((next) => {
+      if (!cancelled) setResult(next);
     });
     return () => {
       cancelled = true;
     };
   }, [authReady, user, key]);
 
-  return { allowed, ready: authReady && checked };
+  return { allowed: result?.allowed ?? false, failed: result?.failed ?? false, ready: authReady && result !== null };
 }

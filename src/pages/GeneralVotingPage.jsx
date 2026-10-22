@@ -4,26 +4,21 @@ import AppTopBar from "../components/AppTopBar";
 import VotingPanel from "../components/VotingPanel";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
-import { buildInitialGroups, adjustVoteGroups, toggleAbstainGroups } from "../utils/voteGroups";
+import { buildInitialGroups, adjustVoteGroups, isCachedVoteUsable, toggleAbstainGroups } from "../utils/voteGroups";
 import ConferenceService from "../services/ConferenceService";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
+import { generalVoteKey } from "../committeeCaches";
+import { attendanceCounts } from "../utils/attendance";
+import { session } from "../utils/storage";
 
-function voteStorageKey(committeeId) {
-  return `general-vote-${committeeId}`;
-}
-
-// Same cache-validity reasoning as MotionPage.jsx's loadCachedVote - ignores
-// a cache whose total no longer matches the roster.
-function loadCachedVote(committeeId, delegateCount) {
-  try {
-    const raw = sessionStorage.getItem(voteStorageKey(committeeId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const total = (parsed.groups ?? []).reduce((sum, group) => sum + (group.seats ?? 0), 0);
-    return total === delegateCount ? parsed : null;
-  } catch {
-    return null;
-  }
+// Same cache-validity rule as MotionPage.jsx (see isCachedVoteUsable): a
+// stale tally starts fresh, but the label the chair typed is kept.
+function loadCachedVote(committeeId, delegateCount, absentCount) {
+  const saved = session.getJSON(generalVoteKey(committeeId));
+  return {
+    label: typeof saved?.label === "string" ? saved.label : "",
+    groups: isCachedVoteUsable(saved, delegateCount, absentCount) ? saved.groups : null,
+  };
 }
 
 // A standalone vote for chairs who don't want to write a motion first,
@@ -32,29 +27,29 @@ function loadCachedVote(committeeId, delegateCount) {
 export default function GeneralVotingPage() {
   const committee = ConferenceService.getActiveCommittee();
   const delegateCount = committee?.delegates.length ?? 0;
-  const presentCount = committee?.delegates.filter((d) => d.present).length ?? 0;
-  const absentCount = delegateCount - presentCount;
-  const cachedVote = committee ? loadCachedVote(committee.id, delegateCount) : null;
+  const { present: presentCount, absent: absentCount } = attendanceCounts(committee?.delegates ?? []);
+  const [cachedVote] = useState(() =>
+    committee ? loadCachedVote(committee.id, delegateCount, absentCount) : { label: "", groups: null }
+  );
 
-  const [label, setLabel] = useState(cachedVote?.label ?? "");
-  const [groups, setGroups] = useState(cachedVote?.groups ?? buildInitialGroups(presentCount, absentCount));
+  const [label, setLabel] = useState(cachedVote.label);
+  const [groups, setGroups] = useState(() => cachedVote.groups ?? buildInitialGroups(presentCount, absentCount));
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [legendOpen, setLegendOpen] = useState(false);
 
   useEffect(() => {
     if (!committee) return;
-    try {
-      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ label, groups }));
-    } catch {
-      // storage unavailable (private browsing, quota) - falls back to in-memory-only
-    }
-  }, [committee, label, groups]);
+    // A failed write (private browsing, quota) just leaves this in memory only.
+    session.setJSON(generalVoteKey(committee.id), { label, groups, absentCount });
+  }, [committee, label, groups, absentCount]);
 
   const adjustVotes = useCallback((index, delta) => {
     setGroups((prev) => adjustVoteGroups(prev, index, delta));
   }, []);
 
   const allowAbstain = groups.length > 2;
+  // Abstain can disappear (toggle off, reset) while it's selected.
+  const activeIndex = selectedIndex < groups.length ? selectedIndex : 0;
 
   function toggleAbstain() {
     if (absentCount > 0) return;
@@ -74,8 +69,8 @@ export default function GeneralVotingPage() {
         "voting.selectFor": () => setSelectedIndex(0),
         "voting.selectAgainst": () => setSelectedIndex(1),
         "voting.selectAbstain": () => allowAbstain && setSelectedIndex(2),
-        "voting.increment": () => adjustVotes(selectedIndex, 1),
-        "voting.decrement": () => adjustVotes(selectedIndex, -1),
+        "voting.increment": () => adjustVotes(activeIndex, 1),
+        "voting.decrement": () => adjustVotes(activeIndex, -1),
       },
     }
   );
@@ -83,12 +78,12 @@ export default function GeneralVotingPage() {
   if (!committee) return <NoCommitteeModal />;
 
   return (
-    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
-      <div className="mx-auto max-w-2xl">
-        <AppTopBar
-          committeeLabel={committee?.committee ?? committee?.id}
-          onShowShortcuts={() => setLegendOpen(true)}
-        />
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
+      <AppTopBar
+        committeeLabel={committee?.committee ?? committee?.id}
+        onShowShortcuts={() => setLegendOpen(true)}
+      />
+      <div className="mx-auto max-w-2xl p-8">
 
         <div className="border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
           <p className="text-[11px] uppercase tracking-[0.26em] text-[var(--app-text-muted)]">What's being voted on?</p>
@@ -112,7 +107,7 @@ export default function GeneralVotingPage() {
           <VotingPanel
             subtitle={label}
             groups={groups}
-            selectedIndex={selectedIndex}
+            selectedIndex={activeIndex}
             onSelect={setSelectedIndex}
             onIncrement={(index) => adjustVotes(index, 1)}
             onDecrement={(index) => adjustVotes(index, -1)}

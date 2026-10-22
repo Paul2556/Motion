@@ -28,14 +28,21 @@ class LiveSessionService {
 
   // merge:true so currentSpeaker/queue, timer, and activeMotionLabel can each
   // be published independently without one caller clobbering another's last
-  // write.
+  // write. Best-effort: callers fire and forget, so a failure (signed out,
+  // session deleted, offline rules check) resolves false rather than rejecting.
   async publish(sessionId, patch) {
-    const db = getFirebaseDb();
-    await setDoc(
-      doc(db, "sessions", sessionId, "live", "state"),
-      { ...patch, updatedAt: serverTimestamp() },
-      { merge: true }
-    );
+    try {
+      const db = getFirebaseDb();
+      await setDoc(
+        doc(db, "sessions", sessionId, "live", "state"),
+        { ...patch, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
+      return true;
+    } catch (error) {
+      console.warn("Couldn't update the delegate view:", error);
+      return false;
+    }
   }
 
   // Timer.jsx's onAnchorChange hands over its own Date.now()-based `time` -
@@ -48,11 +55,18 @@ class LiveSessionService {
   }
 
   // First onSnapshot usage in the app - returns Firestore's own unsubscribe.
-  subscribe(sessionId, callback) {
+  // The error handler keeps a terminal listener error (e.g. a bad session id)
+  // from surfacing as an uncaught exception; Firestore retries network drops itself.
+  subscribe(sessionId, callback, onError = () => {}) {
     const db = getFirebaseDb();
-    return onSnapshot(doc(db, "sessions", sessionId, "live", "state"), (snap) => {
-      callback(snap.exists() ? snap.data() : null);
-    });
+    return onSnapshot(
+      doc(db, "sessions", sessionId, "live", "state"),
+      (snap) => callback(snap.exists() ? snap.data() : null),
+      (error) => {
+        console.warn("Lost the live session feed:", error);
+        onError(error);
+      }
+    );
   }
 }
 

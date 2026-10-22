@@ -9,30 +9,28 @@ import SpeakingTimeSelector from "../components/SpeakingTimeSelector";
 import NoCommitteeModal from "../components/NoCommitteeModal";
 import ShortcutLegend from "../components/ShortcutLegend";
 import { formatMotionSummary } from "../utils/motionSummary";
-import { buildInitialGroups, adjustVoteGroups, toggleAbstainGroups } from "../utils/voteGroups";
+import { buildInitialGroups, adjustVoteGroups, restoreMotionWork, toggleAbstainGroups } from "../utils/voteGroups";
 import ConferenceService from "../services/ConferenceService";
 import LiveSessionService from "../services/LiveSessionService";
 import { getMotions, canonicalLabel } from "../motionPresets";
 import { getMotionInputMode } from "../motionInputMode";
 import { useDaisShortcuts } from "../hooks/useDaisShortcuts";
+import { motionVoteKey } from "../committeeCaches";
+import { attendanceCounts } from "../utils/attendance";
+import { randomId } from "../utils/randomId";
+import { session } from "../utils/storage";
 
-function voteStorageKey(committeeId) {
-  return `motion-vote-${committeeId}`;
+// sessionStorage so it survives a refresh but not the tab closing. The tally
+// is dropped once attendance no longer matches; the log never is (see
+// restoreMotionWork).
+function loadMotionWork(committeeId, delegateCount, absentCount) {
+  return restoreMotionWork(session.getJSON(motionVoteKey(committeeId)), delegateCount, absentCount);
 }
 
-// sessionStorage so it survives a refresh but not the tab closing. Ignores a
-// cache whose seat count no longer matches the roster, and sums every group
-// present rather than hardcoding indices, since the count varies.
-function loadCachedVote(committeeId, delegateCount) {
-  try {
-    const raw = sessionStorage.getItem(voteStorageKey(committeeId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const total = (parsed.groups ?? []).reduce((sum, group) => sum + (group.seats ?? 0), 0);
-    return total === delegateCount ? parsed : null;
-  } catch {
-    return null;
-  }
+// Every logged motion gets an id, so selection, voting, and deletion follow
+// the entry itself rather than its position (precedence inserts shift it).
+function withId(entry) {
+  return entry.id ? entry : { ...entry, id: randomId() };
 }
 
 // Inserts by precedence, so a Point of Order jumps to the top while same-rank
@@ -51,9 +49,11 @@ export default function MotionPage() {
   const navigate = useNavigate();
   const committee = ConferenceService.getActiveCommittee();
   const delegateCount = committee?.delegates.length ?? 0;
-  const presentCount = committee?.delegates.filter((d) => d.present).length ?? 0;
-  const absentCount = delegateCount - presentCount;
-  const cachedVote = committee ? loadCachedVote(committee.id, delegateCount) : null;
+  const { present: presentCount, absent: absentCount } = attendanceCounts(committee?.delegates ?? []);
+  // Read once per mount rather than re-parsed on every render.
+  const [saved] = useState(() =>
+    committee ? loadMotionWork(committee.id, delegateCount, absentCount) : restoreMotionWork(null, 0, 0)
+  );
 
   // Scope MotionInput's matching to delegations actually in this committee
   // (including non-country ones like press corps), not the full ISO list.
@@ -70,25 +70,35 @@ export default function MotionPage() {
     []
   );
 
-  const [motionText, setMotionText] = useState(cachedVote?.motionText ?? "");
-  const [groups, setGroups] = useState(cachedVote?.groups ?? buildInitialGroups(presentCount, absentCount));
-  const [motionLog, setMotionLog] = useState(cachedVote?.motionLog ?? []);
+  const [motionText, setMotionText] = useState(saved.motionText);
+  const [groups, setGroups] = useState(() => saved.groups ?? buildInitialGroups(presentCount, absentCount));
+  const [motionLog, setMotionLog] = useState(() => saved.motionLog.map(withId));
   const [selectedIndex, setSelectedIndex] = useState(0);
   // Hidden until a chair explicitly opens voting on a logged motion - null
-  // means hidden, an entry means "voting is open for this motion".
-  const [votingMotion, setVotingMotion] = useState(null);
+  // means hidden, an id means "voting is open for this motion". Saved with
+  // the tally, so a refresh mid-vote reopens the panel instead of hiding it.
+  const [votingMotionId, setVotingMotionId] = useState(saved.votingMotionId);
+  const votingMotion = motionLog.find((entry) => entry.id === votingMotionId) ?? null;
 
   // Distinct from the vote-bloc `selectedIndex` above (different concept:
   // this is "which logged motion the keyboard cursor is on", kept separate
   // rather than conflated with it).
-  const [selectedMotionIndex, setSelectedMotionIndex] = useState(0);
+  const [selectedMotionId, setSelectedMotionId] = useState(null);
   const [legendOpen, setLegendOpen] = useState(false);
   const motionInputRef = useRef(null);
   // Single-slot undo (not a history stack) - same pattern as SessionBoard.jsx
   // and RollCallPage.jsx. Covers the last deleted motion only.
   const undoRef = useRef(null);
 
-  const clampedMotionIndex = motionLog.length === 0 ? -1 : Math.min(selectedMotionIndex, motionLog.length - 1);
+  const selectedFound = motionLog.findIndex((entry) => entry.id === selectedMotionId);
+  const clampedMotionIndex = selectedFound >= 0 ? selectedFound : motionLog.length > 0 ? 0 : -1;
+  // Functional, so held-down arrow keys all count.
+  const moveMotionSelection = (step) =>
+    setSelectedMotionId((id) => {
+      const found = motionLog.findIndex((entry) => entry.id === id);
+      const index = found >= 0 ? found : 0;
+      return motionLog[Math.min(motionLog.length - 1, Math.max(0, index + step))]?.id ?? null;
+    });
   const selectedMotion = clampedMotionIndex >= 0 ? motionLog[clampedMotionIndex] : null;
 
   // Only set once the chair hits "Go Live" on /cloud - a purely local
@@ -103,8 +113,12 @@ export default function MotionPage() {
   // Opening voting starts a fresh tally rather than carrying one over, and
   // marks this as the active motion, since reopening an older motion means
   // bringing it back to the floor.
+  // A vote already open on this motion is left alone, so a stray Enter or V
+  // mid-count can't wipe the tally.
   function startVoting(entry) {
-    setVotingMotion(entry);
+    if (entry.id === votingMotionId) return;
+    setVotingMotionId(entry.id);
+    setSelectedMotionId(entry.id);
     setGroups(buildInitialGroups(presentCount, absentCount));
     ConferenceService.setActiveMotion(entry);
     publishActiveMotion(entry);
@@ -114,9 +128,10 @@ export default function MotionPage() {
   // govern the floor as soon as they're moved. Inserted by precedence, so a
   // Point of Order outranks whatever is already on the floor.
   function handleMotionSubmit(meta) {
-    setMotionLog((prev) => insertByPrecedence(prev, meta, precedenceByLabel));
-    ConferenceService.setActiveMotion(meta);
-    publishActiveMotion(meta);
+    const entry = withId(meta);
+    setMotionLog((prev) => insertByPrecedence(prev, entry, precedenceByLabel));
+    ConferenceService.setActiveMotion(entry);
+    publishActiveMotion(entry);
   }
 
   // votingMotion is already the committee's active motion (set in
@@ -143,7 +158,9 @@ export default function MotionPage() {
     navigate("/session", { state: { seedQueue: true } });
   }
 
+  // Deleting the motion under vote closes the vote too.
   function deleteMotion(index) {
+    if (motionLog[index]?.id === votingMotionId) setVotingMotionId(null);
     undoRef.current = { entry: motionLog[index], index };
     setMotionLog((prev) => prev.filter((_, i) => i !== index));
   }
@@ -174,18 +191,17 @@ export default function MotionPage() {
 
   useEffect(() => {
     if (!committee) return;
-    try {
-      sessionStorage.setItem(voteStorageKey(committee.id), JSON.stringify({ motionText, groups, motionLog }));
-    } catch {
-      // storage unavailable (private browsing, quota) - falls back to in-memory-only
-    }
-  }, [committee, motionText, groups, motionLog]);
+    // A failed write (private browsing, quota) just leaves this in memory only.
+    session.setJSON(motionVoteKey(committee.id), { motionText, groups, motionLog, absentCount, votingMotionId });
+  }, [committee, motionText, groups, motionLog, absentCount, votingMotionId]);
 
   const adjustVotes = useCallback((index, delta) => {
     setGroups((prev) => adjustVoteGroups(prev, index, delta));
   }, []);
 
   const allowAbstain = groups.length > 2;
+  // Abstain can disappear (toggle off, new vote) while it's selected.
+  const activeIndex = selectedIndex < groups.length ? selectedIndex : 0;
 
   // Locked (a no-op) whenever anyone's absent - their seats are already
   // forced into Abstain (see voteGroups.js's buildInitialGroups) and folding
@@ -205,8 +221,8 @@ export default function MotionPage() {
       "motions.second": () => selectedMotion && adjustSecond(clampedMotionIndex, 1),
       "motions.openVote": () => selectedMotion && startVoting(selectedMotion),
       "motions.confirm": () => selectedMotion && startVoting(selectedMotion),
-      "motions.moveUp": () => setSelectedMotionIndex((i) => Math.max(0, (i < 0 ? 0 : i) - 1)),
-      "motions.moveDown": () => setSelectedMotionIndex((i) => Math.min(motionLog.length - 1, (i < 0 ? -1 : i) + 1)),
+      "motions.moveUp": () => moveMotionSelection(-1),
+      "motions.moveDown": () => moveMotionSelection(1),
       "global.undo": performUndo,
       "global.legend": () => setLegendOpen((open) => !open),
       "global.viewSpeakerList": () => navigate("/session"),
@@ -219,8 +235,8 @@ export default function MotionPage() {
         "voting.selectFor": () => setSelectedIndex(0),
         "voting.selectAgainst": () => setSelectedIndex(1),
         "voting.selectAbstain": () => allowAbstain && setSelectedIndex(2),
-        "voting.increment": () => adjustVotes(selectedIndex, 1),
-        "voting.decrement": () => adjustVotes(selectedIndex, -1),
+        "voting.increment": () => adjustVotes(activeIndex, 1),
+        "voting.decrement": () => adjustVotes(activeIndex, -1),
       },
     }
   );
@@ -228,12 +244,12 @@ export default function MotionPage() {
   if (!committee) return <NoCommitteeModal />;
 
   return (
-    <div className="app-shell min-h-screen bg-[var(--app-bg)] p-8 text-[var(--app-text)]">
-      <div className="mx-auto max-w-5xl">
-        <AppTopBar
-          committeeLabel={committee?.committee ?? committee?.id}
-          onShowShortcuts={() => setLegendOpen(true)}
-        />
+    <div className="app-shell min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
+      <AppTopBar
+        committeeLabel={committee?.committee ?? committee?.id}
+        onShowShortcuts={() => setLegendOpen(true)}
+      />
+      <div className="mx-auto max-w-5xl p-8">
 
         <div className={votingMotion ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]" : "flex justify-center"}>
           <div className={`border border-[var(--app-border)] bg-[var(--app-panel)] p-6 ${votingMotion ? "" : "w-full max-w-2xl"}`}>
@@ -275,7 +291,7 @@ export default function MotionPage() {
             <VotingPanel
               subtitle={formatMotionSummary(votingMotion)}
               groups={groups}
-              selectedIndex={selectedIndex}
+              selectedIndex={activeIndex}
               onSelect={setSelectedIndex}
               onIncrement={(index) => adjustVotes(index, 1)}
               onDecrement={(index) => adjustVotes(index, -1)}

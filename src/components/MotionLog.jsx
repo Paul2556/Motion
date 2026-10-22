@@ -10,7 +10,7 @@ export default function MotionLog({ entries, onDelete, onVote, onAdjustSecond, m
     <div className="mt-4 space-y-2">
       {entries.map((entry, i) => (
         <div
-          key={i}
+          key={entry.id ?? i}
           className={`border p-4 transition ${
             i === selectedIndex ? "border-[var(--app-border-active)] bg-[var(--app-panel)]" : "border-[var(--app-border)] bg-[var(--app-panel)]"
           }`}

@@ -13,6 +13,38 @@ function hashEmail(email) {
   return createHash("sha256").update(email.toLowerCase()).digest("hex");
 }
 
+// Recorded for the admin panel's Announcements tab (api/admin/announcements.js) - plaintext,
+// unlike the sha256-only waitlistSends doc, which exists purely as a resend cooldown key.
+// unsubscribed is reset to false so a repeat signup after a prior unsubscribe re-opts in;
+// createdAt is only set the first time, so a repeat signup doesn't bump their join date.
+async function recordSubscriber(subscriberRef, email) {
+  const subscriberSnap = await subscriberRef.get();
+  await subscriberRef.set(
+    {
+      email,
+      source: "signup",
+      unsubscribed: false,
+      ...(subscriberSnap.exists ? {} : { createdAt: Timestamp.now() }),
+    },
+    { merge: true },
+  );
+}
+
+// Caps mail-bomb impact on a single destination address even under IP
+// rotation, which the rate limit can't defend against on its own. Claimed in
+// a transaction before sending, so concurrent signups for one address can't
+// all pass the check and each send a copy.
+async function claimWelcomeSend(db, cooldownRef) {
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(cooldownRef);
+    const previous = snap.exists ? snap.data() : null;
+    const lastSentAt = previous?.lastSentAt?.toMillis?.();
+    if (lastSentAt != null && Date.now() - lastSentAt < SEND_COOLDOWN_MS) return { claimed: false, previous };
+    tx.set(cooldownRef, { lastSentAt: Timestamp.now() });
+    return { claimed: true, previous };
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "method_not_allowed" });
@@ -68,6 +100,7 @@ export default async function handler(req, res) {
     const sheetResponse = await fetch(process.env.WAITLIST_SHEET_WEBHOOK_URL, {
       method: "POST",
       body: sheetForm,
+      signal: AbortSignal.timeout(10_000),
     });
     if (!sheetResponse.ok) {
       console.error("Waitlist sheet write failed:", sheetResponse.status, await sheetResponse.text());
@@ -80,50 +113,29 @@ export default async function handler(req, res) {
     return;
   }
 
-  const db = getAdminDb();
-  const emailHash = hashEmail(trimmedEmail);
-  const cooldownRef = db.collection("waitlistSends").doc(emailHash);
-
-  // Recorded for the admin panel's Announcements tab (api/admin/announcements.js) - plaintext,
-  // unlike the sha256-only waitlistSends doc above, since that one exists purely as a resend
-  // cooldown key and was never meant to be readable back into an email list. unsubscribed is
-  // reset to false so a repeat signup after a prior unsubscribe re-opts in; createdAt is only
-  // set the first time, so a repeat signup doesn't bump their original join date.
-  const subscriberRef = db.collection("waitlistSubscribers").doc(emailHash);
-  const subscriberSnap = await subscriberRef.get();
-  await subscriberRef.set(
-    {
-      email: trimmedEmail,
-      source: "signup",
-      unsubscribed: false,
-      ...(subscriberSnap.exists ? {} : { createdAt: Timestamp.now() }),
-    },
-    { merge: true },
-  );
-
-  // Caps mail-bomb impact on a single destination address even under IP
-  // rotation, which the rate limit above can't defend against on its own -
-  // silently no-ops (same fake-success shape as the honeypot) rather than
-  // erroring, so a caller gets no signal either way.
-  const cooldownSnap = await cooldownRef.get();
-  if (cooldownSnap.exists && Date.now() - cooldownSnap.data().lastSentAt.toMillis() < SEND_COOLDOWN_MS) {
-    res.status(200).json({ ok: true });
-    return;
-  }
-
+  // The sheet row above is the signup itself, so nothing past this point
+  // fails the request: an error would prompt a retry and a duplicate row.
+  // Failures here are logged instead.
   try {
-    const { subject, html } = waitlistWelcomeEmail();
-    await sendEmail({ to: trimmedEmail, subject, html });
-  } catch (error) {
-    // Caught (rather than left to crash the function) so a Resend failure - e.g. a missing
-    // RESEND_API_KEY - shows up as a normal, diagnosable JSON error instead of Vercel's opaque
-    // FUNCTION_INVOCATION_FAILED page.
-    console.error("Failed to send waitlist welcome email:", error);
-    res.status(500).json({ error: "email_failed" });
-    return;
-  }
+    const db = getAdminDb();
+    const emailHash = hashEmail(trimmedEmail);
+    await recordSubscriber(db.collection("waitlistSubscribers").doc(emailHash), trimmedEmail);
 
-  await cooldownRef.set({ lastSentAt: Timestamp.now() });
+    const cooldownRef = db.collection("waitlistSends").doc(emailHash);
+    const claim = await claimWelcomeSend(db, cooldownRef);
+    if (claim.claimed) {
+      try {
+        const { subject, html } = waitlistWelcomeEmail();
+        await sendEmail({ to: trimmedEmail, subject, html });
+      } catch (error) {
+        console.error("Failed to send waitlist welcome email:", error);
+        // Hands the cooldown back so a later signup can still get the email.
+        await (claim.previous ? cooldownRef.set(claim.previous) : cooldownRef.delete());
+      }
+    }
+  } catch (error) {
+    console.error("Waitlist follow-up failed after the signup was recorded:", error);
+  }
 
   res.status(200).json({ ok: true });
 }

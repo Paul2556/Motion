@@ -1,5 +1,8 @@
 // Plain fetch against Resend's REST API rather than adding their SDK - one
-// HTTP call is all this needs.
+// HTTP call is all this needs. Every call has a timeout, so a hung upstream
+// fails fast with a catchable error instead of running out the function.
+const TIMEOUT_MS = 10_000;
+
 export async function sendEmail({ to, subject, html }) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -13,6 +16,7 @@ export async function sendEmail({ to, subject, html }) {
       subject,
       html,
     }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -31,6 +35,7 @@ export async function sendEmailBatch(messages) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(messages.map((m) => ({ from: "Motion <hello@motionmun.com>", ...m }))),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
   });
 
   if (!res.ok) {

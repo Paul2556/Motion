@@ -8,7 +8,8 @@ export function getVoteStatusLabel(groups) {
   const forSeats = groups[0]?.seats ?? 0;
   if (forSeats === totalSeats) return "Full House";
 
-  const twoThirdsIndex = Math.floor((totalSeats * 2) / 3) + 1;
+  // "Two-thirds majority" means at least two-thirds, so 6 of 9 passes.
+  const twoThirdsIndex = Math.ceil((totalSeats * 2) / 3);
   if (forSeats >= twoThirdsIndex) return "Super Majority";
 
   const majorityIndex = Math.floor(totalSeats / 2) + 1;

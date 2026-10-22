@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { durationToMinutes, toWholeSeconds } from "../utils/duration";
 
 const PRESET_SECONDS = [60, 75, 90];
 
@@ -9,9 +10,8 @@ export default function SpeakingTimeSelector({ onSelect }) {
   const [customValue, setCustomValue] = useState("");
 
   function submitCustom() {
-    const seconds = Number(customValue);
-    if (!Number.isFinite(seconds) || seconds <= 0) return;
-    onSelect(Math.round(seconds));
+    const seconds = toWholeSeconds(durationToMinutes(customValue, "sec"));
+    if (seconds != null) onSelect(seconds);
   }
 
   return (

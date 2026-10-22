@@ -1,4 +1,6 @@
 import { MOTIONS } from "./constants";
+import { randomId } from "./utils/randomId";
+import { local } from "./utils/storage";
 
 // Same localStorage-backed override pattern as shortcutPrefs.js - one JSON
 // blob holding the full effective motions list, re-read on every call rather
@@ -22,6 +24,7 @@ const SEED_IDS = {
   "Move to Voting Procedure": "move-voting-procedure",
   "Suspend Meeting": "suspend-meeting",
   "Adjourn Meeting": "adjourn-meeting",
+  "Adjourn Debate": "adjourn-debate",
   // ThaiMUN RoP additions (see constants.js's MOTIONS comment).
   "Point of Order": "point-of-order",
   "Personal Privilege": "personal-privilege",
@@ -62,13 +65,22 @@ function seedMotions() {
   }));
 }
 
+// Saved lists come from localStorage or an account's Firestore doc, so
+// anything unusable is dropped here rather than crashing a page that maps it.
+function toMotion(motion) {
+  if (!motion || typeof motion !== "object") return null;
+  if (typeof motion.id !== "string" || typeof motion.text !== "string" || !motion.text.trim()) return null;
+  if (motion.alias === undefined) return motion;
+  return { ...motion, alias: Array.isArray(motion.alias) ? motion.alias.filter((alias) => typeof alias === "string") : [] };
+}
+
+function sanitizeMotions(list) {
+  return Array.isArray(list) ? list.map(toMotion).filter(Boolean) : null;
+}
+
 export function getMotions() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : seedMotions();
-  } catch {
-    return seedMotions();
-  }
+  const saved = local.getJSON(STORAGE_KEY);
+  return sanitizeMotions(saved) ?? seedMotions();
 }
 
 // Plain pub/sub so this module has no idea account sync exists, avoiding a
@@ -85,32 +97,25 @@ function notifyChange() {
   changeListeners.forEach((callback) => callback(motions));
 }
 
+// A failed write (private browsing, quota) just means edits won't persist.
 function saveMotions(list) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    // storage unavailable (private browsing, quota) - edits just won't persist
-  }
+  local.setJSON(STORAGE_KEY, list);
   notifyChange();
 }
 
 // Wholesale replace, same write path as saveMotions - used by prefsSync.js
-// to adopt a signed-in user's server copy.
+// to adopt a signed-in user's server copy. Not a list at all is ignored.
 export function replaceMotions(list) {
-  saveMotions(list);
+  const motions = sanitizeMotions(list);
+  if (motions) saveMotions(motions);
 }
 
-// `explicit` is deliberately never part of the accepted patch shape, so the
-// merge below can't clobber it on an existing record.
 export function addMotion({ text, alias = [], topic = false, durationField = null }) {
-  const motion = { id: crypto.randomUUID(), text, alias, topic, durationField };
+  const motion = { id: randomId(), text, alias, topic, durationField };
   saveMotions([...getMotions(), motion]);
   return motion;
 }
 
-// Plain merge patch - callers (the editor form) must never include an
-// `explicit` key in patch, so any pre-existing `explicit: true` on a
-// built-in survives edits untouched.
 export function updateMotion(id, patch) {
   saveMotions(getMotions().map((m) => (m.id === id ? { ...m, ...patch } : m)));
 }
@@ -137,10 +142,6 @@ export function moveMotion(id, direction) {
 // Reverts to defaults by clearing the override entirely, not by re-seeding -
 // so a stale/corrupt saved list can't linger past a reset.
 export function resetMotions() {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // storage unavailable - nothing to clear
-  }
+  local.remove(STORAGE_KEY);
   notifyChange();
 }

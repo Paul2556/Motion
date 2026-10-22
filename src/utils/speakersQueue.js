@@ -1,0 +1,54 @@
+import { countries, historicalCountries } from "../constants";
+import { isRollCallTaken } from "./attendance";
+
+const COUNTRY_BY_CODE = new Map([...countries, ...historicalCountries].map((c) => [c.code, c]));
+
+// The queue shows the short canonical name rather than placard text, since a
+// long formal name wraps badly in its narrow card.
+export function shortCountryName(delegate) {
+  return COUNTRY_BY_CODE.get(delegate.countryCode)?.name ?? delegate.countryDisplay ?? delegate.country;
+}
+
+export function countryAliases(delegate) {
+  return (delegate.countryCode && COUNTRY_BY_CODE.get(delegate.countryCode)?.alias) || [];
+}
+
+function toQueueEntry(delegate) {
+  return { id: delegate.id, country: shortCountryName(delegate), countryCode: delegate.countryCode };
+}
+
+// MotionInput reports the mover as the words that matched, which may be an
+// alias ("US", "Holland"), so every name the country goes by is checked.
+function findMover(delegates, mover) {
+  const wanted = mover.toLowerCase();
+  return delegates.find((delegate) =>
+    [shortCountryName(delegate), delegate.countryDisplay, delegate.country, ...countryAliases(delegate)]
+      .some((name) => name?.toLowerCase() === wanted)
+  );
+}
+
+// The one-time seed MotionPage hands /session: the whole speakers' list
+// (seedQueue) or just a passed motion's mover (seedProposer). Absent
+// delegates are left out once roll call has marked anyone present.
+export function initialSpeakersQueue(delegates, { seedQueue, seedProposer } = {}) {
+  if (seedQueue) {
+    const rollCallTaken = isRollCallTaken(delegates);
+    return delegates
+      .filter((delegate) => !rollCallTaken || delegate.present)
+      .sort((a, b) => (a.countryDisplay || a.country).localeCompare(b.countryDisplay || b.country))
+      .map(toQueueEntry);
+  }
+  const mover = seedProposer ? findMover(delegates, seedProposer) : null;
+  return mover ? [toQueueEntry(mover)] : [];
+}
+
+// A saved speakers' list only keeps delegates still in this committee, so a
+// reloaded workbook (fresh delegate ids) starts clean instead of showing
+// yesterday's queue. Entries the queue couldn't render are dropped too.
+export function restoreSavedSession(saved, delegates) {
+  const ids = new Set(delegates.map((delegate) => delegate.id));
+  const isShowable = (entry) =>
+    ids.has(entry?.id) && typeof entry.country === "string" && (entry.countryCode == null || typeof entry.countryCode === "string");
+  const keep = (list) => (Array.isArray(list) ? list.filter(isShowable) : []);
+  return { queue: keep(saved?.queue), history: keep(saved?.history) };
+}
