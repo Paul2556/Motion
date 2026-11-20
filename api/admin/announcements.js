@@ -6,6 +6,7 @@ import { mapAuthError } from "./_lib/mapAuthError.js";
 import { sendEmailBatch } from "../source/_lib/sendEmail.js";
 import { announcementEmail } from "../source/_lib/emailTemplates.js";
 import { createUnsubscribeToken } from "../source/_lib/unsubscribeToken.js";
+import { AUDIENCES, hashEmail, loadAudiences, loadRecipients } from "./_lib/recipients.js";
 
 // Merged list/import/send into one dispatched handler (GET = list, POST
 // {action} = import/start/continue/retryFailed), same reasoning as
@@ -17,31 +18,35 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BATCH_SIZE = 100; // Resend's /emails/batch cap, and one send call's work
 const FIRESTORE_BATCH_LIMIT = 500; // writes per Firestore batch
 
-function hashEmail(email) {
-  return createHash("sha256").update(email.toLowerCase()).digest("hex");
-}
-
 async function listSubscribers(res) {
   try {
     const db = getAdminDb();
-    const [snap, latest] = await Promise.all([
+    const [snap, latest, audiences] = await Promise.all([
       db.collection("waitlistSubscribers").get(),
       db.collection("announcements").orderBy("createdAt", "desc").limit(1).get(),
+      loadAudiences(),
     ]);
-    const subscribers = snap.docs.map((d) => {
-      const data = d.data();
-      return {
-        email: data.email,
-        source: data.source,
-        unsubscribed: Boolean(data.unsubscribed),
-        createdAt: data.createdAt?.toDate?.().toISOString() ?? null,
-      };
-    });
+    // Email-less rows are opt-outs older unsubscribe links left behind, not subscribers.
+    const subscribers = snap.docs.map((d) => d.data()).filter((data) => data.email).map((data) => ({
+      email: data.email,
+      source: data.source,
+      unsubscribed: Boolean(data.unsubscribed),
+      createdAt: data.createdAt?.toDate?.().toISOString() ?? null,
+    }));
     const unsubscribedCount = subscribers.filter((s) => s.unsubscribed).length;
     // The most recent send, so the panel can offer to resume it if the tab
     // closed or a call failed before it finished.
     const lastAnnouncement = latest.empty ? null : storedSummary(latest.docs[0]);
-    res.status(200).json({ subscribers, total: subscribers.length, unsubscribedCount, lastAnnouncement });
+    const { waitlist, users, both } = audiences;
+    res.status(200).json({
+      subscribers,
+      total: subscribers.length,
+      unsubscribedCount,
+      lastAnnouncement,
+      // Exact send sizes for the confirm button, after dedup and opt-outs.
+      audiences: { waitlist: waitlist.length, users: users.length, both: both.length },
+      overlap: waitlist.length + users.length - both.length,
+    });
   } catch (error) {
     console.error("listSubscribers failed:", error);
     res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
@@ -81,12 +86,9 @@ async function importSubscribers(req, res) {
   }
 }
 
-// The announcement's audience as email addresses. Re-read on every chunk, so
-// anyone who unsubscribes mid-send is skipped.
-async function loadRecipients() {
-  const snap = await getAdminDb().collection("waitlistSubscribers").where("unsubscribed", "==", false).get();
-  return snap.docs.map((d) => d.data().email);
-}
+// The audience is re-read on every chunk, so anyone who unsubscribes mid-send
+// is skipped. Sends started before audiences existed went to the waitlist.
+const recipientsOf = (announcement) => loadRecipients(announcement.audience ?? "waitlist");
 
 // One marker per recipient under the announcement, recording whether their
 // batch was accepted. A recipient with a marker is never picked again.
@@ -136,25 +138,35 @@ function announcementMessages(emails, { subject, body }) {
 }
 
 // Records the announcement without emailing anyone; the admin panel then
-// calls `continue` until it reports "done". Sending the same text again while
-// the last send is unfinished resumes that send rather than starting over.
+// calls `continue` until it reports "done". Sending the same text to the same
+// audience while the last send is unfinished resumes that send rather than
+// starting over.
 async function startAnnouncement(req, res) {
-  const { subject, body } = req.body ?? {};
+  const { subject, body, audience } = req.body ?? {};
   if (typeof subject !== "string" || !subject.trim() || typeof body !== "string" || !body.trim()) {
     res.status(400).json({ error: "subject_and_body_required" });
+    return;
+  }
+  if (!AUDIENCES.includes(audience)) {
+    res.status(400).json({ error: "invalid_audience" });
     return;
   }
 
   try {
     const db = getAdminDb();
     const [recipients, latest] = await Promise.all([
-      loadRecipients(),
+      loadRecipients(audience),
       db.collection("announcements").orderBy("createdAt", "desc").limit(1).get(),
     ]);
 
     const previous = latest.docs[0];
     const unfinished = previous?.data();
-    if (unfinished?.status === "sending" && unfinished.subject === subject && unfinished.body === body) {
+    if (
+      unfinished?.status === "sending" &&
+      unfinished.subject === subject &&
+      unfinished.body === body &&
+      (unfinished.audience ?? "waitlist") === audience
+    ) {
       const deliveries = await loadDeliveries(previous.ref);
       res.status(200).json({ announcement: summarize(previous.id, subject, recipients, deliveries) });
       return;
@@ -162,7 +174,7 @@ async function startAnnouncement(req, res) {
 
     const ref = db.collection("announcements").doc();
     const announcement = summarize(ref.id, subject, recipients, new Map());
-    await ref.set({ subject, body, createdAt: Timestamp.now(), ...announcement });
+    await ref.set({ subject, body, audience, createdAt: Timestamp.now(), ...announcement });
     res.status(200).json({ announcement });
   } catch (error) {
     console.error("startAnnouncement failed:", error);
@@ -195,7 +207,7 @@ async function continueAnnouncement(req, res) {
     if (!snap) return;
     const { id, ref } = snap;
     const { subject, body } = snap.data();
-    const [recipients, deliveries] = await Promise.all([loadRecipients(), loadDeliveries(ref)]);
+    const [recipients, deliveries] = await Promise.all([recipientsOf(snap.data()), loadDeliveries(ref)]);
 
     const chunk = pendingRecipients(recipients, deliveries).slice(0, BATCH_SIZE);
     if (chunk.length > 0) {
@@ -240,7 +252,7 @@ async function retryFailed(req, res) {
       await batch.commit();
     }
 
-    const [recipients, deliveries] = await Promise.all([loadRecipients(), loadDeliveries(ref)]);
+    const [recipients, deliveries] = await Promise.all([recipientsOf(snap.data()), loadDeliveries(ref)]);
     const announcement = summarize(id, snap.data().subject, recipients, deliveries);
     await ref.set(announcement, { merge: true });
     res.status(200).json({ announcement });
