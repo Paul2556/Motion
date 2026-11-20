@@ -39,7 +39,7 @@
     "globals": "^17.13.0",
     "postcss": "^8.5.31",
     "tailwindcss": "^4.3.3",
-    "vitest": "5.0.2"
+    "vitest": "5.1.1"
   },
   "overrides": {
     "jwks-rsa": "3.2.2",
