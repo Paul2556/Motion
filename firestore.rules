@@ -85,5 +85,12 @@ service cloud.firestore {
     match /waitlistSubscribers/{emailHash} {
       allow read, write: if false;
     }
+
+    // Announcement sends and their per-recipient delivery markers
+    // (api/admin/announcements.js) - Admin-SDK-only, same reasoning as
+    // waitlistSubscribers above.
+    match /announcements/{document=**} {
+      allow read, write: if false;
+    }
   }
 }

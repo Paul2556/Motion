@@ -35,6 +35,17 @@ function formatDate(value) {
   return new Date(value).toLocaleString();
 }
 
+function SendProgress({ announcement, sending }) {
+  const { subject, sent, failed, remaining, status } = announcement;
+  const processed = sent + failed;
+  const failedNote = failed > 0 ? `, ${failed} failed` : "";
+  let text;
+  if (status === "done") text = `Sent ${sent}${failedNote}.`;
+  else if (sending) text = `Sending ${processed} of ${processed + remaining}${failedNote}...`;
+  else text = `"${subject}" stopped at ${processed} of ${processed + remaining}${failedNote}.`;
+  return <p className="text-xs text-[var(--app-text-muted)]">{text}</p>;
+}
+
 const PERMISSION_KEYS = ["debug", "refer", "app"];
 const PERMISSION_LABELS = { debug: "Debug", refer: "Refer", app: "App" };
 
@@ -91,7 +102,9 @@ export default function AdminPanelPage() {
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [confirmSend, setConfirmSend] = useState(false);
-  const [sendResult, setSendResult] = useState(null);
+  // The send in progress, or the last one if it still needs the owner: either
+  // interrupted (status "sending") or finished with failures to retry.
+  const [announcement, setAnnouncement] = useState(null);
 
   async function loadUsers() {
     setLoading(true);
@@ -162,6 +175,8 @@ export default function AdminPanelPage() {
         setSubscribers(data.subscribers);
         setSubscriberTotal(data.total);
         setUnsubscribedCount(data.unsubscribedCount);
+        const last = data.lastAnnouncement;
+        if (last && (last.status === "sending" || last.failed > 0)) setAnnouncement(last);
       })
       .catch((err) => setSubscribersError(err.message))
       .finally(() => setSubscribersLoading(false));
@@ -195,23 +210,35 @@ export default function AdminPanelPage() {
     setBody(template.body);
   }
 
-  async function handleSend() {
+  async function postAnnouncement(payload) {
+    const data = await callAdmin("announcements", { method: "POST", body: JSON.stringify(payload) });
+    return data.announcement;
+  }
+
+  // Each `continue` call sends one batch, so the loop lives here and the
+  // server never runs long. Stopping part-way (error, closed tab) is safe:
+  // the server remembers who was sent, and Resume picks up from there.
+  async function runSend(begin) {
     setSending(true);
     setSubscribersError(null);
-    setSendResult(null);
     try {
-      const data = await callAdmin("announcements", {
-        method: "POST",
-        body: JSON.stringify({ action: "send", subject, body }),
-      });
-      setSendResult(data);
+      let current = await begin();
+      setAnnouncement(current);
       setConfirmSend(false);
+      while (current.status === "sending") {
+        current = await postAnnouncement({ action: "continue", id: current.id });
+        setAnnouncement(current);
+      }
     } catch (err) {
       setSubscribersError(err.message);
     } finally {
       setSending(false);
     }
   }
+
+  const handleSend = () => runSend(() => postAnnouncement({ action: "start", subject, body }));
+  const handleResume = () => runSend(async () => announcement);
+  const handleRetryFailed = () => runSend(() => postAnnouncement({ action: "retryFailed", id: announcement.id }));
 
   async function handleAddContributor(event) {
     event.preventDefault();
@@ -628,16 +655,28 @@ export default function AdminPanelPage() {
             ) : (
               <button
                 onClick={() => setConfirmSend(true)}
-                disabled={!subject.trim() || !body.trim()}
+                disabled={sending || !subject.trim() || !body.trim()}
                 className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip-active)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text)] transition hover:bg-[var(--app-chip-active-hover)] disabled:opacity-50"
               >
                 <Send size={14} /> Send
               </button>
             )}
-            {sendResult && (
-              <p className="text-xs text-[var(--app-text-muted)]">
-                Sent {sendResult.sent}{sendResult.failed > 0 ? `, ${sendResult.failed} failed` : ""}.
-              </p>
+            {announcement && <SendProgress announcement={announcement} sending={sending} />}
+            {announcement && !sending && announcement.status === "sending" && (
+              <button
+                onClick={handleResume}
+                className="text-xs uppercase tracking-[0.14em] text-[var(--app-text)] underline-offset-4 hover:underline"
+              >
+                Resume
+              </button>
+            )}
+            {announcement && !sending && announcement.status === "done" && announcement.failed > 0 && (
+              <button
+                onClick={handleRetryFailed}
+                className="text-xs uppercase tracking-[0.14em] text-[var(--app-text)] underline-offset-4 hover:underline"
+              >
+                Retry failed
+              </button>
             )}
           </div>
         </div>

@@ -27,12 +27,14 @@ export async function sendEmail({ to, subject, html }) {
 // Resend's batch endpoint, for announcement sends - one HTTP call per up to
 // 100 recipients instead of one per recipient. `messages` items omit `from`,
 // filled in here so every batch send comes from the same address as sendEmail.
-export async function sendEmailBatch(messages) {
+// A repeated `idempotencyKey` within 24 hours is not sent again by Resend.
+export async function sendEmailBatch(messages, { idempotencyKey } = {}) {
   const res = await fetch("https://api.resend.com/emails/batch", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       "Content-Type": "application/json",
+      ...(idempotencyKey && { "Idempotency-Key": idempotencyKey }),
     },
     body: JSON.stringify(messages.map((m) => ({ from: "Motion <hello@motionmun.com>", ...m }))),
     signal: AbortSignal.timeout(TIMEOUT_MS),

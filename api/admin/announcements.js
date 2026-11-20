@@ -8,24 +8,26 @@ import { announcementEmail } from "../source/_lib/emailTemplates.js";
 import { createUnsubscribeToken } from "../source/_lib/unsubscribeToken.js";
 
 // Merged list/import/send into one dispatched handler (GET = list, POST
-// {action} = import/send), same reasoning as users.js/permissions.js: Vercel's
-// Hobby plan caps a deployment at 12 serverless functions.
+// {action} = import/start/continue/retryFailed), same reasoning as
+// users.js/permissions.js: Vercel's Hobby plan caps a deployment at 12
+// serverless functions. A send is many short calls rather than one long one,
+// so no audience size can run a call past the function time limit.
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const BATCH_SIZE = 100; // Resend's /emails/batch cap
-const BATCH_DELAY_MS = 600; // courtesy gap between batch calls
+const BATCH_SIZE = 100; // Resend's /emails/batch cap, and one send call's work
+const FIRESTORE_BATCH_LIMIT = 500; // writes per Firestore batch
 
 function hashEmail(email) {
   return createHash("sha256").update(email.toLowerCase()).digest("hex");
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function listSubscribers(res) {
   try {
-    const snap = await getAdminDb().collection("waitlistSubscribers").get();
+    const db = getAdminDb();
+    const [snap, latest] = await Promise.all([
+      db.collection("waitlistSubscribers").get(),
+      db.collection("announcements").orderBy("createdAt", "desc").limit(1).get(),
+    ]);
     const subscribers = snap.docs.map((d) => {
       const data = d.data();
       return {
@@ -36,7 +38,10 @@ async function listSubscribers(res) {
       };
     });
     const unsubscribedCount = subscribers.filter((s) => s.unsubscribed).length;
-    res.status(200).json({ subscribers, total: subscribers.length, unsubscribedCount });
+    // The most recent send, so the panel can offer to resume it if the tab
+    // closed or a call failed before it finished.
+    const lastAnnouncement = latest.empty ? null : storedSummary(latest.docs[0]);
+    res.status(200).json({ subscribers, total: subscribers.length, unsubscribedCount, lastAnnouncement });
   } catch (error) {
     console.error("listSubscribers failed:", error);
     res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
@@ -76,47 +81,173 @@ async function importSubscribers(req, res) {
   }
 }
 
-async function sendAnnouncement(req, res) {
+// The announcement's audience as email addresses. Re-read on every chunk, so
+// anyone who unsubscribes mid-send is skipped.
+async function loadRecipients() {
+  const snap = await getAdminDb().collection("waitlistSubscribers").where("unsubscribed", "==", false).get();
+  return snap.docs.map((d) => d.data().email);
+}
+
+// One marker per recipient under the announcement, recording whether their
+// batch was accepted. A recipient with a marker is never picked again.
+async function loadDeliveries(announcementRef) {
+  const snap = await announcementRef.collection("deliveries").get();
+  return new Map(snap.docs.map((d) => [d.data().email, d.data().status]));
+}
+
+function pendingRecipients(recipients, deliveries) {
+  const unique = new Set(recipients.map((email) => String(email).trim().toLowerCase()));
+  return [...unique].filter((email) => !deliveries.has(email)).sort();
+}
+
+function summarize(id, subject, recipients, deliveries) {
+  const statuses = [...deliveries.values()];
+  const remaining = pendingRecipients(recipients, deliveries).length;
+  return {
+    id,
+    subject,
+    status: remaining === 0 ? "done" : "sending",
+    sent: statuses.filter((s) => s === "sent").length,
+    failed: statuses.filter((s) => s === "failed").length,
+    remaining,
+  };
+}
+
+function storedSummary(doc) {
+  const { subject, status, sent, failed, remaining } = doc.data();
+  return { id: doc.id, subject, status, sent, failed, remaining };
+}
+
+// Same announcement + same recipients = same key, so a retry of a batch that
+// Resend accepted but this function never recorded (timeout, crash) is
+// dropped by Resend instead of emailing those people twice. The key is reused
+// even after a Resend error: if Resend replays that error, the batch stays
+// visibly failed, which beats risking a silent duplicate.
+function chunkIdempotencyKey(id, emails) {
+  return `announcement/${id}/${createHash("sha256").update(emails.join("\n")).digest("hex")}`;
+}
+
+function announcementMessages(emails, { subject, body }) {
+  return emails.map((email) => {
+    const unsubscribeUrl = `https://motionmun.com/api/waitlist/unsubscribe?email=${encodeURIComponent(email)}&token=${createUnsubscribeToken(email)}`;
+    const { subject: renderedSubject, html } = announcementEmail({ subject, body, unsubscribeUrl });
+    return { to: email, subject: renderedSubject, html };
+  });
+}
+
+// Records the announcement without emailing anyone; the admin panel then
+// calls `continue` until it reports "done". Sending the same text again while
+// the last send is unfinished resumes that send rather than starting over.
+async function startAnnouncement(req, res) {
   const { subject, body } = req.body ?? {};
   if (typeof subject !== "string" || !subject.trim() || typeof body !== "string" || !body.trim()) {
     res.status(400).json({ error: "subject_and_body_required" });
     return;
   }
 
-  const db = getAdminDb();
-  let recipients;
   try {
-    const snap = await db.collection("waitlistSubscribers").where("unsubscribed", "==", false).get();
-    recipients = snap.docs.map((d) => d.data().email);
-  } catch (error) {
-    console.error("loading subscribers for send failed:", error);
-    res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
-    return;
-  }
+    const db = getAdminDb();
+    const [recipients, latest] = await Promise.all([
+      loadRecipients(),
+      db.collection("announcements").orderBy("createdAt", "desc").limit(1).get(),
+    ]);
 
-  let sent = 0;
-  let failed = 0;
-
-  for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-    const chunk = recipients.slice(i, i + BATCH_SIZE);
-    const messages = chunk.map((email) => {
-      const unsubscribeUrl = `https://motionmun.com/api/waitlist/unsubscribe?email=${encodeURIComponent(email)}&token=${createUnsubscribeToken(email)}`;
-      const { subject: renderedSubject, html } = announcementEmail({ subject, body, unsubscribeUrl });
-      return { to: email, subject: renderedSubject, html };
-    });
-
-    try {
-      await sendEmailBatch(messages);
-      sent += chunk.length;
-    } catch (error) {
-      console.error("sendEmailBatch failed:", error);
-      failed += chunk.length;
+    const previous = latest.docs[0];
+    const unfinished = previous?.data();
+    if (unfinished?.status === "sending" && unfinished.subject === subject && unfinished.body === body) {
+      const deliveries = await loadDeliveries(previous.ref);
+      res.status(200).json({ announcement: summarize(previous.id, subject, recipients, deliveries) });
+      return;
     }
 
-    if (i + BATCH_SIZE < recipients.length) await sleep(BATCH_DELAY_MS);
+    const ref = db.collection("announcements").doc();
+    const announcement = summarize(ref.id, subject, recipients, new Map());
+    await ref.set({ subject, body, createdAt: Timestamp.now(), ...announcement });
+    res.status(200).json({ announcement });
+  } catch (error) {
+    console.error("startAnnouncement failed:", error);
+    res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
   }
+}
 
-  res.status(200).json({ sent, failed });
+// Answers 400/404 itself and returns null when there is no such announcement.
+async function findAnnouncement(db, req, res) {
+  const { id } = req.body ?? {};
+  // Firestore auto-IDs are alphanumeric; a "/" would address a nested path.
+  if (typeof id !== "string" || !/^[A-Za-z0-9]+$/.test(id)) {
+    res.status(400).json({ error: "id_required" });
+    return null;
+  }
+  const snap = await db.collection("announcements").doc(id).get();
+  if (!snap.exists) {
+    res.status(404).json({ error: "announcement_not_found" });
+    return null;
+  }
+  return snap;
+}
+
+// Sends one batch to the next recipients without a marker, so each call does
+// a bounded amount of work however large the audience is.
+async function continueAnnouncement(req, res) {
+  try {
+    const db = getAdminDb();
+    const snap = await findAnnouncement(db, req, res);
+    if (!snap) return;
+    const { id, ref } = snap;
+    const { subject, body } = snap.data();
+    const [recipients, deliveries] = await Promise.all([loadRecipients(), loadDeliveries(ref)]);
+
+    const chunk = pendingRecipients(recipients, deliveries).slice(0, BATCH_SIZE);
+    if (chunk.length > 0) {
+      let status = "sent";
+      try {
+        await sendEmailBatch(announcementMessages(chunk, { subject, body }), {
+          idempotencyKey: chunkIdempotencyKey(id, chunk),
+        });
+      } catch (error) {
+        console.error("sendEmailBatch failed:", error);
+        status = "failed";
+      }
+      for (const email of chunk) deliveries.set(email, status);
+
+      const batch = db.batch();
+      for (const email of chunk) {
+        batch.set(ref.collection("deliveries").doc(hashEmail(email)), { email, status, at: Timestamp.now() });
+      }
+      batch.set(ref, summarize(id, subject, recipients, deliveries), { merge: true });
+      await batch.commit();
+    }
+
+    res.status(200).json({ announcement: summarize(id, subject, recipients, deliveries) });
+  } catch (error) {
+    console.error("continueAnnouncement failed:", error);
+    res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
+  }
+}
+
+// Clears the failed markers so `continue` sends to those recipients again.
+async function retryFailed(req, res) {
+  try {
+    const db = getAdminDb();
+    const snap = await findAnnouncement(db, req, res);
+    if (!snap) return;
+    const { id, ref } = snap;
+
+    const failed = await ref.collection("deliveries").where("status", "==", "failed").get();
+    for (let i = 0; i < failed.docs.length; i += FIRESTORE_BATCH_LIMIT) {
+      const batch = db.batch();
+      for (const doc of failed.docs.slice(i, i + FIRESTORE_BATCH_LIMIT)) batch.delete(doc.ref);
+      await batch.commit();
+    }
+
+    const [recipients, deliveries] = await Promise.all([loadRecipients(), loadDeliveries(ref)]);
+    const announcement = summarize(id, snap.data().subject, recipients, deliveries);
+    await ref.set(announcement, { merge: true });
+    res.status(200).json({ announcement });
+  } catch (error) {
+    console.error("retryFailed failed:", error);
+    res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
+  }
 }
 
 export default async function handler(req, res) {
@@ -141,8 +272,16 @@ export default async function handler(req, res) {
     await importSubscribers(req, res);
     return;
   }
-  if (action === "send") {
-    await sendAnnouncement(req, res);
+  if (action === "start") {
+    await startAnnouncement(req, res);
+    return;
+  }
+  if (action === "continue") {
+    await continueAnnouncement(req, res);
+    return;
+  }
+  if (action === "retryFailed") {
+    await retryFailed(req, res);
     return;
   }
 
