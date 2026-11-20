@@ -36,6 +36,8 @@ function formatDate(value) {
 }
 
 const PERMISSION_KEYS = ["debug", "refer", "app"];
+const AUDIENCE_OPTIONS = [["waitlist", "Waitlist"], ["users", "Signed-up users"], ["both", "Both"]];
+const AUDIENCE_LABELS = Object.fromEntries(AUDIENCE_OPTIONS);
 const PERMISSION_LABELS = { debug: "Debug", refer: "Refer", app: "App" };
 
 export default function AdminPanelPage() {
@@ -82,6 +84,9 @@ export default function AdminPanelPage() {
   const [subscribers, setSubscribers] = useState([]);
   const [subscriberTotal, setSubscriberTotal] = useState(0);
   const [unsubscribedCount, setUnsubscribedCount] = useState(0);
+  const [audienceSizes, setAudienceSizes] = useState({ waitlist: 0, users: 0, both: 0 });
+  const [overlap, setOverlap] = useState(0);
+  const [audience, setAudience] = useState("waitlist");
   const [subscribersLoading, setSubscribersLoading] = useState(true);
   const [subscribersError, setSubscribersError] = useState(null);
   const [importText, setImportText] = useState("");
@@ -139,14 +144,19 @@ export default function AdminPanelPage() {
       .finally(() => setPermissionsLoading(false));
   }, [isAuthorized]);
 
+  function applySubscriberData(data) {
+    setSubscribers(data.subscribers);
+    setSubscriberTotal(data.total);
+    setUnsubscribedCount(data.unsubscribedCount);
+    setAudienceSizes(data.audiences);
+    setOverlap(data.overlap);
+  }
+
   async function loadSubscribers() {
     setSubscribersLoading(true);
     setSubscribersError(null);
     try {
-      const data = await callAdmin("announcements", { method: "GET" });
-      setSubscribers(data.subscribers);
-      setSubscriberTotal(data.total);
-      setUnsubscribedCount(data.unsubscribedCount);
+      applySubscriberData(await callAdmin("announcements", { method: "GET" }));
     } catch (err) {
       setSubscribersError(err.message);
     } finally {
@@ -158,11 +168,7 @@ export default function AdminPanelPage() {
   useEffect(() => {
     if (!isAuthorized) return;
     callAdmin("announcements", { method: "GET" })
-      .then((data) => {
-        setSubscribers(data.subscribers);
-        setSubscriberTotal(data.total);
-        setUnsubscribedCount(data.unsubscribedCount);
-      })
+      .then(applySubscriberData)
       .catch((err) => setSubscribersError(err.message))
       .finally(() => setSubscribersLoading(false));
   }, [isAuthorized]);
@@ -202,7 +208,7 @@ export default function AdminPanelPage() {
     try {
       const data = await callAdmin("announcements", {
         method: "POST",
-        body: JSON.stringify({ action: "send", subject, body }),
+        body: JSON.stringify({ action: "send", subject, body, audience }),
       });
       setSendResult(data);
       setConfirmSend(false);
@@ -327,7 +333,7 @@ export default function AdminPanelPage() {
             ? "Firebase Auth accounts - list, disable/enable, delete."
             : tab === "permissions"
             ? "Contributor page access - Debug/Refer/App are granted individually; admin access always stays owner-only."
-            : "Compose and send an email to the waitlist from hello@motionmun.com."}
+            : "Compose and send an email to the waitlist, signed-up users, or both, from hello@motionmun.com."}
         </p>
 
         <div className="mt-6 flex gap-2 border-b border-[var(--app-border)]">
@@ -570,12 +576,36 @@ export default function AdminPanelPage() {
           </div>
         </form>
 
-        {/* Audience is waitlist-only for now; a selector belongs here once
-            announcements can also target every signed-up Firebase user. */}
         <div className="mt-6 border border-[var(--app-border)] bg-[var(--app-panel)] p-6">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Audience: Waitlist</p>
+          <span className="text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Audience</span>
+          <div className="mt-1.5 flex flex-wrap gap-2" role="radiogroup" aria-label="Audience">
+            {AUDIENCE_OPTIONS.map(([key, label]) => (
+              <label
+                key={key}
+                className={`cursor-pointer border px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+                  audience === key
+                    ? "border-[var(--app-text)] bg-[var(--app-chip-active)] text-[var(--app-text)]"
+                    : "border-[var(--app-border)] text-[var(--app-text-secondary)] hover:bg-[var(--app-chip-active)]"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="audience"
+                  value={key}
+                  checked={audience === key}
+                  onChange={() => {
+                    setAudience(key);
+                    setConfirmSend(false);
+                  }}
+                  className="sr-only"
+                />
+                {label} <span className="tabular-nums text-[var(--app-text-muted)]">{audienceSizes[key]}</span>
+              </label>
+            ))}
+          </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <span className="mt-4 block text-[11px] uppercase tracking-[0.16em] text-[var(--app-text-muted)]">Template</span>
+          <div className="mt-1.5 flex flex-wrap gap-2">
             {ANNOUNCEMENT_TEMPLATES.map((t) => (
               <button
                 key={t.id}
@@ -616,7 +646,8 @@ export default function AdminPanelPage() {
                   disabled={sending}
                   className="flex items-center gap-2 border border-[rgba(var(--danger-rgb),0.4)] bg-[rgba(var(--danger-rgb),0.08)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--danger)] transition hover:bg-[rgba(var(--danger-rgb),0.15)] disabled:opacity-50"
                 >
-                  <Send size={14} /> Confirm: send to {subscriberTotal - unsubscribedCount} people
+                  <Send size={14} /> Confirm: send to {AUDIENCE_LABELS[audience]}, {audienceSizes[audience]} {audienceSizes[audience] === 1 ? "person" : "people"}
+                  {audience === "both" && overlap > 0 && ` (${overlap} on both lists, counted once)`}
                 </button>
                 <button
                   onClick={() => setConfirmSend(false)}
@@ -628,7 +659,7 @@ export default function AdminPanelPage() {
             ) : (
               <button
                 onClick={() => setConfirmSend(true)}
-                disabled={!subject.trim() || !body.trim()}
+                disabled={!subject.trim() || !body.trim() || audienceSizes[audience] === 0}
                 className="flex items-center gap-2 border border-[var(--app-border)] bg-[var(--app-chip-active)] px-4 py-2.5 text-xs uppercase tracking-[0.16em] text-[var(--app-text)] transition hover:bg-[var(--app-chip-active-hover)] disabled:opacity-50"
               >
                 <Send size={14} /> Send

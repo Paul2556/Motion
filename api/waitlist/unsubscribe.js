@@ -29,11 +29,15 @@ export default async function handler(req, res) {
     return;
   }
 
+  // emailOptOuts is the opt-out every announcement audience checks; the
+  // waitlist row, when there is one, is flagged too so the admin list shows it.
   try {
-    await getAdminDb().collection("waitlistSubscribers").doc(hashEmail(email)).set(
-      { unsubscribed: true, unsubscribedAt: Timestamp.now() },
-      { merge: true },
-    );
+    const db = getAdminDb();
+    const emailHash = hashEmail(email);
+    const unsubscribedAt = Timestamp.now();
+    await db.collection("emailOptOuts").doc(emailHash).set({ unsubscribedAt });
+    const subscriberRef = db.collection("waitlistSubscribers").doc(emailHash);
+    if ((await subscriberRef.get()).exists) await subscriberRef.set({ unsubscribed: true, unsubscribedAt }, { merge: true });
   } catch (error) {
     console.error("unsubscribe failed:", error);
     res.status(500).setHeader("Content-Type", "text/html").send(htmlPage("Something went wrong. Please try again later."));

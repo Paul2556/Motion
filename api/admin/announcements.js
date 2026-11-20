@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { Timestamp } from "firebase-admin/firestore";
 import { getAdminDb } from "./_lib/firebaseAdmin.js";
 import { verifyOwner } from "./_lib/requireOwner.js";
@@ -6,6 +5,7 @@ import { mapAuthError } from "./_lib/mapAuthError.js";
 import { sendEmailBatch } from "../source/_lib/sendEmail.js";
 import { announcementEmail } from "../source/_lib/emailTemplates.js";
 import { createUnsubscribeToken } from "../source/_lib/unsubscribeToken.js";
+import { AUDIENCES, hashEmail, loadAudiences, loadRecipients } from "./_lib/recipients.js";
 
 // Merged list/import/send into one dispatched handler (GET = list, POST
 // {action} = import/send), same reasoning as users.js/permissions.js: Vercel's
@@ -15,28 +15,33 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BATCH_SIZE = 100; // Resend's /emails/batch cap
 const BATCH_DELAY_MS = 600; // courtesy gap between batch calls
 
-function hashEmail(email) {
-  return createHash("sha256").update(email.toLowerCase()).digest("hex");
-}
-
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function listSubscribers(res) {
   try {
-    const snap = await getAdminDb().collection("waitlistSubscribers").get();
-    const subscribers = snap.docs.map((d) => {
-      const data = d.data();
-      return {
-        email: data.email,
-        source: data.source,
-        unsubscribed: Boolean(data.unsubscribed),
-        createdAt: data.createdAt?.toDate?.().toISOString() ?? null,
-      };
-    });
+    const [snap, audiences] = await Promise.all([
+      getAdminDb().collection("waitlistSubscribers").get(),
+      loadAudiences(),
+    ]);
+    // Email-less rows are opt-outs older unsubscribe links left behind, not subscribers.
+    const subscribers = snap.docs.map((d) => d.data()).filter((data) => data.email).map((data) => ({
+      email: data.email,
+      source: data.source,
+      unsubscribed: Boolean(data.unsubscribed),
+      createdAt: data.createdAt?.toDate?.().toISOString() ?? null,
+    }));
     const unsubscribedCount = subscribers.filter((s) => s.unsubscribed).length;
-    res.status(200).json({ subscribers, total: subscribers.length, unsubscribedCount });
+    const { waitlist, users, both } = audiences;
+    res.status(200).json({
+      subscribers,
+      total: subscribers.length,
+      unsubscribedCount,
+      // Exact send sizes for the confirm button, after dedup and opt-outs.
+      audiences: { waitlist: waitlist.length, users: users.length, both: both.length },
+      overlap: waitlist.length + users.length - both.length,
+    });
   } catch (error) {
     console.error("listSubscribers failed:", error);
     res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
@@ -77,19 +82,21 @@ async function importSubscribers(req, res) {
 }
 
 async function sendAnnouncement(req, res) {
-  const { subject, body } = req.body ?? {};
+  const { subject, body, audience } = req.body ?? {};
   if (typeof subject !== "string" || !subject.trim() || typeof body !== "string" || !body.trim()) {
     res.status(400).json({ error: "subject_and_body_required" });
     return;
   }
+  if (!AUDIENCES.includes(audience)) {
+    res.status(400).json({ error: "invalid_audience" });
+    return;
+  }
 
-  const db = getAdminDb();
   let recipients;
   try {
-    const snap = await db.collection("waitlistSubscribers").where("unsubscribed", "==", false).get();
-    recipients = snap.docs.map((d) => d.data().email);
+    recipients = await loadRecipients(audience);
   } catch (error) {
-    console.error("loading subscribers for send failed:", error);
+    console.error("loading recipients for send failed:", error);
     res.status(500).json({ error: "internal_error", code: mapAuthError(error) });
     return;
   }
