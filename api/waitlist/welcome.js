@@ -120,6 +120,8 @@ export default async function handler(req, res) {
     const db = getAdminDb();
     const emailHash = hashEmail(trimmedEmail);
     await recordSubscriber(db.collection("waitlistSubscribers").doc(emailHash), trimmedEmail);
+    // Signing up again is an opt-in, so it lifts an earlier unsubscribe.
+    await db.collection("emailOptOuts").doc(emailHash).delete();
 
     const cooldownRef = db.collection("waitlistSends").doc(emailHash);
     const claim = await claimWelcomeSend(db, cooldownRef);

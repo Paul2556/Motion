@@ -1,5 +1,5 @@
 // An in-memory stand-in for the slice of the Firebase Admin Firestore API the
-// api/admin handlers use, so handler tests run without the emulator.
+// api/ handlers use, so handler tests run without the emulator.
 // `failNextCommit()` makes the next batch commit throw, to simulate a function
 // dying between sending an email and recording it.
 export function fakeFirestore() {
@@ -73,6 +73,7 @@ export function fakeFirestore() {
 
   return {
     collection: collectionRef,
+    runTransaction: (fn) => fn({ get: (ref) => ref.get(), set: (ref, data, options) => ref.set(data, options) }),
     batch() {
       const ops = [];
       return {
